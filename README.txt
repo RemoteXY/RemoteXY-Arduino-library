@@ -1,5 +1,6 @@
+Library version: 2.3.4
 
-This library for Arduino is part of a large RemoteXY project. 
-RemoteXY allows you to control your device using an Android or iOS smartphone using Bluetooth, WiFi, Ethernet, Cloud.
+This code is the library for Arduino IDE. The library is part of the RemoteXY project. 
+RemoteXY allows you to control your device using an Android or iOS smartphone. There are Bluetooth, WiFi, Ethernet or Cloud server can be used for connection.
 
-Go to website for more details http://remotexy.com/
+For more details and make GUI go to website http://remotexy.com/
