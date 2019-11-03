@@ -1,9 +1,9 @@
-#ifndef _REMOTEXY_MOD_ESP8266WIFI_CLOUD_H_
-#define _REMOTEXY_MOD_ESP8266WIFI_CLOUD_H_
+#ifndef _REMOTEXY_MOD__ESPCORE_WIFI_CLOUD_H_
+#define _REMOTEXY_MOD__ESPCORE_WIFI_CLOUD_H_
 
 /*
-for ESP8266 board;
-need include <ESP8266WiFi.h>;
+for ESP8266 board: need include <ESP8266WiFi.h>
+for ESP32 board: need include <WiFi.h>
 */
 
 #include "classes/RemoteXY_API.h"
@@ -29,6 +29,7 @@ class CRemoteXY : public CRemoteXY_API {
     wifiSsid = (char *) _wifiSsid;
     wifiPassword = (char *) _wifiPassword;
     clientState=0;
+    
     init (_conf, _var, _accessPassword);  
     initCloud (_cloudServer, _cloudPort, _cloudToken);  
   }
@@ -136,4 +137,4 @@ class CRemoteXY : public CRemoteXY_API {
 
 
 
-#endif //_REMOTEXY_MOD_ESP8266WIFI_CLOUD_H_
+#endif //_REMOTEXY_MOD__ESPCORE_WIFI_CLOUD_H_

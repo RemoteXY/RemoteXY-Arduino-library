@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 2.3.5   
+   version 2.4.1   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -26,9 +26,14 @@
     #define REMOTEXY_MODE__WIFI_LIB 
     
    Only ESP8266 boards:
-    #define REMOTEXY_MODE__ESP8266WIFI_LIB 
-    #define REMOTEXY_MODE__ESP8266WIFI_LIB_POINT 
-    #define REMOTEXY_MODE__ESP8266WIFI_LIB_CLOUD 
+    #define REMOTEXY_MODE__ESP8266CORE_WIFI 
+    #define REMOTEXY_MODE__ESP8266CORE_WIFI_POINT 
+    #define REMOTEXY_MODE__ESP8266CORE_WIFI_CLOUD 
+
+   Only ESP32 boards:
+    #define REMOTEXY_MODE__ESP32CORE_WIFI 
+    #define REMOTEXY_MODE__ESP32CORE_WIFI_POINT 
+    #define REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD 
 
    Parameters depending on the selected mode (for example):
     #define REMOTEXY_SERIAL Serial  // for Hardware Serial
@@ -64,6 +69,8 @@
      - Fixed some bugs;
    version 2.3.5  
      - Fixed some bugs;
+   version 2.4.1
+     - support ESP32 WiFi and Bluetooth   
           
 */
 
@@ -109,14 +116,24 @@
   #define REMOTEXY_CLOUD
 #elif defined(REMOTEXY_MODE__WIFI_LIB)
   #define REMOTEXY_MOD__WIFI_LIB
-#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB_POINT) || defined(REMOTEXY_MODE__ESP8266WIFIPOINT_LIB)  
-  #define REMOTEXY_MOD__ESP8266WIFI_LIB
+#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB_POINT) || defined(REMOTEXY_MODE__ESP8266WIFIPOINT_LIB) || (REMOTEXY_MODE__ESP8266CORE_WIFI_POINT) 
+  #define REMOTEXY_MOD__ESPCORE_WIFI
   #define REMOTEXY_WIFI__POINT
-#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB)
-  #define REMOTEXY_MOD__ESP8266WIFI_LIB
-#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB_CLOUD)
-  #define REMOTEXY_MOD__ESP8266WIFI_LIB_CLOUD
+#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB) || (REMOTEXY_MODE__ESP8266CORE_WIFI)
+  #define REMOTEXY_MOD__ESPCORE_WIFI
+#elif defined(REMOTEXY_MODE__ESP8266WIFI_LIB_CLOUD) || (REMOTEXY_MODE__ESP8266CORE_WIFI_CLOUD)                  
+  #define REMOTEXY_MOD__ESPCORE_WIFI_CLOUD 
   #define REMOTEXY_CLOUD
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_POINT)  
+  #define REMOTEXY_MOD__ESPCORE_WIFI
+  #define REMOTEXY_WIFI__POINT
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI) 
+  #define REMOTEXY_MOD__ESPCORE_WIFI
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD)
+  #define REMOTEXY_MOD__ESPCORE_WIFI_CLOUD
+  #define REMOTEXY_CLOUD
+#elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
+  #define REMOTEXY_MOD__ESP32CORE_BLE
 #else
   #error RemoteXY mode does not defined or defined error: REMOTEXY_MODE__XXXXXXX 
 #endif
@@ -144,10 +161,12 @@
   #include "modules/ethernet_cloud.h" 
 #elif defined(REMOTEXY_MOD__WIFI_LIB)
   #include "modules/wifi.h" 
-#elif defined(REMOTEXY_MOD__ESP8266WIFI_LIB)
-  #include "modules/esp8266wifi.h" 
-#elif defined(REMOTEXY_MOD__ESP8266WIFI_LIB_CLOUD)
-  #include "modules/esp8266wifi_cloud.h" 
+#elif defined(REMOTEXY_MOD__ESPCORE_WIFI)
+  #include "modules/espcore_wifi.h" 
+#elif defined(REMOTEXY_MOD__ESPCORE_WIFI_CLOUD)
+  #include "modules/espcore_wifi_cloud.h" 
+#elif defined(REMOTEXY_MOD__ESP32CORE_BLE)
+  #include "modules/esp32core_ble.h" 
 #endif 
 
 #ifndef REMOTEXY_ACCESS_PASSWORD 
