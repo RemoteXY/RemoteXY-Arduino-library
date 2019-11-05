@@ -155,6 +155,6 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
 };
 
 
-#define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, REMOTEXY_BLE_DEVICENAME)
+#define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, REMOTEXY_BLUETOOTH_NAME)
 
 #endif //_REMOTEXY_MOD__ESP32CORE_BLE_H_
