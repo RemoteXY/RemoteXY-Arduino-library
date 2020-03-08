@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 2.4.3   
+   version 2.4.4   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -76,6 +76,8 @@
      - Fixed some bugs;
    version 2.4.3
      - Fixed some bugs;
+   version 2.4.4
+     - Fixed ESP32 BLE bugs;
           
 */
 

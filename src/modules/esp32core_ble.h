@@ -34,6 +34,8 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
     uint16_t receiveBufferPos;
     uint16_t receiveBufferCount;
     
+    uint8_t receiveBufferLook;
+    
 
   public:
     CRemoteXY (const void * _conf, void * _var, const char * _accessPassword, const char * _bleDeviceName) {
@@ -43,6 +45,8 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
 #endif
 
       receiveBufferCount = 0;
+      receiveBufferLook = 0;
+
 	    
       // Create the BLE Device
       BLEDevice::init(_bleDeviceName);
@@ -99,7 +103,9 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
       std::string rxValue = pCharacteristic->getValue();
 
       if (rxValue.length() > 0) {
-        for (uint16_t i = 0; i < rxValue.length(); i++) {        
+        while (receiveBufferLook!=0) { delay(1); } 
+        receiveBufferLook=1; 
+        for (uint16_t i = 0; i < rxValue.length(); i++) {                
           uint8_t b = (uint8_t)rxValue[i];  
           receiveBuffer[receiveBufferPos++] =  b;
           if (receiveBufferPos>=REMOTEXY_RECEIVE_BUFFER_LENGTH) receiveBufferPos=0; 
@@ -111,7 +117,8 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
 #if defined(REMOTEXY__DEBUGLOGS)
           DEBUGLOGS_writeInputHex (b);
 #endif          
-        }
+        } 
+        receiveBufferLook=0; 
       }
     }
 
@@ -139,17 +146,21 @@ class CRemoteXY : public CRemoteXY_API, BLEServerCallbacks, BLECharacteristicCal
 
     uint8_t receiveByte () {
       uint8_t b =0;
+      while (receiveBufferLook!=0) { delay(1); } 
+      receiveBufferLook=1;      
       if (receiveBufferCount>0) {      
         b = receiveBuffer[receiveBufferStart++];
         if (receiveBufferStart>=REMOTEXY_RECEIVE_BUFFER_LENGTH) receiveBufferStart=0;
         receiveBufferCount--;
       }
+      receiveBufferLook=0;
       return b;
     }
 
 
     uint8_t availableByte () {
-      return receiveBufferCount;
+      if (receiveBufferCount>0) return 1;
+      else return 0;
     };
 
 };

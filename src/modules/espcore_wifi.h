@@ -41,7 +41,7 @@ class CRemoteXY : public CRemoteXY_API {
     WiFi.disconnect();
     WiFi.softAPdisconnect(true);
 #if defined(REMOTEXY_WIFI__POINT)
-    /* access point */
+    /* access point */    
     WiFi.mode(WIFI_AP);
     WiFi.softAP(wifiSsid, wifiPassword);
 #if defined(REMOTEXY__DEBUGLOGS)
