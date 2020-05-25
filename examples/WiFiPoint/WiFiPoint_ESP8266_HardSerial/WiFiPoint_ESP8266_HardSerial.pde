@@ -46,7 +46,9 @@ unsigned char RemoteXY_CONF[] =
   { 1,0,11,0,1,5,1,0,21,2
   ,59,59,2,88,0 }; 
    
-/* this structure defines all the variables of your control interface */ 
+/* RemoteXY configurate : This decides how your app is gonna look  */ 
+// So, consider changing only this if you wan't to juggle between designs
+// but want the rest of the program to be the same.
 struct { 
 
     /* input variable */
@@ -67,8 +69,7 @@ struct {
 void setup()  
 { 
   RemoteXY_Init ();  
-   
-  pinMode (PIN_BUTTON_1, OUTPUT);
+  pinMode(PIN_BUTTON_1, OUTPUT); 
    
 
   // TODO you setup code 
@@ -79,7 +80,12 @@ void loop()
 {  
   RemoteXY_Handler (); 
    
-  digitalWrite(PIN_BUTTON_1, (RemoteXY.button_1==0)?LOW:HIGH);
+  if (RemoteXY.button_1 == 1){
+    digitalWrite(PIN_BUTTON_1, HIGH);
+  } 
+  else if (RemoteXY.button_1 == 0){
+    digitalWrite(PIN_BUTTON_1, LOW);
+  }
    
 
   // TODO you loop code 
