@@ -35,6 +35,7 @@
     #define REMOTEXY_MODE__ESP32CORE_WIFI_POINT              - data transfer using <wifi.h> library and open access point with a server
     #define REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD              - data transfer using <wifi.h> library and cloud connection
     #define REMOTEXY_MODE__ESP32CORE_BLE                     - data transfer using <BLEdevice.h> library
+    #define REMOTEXY_MODE__ESP32CORE_BLUETOOTH               - data transfer using <BluetoothSerial.h> library of classic bluetooth
 
    Parameters depending on the selected mode (for example):
     #define REMOTEXY_SERIAL Serial  // for Hardware Serial
@@ -71,13 +72,16 @@
    version 2.3.5  
      - Fixed some bugs;
    version 2.4.1
-     - support ESP32 WiFi and Bluetooth   
+     - support ESP32 WiFi and BLE   
    version 2.4.2
      - Fixed some bugs;
    version 2.4.3
      - Fixed some bugs;
    version 2.4.4
      - Fixed ESP32 BLE bugs;
+   version 2.4.5
+     - support ESP32 classic Bluetooth   
+     - Fixed some bugs;
           
 */
 
@@ -141,6 +145,8 @@
   #define REMOTEXY_CLOUD
 #elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
   #define REMOTEXY_MOD__ESP32CORE_BLE
+#elif defined(REMOTEXY_MODE__ESP32CORE_BLUETOOTH)
+  #define REMOTEXY_MOD__ESP32CORE_BLUETOOTH
 #else
   #error RemoteXY mode does not defined or defined error: REMOTEXY_MODE__XXXXXXX 
 #endif
@@ -174,6 +180,8 @@
   #include "modules/espcore_wifi_cloud.h" 
 #elif defined(REMOTEXY_MOD__ESP32CORE_BLE)
   #include "modules/esp32core_ble.h" 
+#elif defined(REMOTEXY_MOD__ESP32CORE_BLUETOOTH)
+  #include "modules/esp32core_bluetooth.h" 
 #endif 
 
 #ifndef REMOTEXY_ACCESS_PASSWORD 

@@ -50,12 +50,11 @@ class CRemoteXY_API {
   virtual void closeConnection () {};
   virtual void sendStart (uint16_t len) {};
   virtual void sendByte (uint8_t b) {};
-  virtual uint8_t receiveByte () {};
-  virtual uint8_t availableByte () {};  
+  virtual uint8_t receiveByte () {return 0;};
+  virtual uint8_t availableByte () {return 0;};  
   
   public:
   void init (const void * _conf, void * _var, const char * _accessPassword) {
-    uint32_t ms;
     uint8_t i;
     uint8_t* p = (uint8_t*)_conf;
     uint8_t b = getConfByte (p++);
@@ -124,7 +123,7 @@ class CRemoteXY_API {
       
   public:
   void handler () {
-    uint8_t *p, *kp;
+    uint8_t *p;
     uint16_t i;  
     uint8_t b;
     uint16_t packageLength;
@@ -493,13 +492,13 @@ class CRemoteXY_API {
   void DEBUGLOGS_writeTime () {
     uint32_t d = millis();
     char s[15];
-    sprintf (s, "[%5ld.%03ld] ",d/1000, d%1000);     
+    sprintf (s, "[%5ld.%03d] ",(long)(d/1000), (int)(d%1000));     
     REMOTEXY__DEBUGLOGS.println ();    
     REMOTEXY__DEBUGLOGS.print (s);
   }
   
   public:
-  void DEBUGLOGS_write (char *s) {
+  void DEBUGLOGS_write (const char *s) {
     debug_flags = 0;
     DEBUGLOGS_writeTime (); 
     REMOTEXY__DEBUGLOGS.print(s);
