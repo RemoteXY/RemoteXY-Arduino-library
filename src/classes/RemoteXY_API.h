@@ -34,12 +34,14 @@ class CRemoteXY_API {
   uint16_t inputLength;
   uint16_t confLength;
   uint8_t *connect_flag;
+  uint8_t inputVarNeedSend;
 
   uint8_t *receiveBuffer;
   uint16_t receiveBufferLength;
   uint16_t receiveIndex;
   uint16_t receiveCRC;
 
+  
   uint32_t wireTimeOut;
   
   uint8_t moduleRunning;
@@ -116,7 +118,8 @@ class CRemoteXY_API {
   void resetWire () {
     receiveIndex=0; 
     receiveCRC=initCRC ();
-    *connect_flag = 0;    
+    *connect_flag = 0; 
+    inputVarNeedSend = 1;
     wireTimeOut= millis();
   }
   
@@ -286,10 +289,11 @@ class CRemoteXY_API {
         }          
         break;   
       case 0x40:  
+        inputVarNeedSend = 0;
         sendPackage (command, var, inputLength+outputLength, 0); 
         break;   
       case 0x80:  
-        if (length==inputLength) {
+        if ((length==inputLength) && (inputVarNeedSend==0)) {
           p=receiveBuffer+4;
           kp=var;
           i= inputLength;
@@ -298,6 +302,7 @@ class CRemoteXY_API {
         sendPackage (command, 0, 0, 0);
         break;   
       case 0xC0:  
+        if (inputVarNeedSend!=0) command |= 0x01;
         sendPackage (command, var+inputLength, outputLength, 0);
         break;   
 #if defined(REMOTEXY_CLOUD)  
@@ -331,7 +336,19 @@ class CRemoteXY_API {
   uint8_t isConnected () {
     return *connect_flag;
   }
+  
+  // transmit the input vars to smartphone, while input variables are transmitted the output variables are not sent
+  public:
+  void sendInputVariables () {
+    inputVarNeedSend = 1;
+  }
 
+  //check if input variables were sent, return 1 if sent
+  public:
+  uint8_t didSendInputVariables () {
+    if (inputVarNeedSend==0) return 1;
+    else return 0;
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 // CLOUD SUPPORT 
