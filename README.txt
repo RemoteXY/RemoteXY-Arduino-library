@@ -23,4 +23,11 @@ History:
    version 2.4.1
      - support ESP32 WiFi and Bluetooth  
    version 2.4.2
-     - Fixed some bugs;     
+     - Fixed some bugs;   
+   version 2.4.3
+     - Fixed some bugs;
+   version 2.4.4
+     - Fixed ESP32 BLE bugs;
+   version 2.4.5
+     - support ESP32 classic Bluetooth   
+     - Fixed some bugs;  
