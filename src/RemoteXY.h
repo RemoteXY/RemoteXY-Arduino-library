@@ -82,6 +82,8 @@
    version 2.4.5
      - support ESP32 classic Bluetooth   
      - Fixed some bugs;
+   version 2.4.6
+     - update input variables on a smartphone;
           
 */
 
@@ -192,6 +194,11 @@ CRemoteXY *remotexy;
 
 #define RemoteXY_Handler() remotexy->handler ()
 #define RemoteXY_CONF const PROGMEM RemoteXY_CONF_PROGMEM
+
+//API
+#define RemoteXY_isConnected() remotexy->isConnected ()
+#define RemoteXY_sendInputVariables() remotexy->sendInputVariables ()
+#define RemoteXY_didSendInputVariables() remotexy->didSendInputVariables ()
 
 
 #endif //_REMOTEXY_H_
