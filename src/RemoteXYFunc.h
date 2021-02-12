@@ -1,5 +1,5 @@
-#ifndef _RXY_LIB_H_
-#define _RXY_LIB_H_
+#ifndef RemoteXYFunc_h
+#define RemoteXYFunc_h
 
 #include <inttypes.h> 
 
@@ -37,4 +37,4 @@ void rxy_getMacAddr (char* s, uint8_t* m) {
 
 
 
-#endif //_RXY_LIB_H_
+#endif //RemoteXYFunc_h
