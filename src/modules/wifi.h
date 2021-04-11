@@ -26,8 +26,23 @@ class CRemoteXY : public CRemoteXY_API {
   }
   
   uint8_t initModule () {  
-    delay(100);    
-    /* station only*/
+    delay(100);
+#if defined(REMOTEXY__DEBUGLOGS)
+    if (WiFi.status() == WL_NO_MODULE)  // check for WiFi module
+    	DEBUGLOGS_write("WiFi module err");
+#endif    
+#if defined(REMOTEXY_WIFI__POINT)	// access point mode
+    int stat;
+    stat = WiFi.beginAP(wifiSsid, wifiPassword);
+#if defined(REMOTEXY__DEBUGLOGS)
+    if (stat == WL_AP_LISTENING) {	// check for AP creation
+    	DEBUGLOGS_write("AP created");
+    	DEBUGLOGS_write("IP: 192.168.4.1");	// default local IP address: 192.168.4.1
+    }
+    else
+    	DEBUGLOGS_write("AP err");
+#endif
+#else					// station mode	
     WiFi.begin(wifiSsid, wifiPassword);
     uint8_t i = 40;
     while (WiFi.status() != WL_CONNECTED && i--) delay(500);
@@ -43,6 +58,7 @@ class CRemoteXY : public CRemoteXY_API {
     }
 #endif
     if (!i) return 0;
+#endif  
 
     client.stop();
     server = new WiFiServer (port);

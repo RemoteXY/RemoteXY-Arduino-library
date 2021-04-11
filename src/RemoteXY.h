@@ -24,6 +24,7 @@
     #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_POINT   - data transfer via SOFTSERIAL using AT commands of ESP8266 and open access point with a server
     #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_CLOUD   - data transfer via SOFTSERIAL using AT commands of ESP8266 and cloud connection
     #define REMOTEXY_MODE__WIFI                       - data transfer using wifi.h library and open server
+    #define REMOTEXY_MODE__WIFI_POINT                 - data transfer using wifi.h library and open server with access point
     
    Only ESP8266 boards:
     #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI           - data transfer using <esp8266wifi.h> library and open server
@@ -129,6 +130,9 @@
   #define REMOTEXY_CLOUD
 #elif defined(REMOTEXY_MODE__WIFI) || defined(REMOTEXY_MODE__WIFI_LIB)
   #define REMOTEXY_MOD__WIFI
+#elif defined(REMOTEXY_MODE__WIFI_POINT)
+  #define REMOTEXY_MOD__WIFI
+  #define REMOTEXY_WIFI__POINT
 #elif defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_POINT) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB_POINT) || defined(REMOTEXY_MODE__ESP8266WIFIPOINT_LIB) 
   #define REMOTEXY_MOD__ESPCORE_WIFI
   #define REMOTEXY_WIFI__POINT
