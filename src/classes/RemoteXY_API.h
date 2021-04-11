@@ -275,7 +275,7 @@ class CRemoteXY_API {
         } 
         if (available!=0) {
           sendPackage (command, conf, confLength,  1);
-          *connect_flag = 1;
+          //*connect_flag = 1;
         }
         else {
           uint8_t buf[4];
@@ -320,6 +320,7 @@ class CRemoteXY_API {
     }  
     
     wireTimeOut=millis();    
+    *connect_flag = 1;
 #if defined(REMOTEXY_CLOUD)  
     if (cloudState==REMOTEXY_CLOUD_STATE_WORKING) {
       cloudTimeOut=millis();
