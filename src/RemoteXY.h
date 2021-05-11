@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 3.1.1   
+   version 3.1.6   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -23,19 +23,24 @@
     #define REMOTEXY_MODE__SOFTSERIAL_ESP8266         - data transfer via SOFTSERIAL using AT commands of ESP8266 and open server
     #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_POINT   - data transfer via SOFTSERIAL using AT commands of ESP8266 and open access point with a server
     #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_CLOUD   - data transfer via SOFTSERIAL using AT commands of ESP8266 and cloud connection
-    #define REMOTEXY_MODE__WIFI                       - data transfer using wifi.h library and open server
+    #define REMOTEXY_MODE__WIFI                       - data transfer using generic wifi.h library and open server
+    #define REMOTEXY_MODE__WIFI_POINT                 - data transfer using generic wifi.h library and open access point with a server
+    #define REMOTEXY_MODE__WIFI_CLOUD                 - data transfer using generic wifi.h library and cloud connection
     
    Only ESP8266 boards:
-    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI           - data transfer using <esp8266wifi.h> library and open server
-    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_POINT     - data transfer using <esp8266wifi.h> library and open access point with a server
-    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_CLOUD     - data transfer using <esp8266wifi.h> library and cloud connection
+    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI or REMOTEXY_MODE__WIFI                - data transfer using <esp8266wifi.h> library and open server
+    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_POINT or REMOTEXY_MODE__WIFI_POINT    - data transfer using <esp8266wifi.h> library and open access point with a server
+    #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_CLOUD or REMOTEXY_MODE__WIFI_CLOUD    - data transfer using <esp8266wifi.h> library and cloud connection
 
    Only ESP32 boards:
-    #define REMOTEXY_MODE__ESP32CORE_WIFI                    - data transfer using <wifi.h> library and open server
-    #define REMOTEXY_MODE__ESP32CORE_WIFI_POINT              - data transfer using <wifi.h> library and open access point with a server
-    #define REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD              - data transfer using <wifi.h> library and cloud connection
+    #define REMOTEXY_MODE__ESP32CORE_WIFI or REMOTEXY_MODE__WIFI                  - data transfer using <wifi.h> library and open server
+    #define REMOTEXY_MODE__ESP32CORE_WIFI_POINT or REMOTEXY_MODE__WIFI_POINT      - data transfer using <wifi.h> library and open access point with a server
+    #define REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD or REMOTEXY_MODE__WIFI_CLOUD      - data transfer using <wifi.h> library and cloud connection
     #define REMOTEXY_MODE__ESP32CORE_BLE                     - data transfer using <BLEdevice.h> library
     #define REMOTEXY_MODE__ESP32CORE_BLUETOOTH               - data transfer using <BluetoothSerial.h> library
+
+   Only NRF52xx based boards: 
+    #define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL                    - data transfer using <BLEPeripheral.h> library
 
    Parameters depending on the selected mode (for example):
     #define REMOTEXY_SERIAL Serial  // for Hardware Serial
@@ -84,11 +89,20 @@
      - Fixed ESP32 BLE bugs;
    version 3.1.1
      - Full update the library: multiple connections, set input variables from board and more;
+   version 3.1.3
+     - Multiple connection for cloud, fixed some bugs;
+   version 3.1.4
+     - fixed some bugs;
+   version 3.1.5
+     - add NRF5XXX and BLEPeripheral.h library as Beta, need define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL;
+   version 3.1.6
+     - fixed some bugs;
           
 */
 
 #ifndef _REMOTEXY_H_
 #define _REMOTEXY_H_
+
 
 
 #ifndef REMOTEXY_MAX_CLIENTS
@@ -118,9 +132,10 @@
 #include "RemoteXYStream_HardSerial.h"
 #include "RemoteXYStream_SoftSerial.h"        // need SoftwareSerial.h or SoftSerial.h
 #include "RemoteXYStream_BluetoothSerial.h"   // need BluetoothSerial.h
-#include "RemoteXYStream_BLEDevice.h"          // need BLEDevice.h
-#include "RemoteXYComm_WiFi.h"              // need ESP8266WiFi.h (ESP8266) or WiFi.h (ESP32) or WiFi.h (Arduino shield) 
-#include "RemoteXYComm_Ethernet.h"          // need Ethernet.h 
+#include "RemoteXYStream_BLEDevice.h"         // need BLEDevice.h
+#include "RemoteXYStream_BLEPeripheral.h"     // need BLEPeripheral.h
+#include "RemoteXYComm_WiFi.h"                // need ESP8266WiFi.h (ESP8266) or WiFi.h (ESP32) or WiFi.h (Arduino shield) 
+#include "RemoteXYComm_Ethernet.h"            // need Ethernet.h 
 #include "RemoteXYComm_ESP8266.h"
 
 
@@ -146,15 +161,15 @@
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_BLEDevice (REMOTEXY_BLUETOOTH_NAME)) 
 
-#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB) 
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB) || defined(REMOTEXY_MODE__WIFI)
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT)) 
 
-#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_POINT) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_POINT) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB_POINT) || defined(REMOTEXY_MODE__ESP8266WIFIPOINT_LIB) 
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_POINT) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_POINT) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB_POINT) || defined(REMOTEXY_MODE__ESP8266WIFIPOINT_LIB) || defined(REMOTEXY_MODE__WIFI_POINT)
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYConnectionServer (new CRemoteXYComm_WiFiPoint (REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT)) 
 
-#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_CLOUD) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB_CLOUD)                
+#elif defined(REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI_CLOUD) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB_CLOUD) || defined(REMOTEXY_MODE__WIFI_CLOUD)               
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYConnectionCloud (new CRemoteXYComm_WiFi (REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN))      
 
@@ -193,6 +208,10 @@
 #elif defined(REMOTEXY_MODE__ESP32CORE_BLUETOOTH)
   CRemoteXY *remotexy;      
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_BluetoothSerial (REMOTEXY_BLUETOOTH_NAME)) 
+
+#elif defined(REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL)
+  CRemoteXY *remotexy;      
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_BLEPeripheral (REMOTEXY_BLUETOOTH_NAME)) 
 
 #endif
 

@@ -7,7 +7,7 @@
 
 #define REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT 20000
 
-class CRemoteXYConnectionCloud: public CRemoteXYConnectionComm { 
+class CRemoteXYConnectionCloud: public CRemoteXYConnectionComm, CRemoteXYCloudClientAvailableListener { 
   public:
   uint16_t port;
   CRemoteXYCloudServer * cloudServer;
@@ -27,7 +27,7 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionComm {
   public:
   void init (CRemoteXYData * _data) override {
     data = _data;
-    cloudServer = new CRemoteXYCloudServer (data, cloudToken);
+    cloudServer = new CRemoteXYCloudServer (data, cloudToken, this);
     client = comm->newClient ();
     timeOut = -REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT;
   }
@@ -37,23 +37,10 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionComm {
     if (comm->configured ()) {
       if (cloudServer->running ()) {
         cloudServer->handler();     
-        CRemoteXYWire * cloudWire = cloudServer->availableWire ();   
-        if (cloudWire) {
-          if (CRemoteXYThread::runningCount (data) < REMOTEXY_MAX_CLIENTS) { 
-            CRemoteXYThread::startThread (data, this, cloudWire, 0);  
-          }
-          else {
-            cloudWire->stop ();
-#if defined(REMOTEXY__DEBUGLOG)
-            RemoteXYDebugLog.write ("Client reject");
-#endif           
-          }
-        }
         timeOut = millis();      
       }
       else { // not serverRunning
         if (millis() - timeOut > REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT) {
-          timeOut = millis();
 #if defined(REMOTEXY__DEBUGLOG)
           RemoteXYDebugLog.write ("Connecting to cloud: ");
           RemoteXYDebugLog.writeAdd (cloudHost);
@@ -71,12 +58,31 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionComm {
           else {
             RemoteXYDebugLog.write ("Cloud server not available");
           }
-#endif        
+#endif     
+          timeOut = millis();   
         }
       }
     }
     else cloudServer->stop ();
+    if (!cloudServer->running ()) {
+      if (client->connected ()) {
+        client->stop ();
+      }
+    }
   }  
+  
+  void clientAvailable (CRemoteXYWireCloud * cloudWire) override {
+    if (CRemoteXYThread::runningCount (data) < REMOTEXY_MAX_CLIENTS) { 
+      CRemoteXYThread::startThread (data, this, cloudWire, 1);  
+    }
+    else {
+      cloudWire->stop ();
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.write ("Client reject");
+#endif           
+    }
+  
+  }
 
   
   void handleWire (CRemoteXYWire * wire) override {  

@@ -16,7 +16,7 @@
 class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BLECharacteristicCallbacks {
   
   protected:
-  const char * bleDeviceName;
+  const char * bleDeviceName;    // need to delete
 
   BLEServer *pServer;
   BLECharacteristic * pRxTxCharacteristic;
@@ -36,9 +36,12 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
   CRemoteXYStream_BLEDevice (const char * _bleDeviceName) : CRemoteXYStream () {
     bleDeviceName = _bleDeviceName;
 
-    receiveBufferCount = 0;
-    receiveBufferLook = 0;
-    
+    receiveBufferLook = 0;         
+    receiveBufferCount = 0;        
+    receiveBufferStart = 0;
+    receiveBufferPos = 0;
+    receiveBufferCount = 0;  
+        
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Init ESP32 BLE on chip");
 #endif

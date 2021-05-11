@@ -104,7 +104,7 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionComm, public CRemoteX
   void handleWire (CRemoteXYWire * wire) override {
     CRemoteXYClient * client = ((CRemoteXYWireStream*)wire)->getClient ();
     if (client) {
-      if (client->connected () && serverRunning && comm->configured ()) wire->handler ();
+      if (client->connected () && serverRunning && comm->configured ()) wire->handler (); 
       else stopThreadListener (wire);
     }
   }

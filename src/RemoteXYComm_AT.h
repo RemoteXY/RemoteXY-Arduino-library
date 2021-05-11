@@ -4,8 +4,9 @@
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYComm.h"
 #include "RemoteXYFunc.h"
+#include <stdarg.h>
 
-
+#define UNUSED(x) (void)(x)
 
 #define REMOTEXYCOMM_AT__RECEIVE_BUFFER_SIZE 32 // maximum response length
 
@@ -28,7 +29,8 @@
 #define AT_RESULT_RESET 6
 #define AT_RESULT_SEND_READY 7
 #define AT_RESULT_SEND_OK 8
-#define AT_RESULT_MESSAGE 9
+#define AT_RESULT_SEND_FAIL 9
+#define AT_RESULT_MESSAGE 10
 
 // standards answers
 const char * AT_ANSWER_ERROR = "ERROR";
@@ -36,6 +38,7 @@ const char * AT_ANSWER_FAIL = "FAIL";
 const char * AT_ANSWER_BUSY = "BUSY *";
 const char * AT_ANSWER_OK = "OK";
 const char * AT_ANSWER_SEND_OK = "SEND OK";
+const char * AT_ANSWER_SEND_FAIL = "SEND FAIL";
 const char * AT_MESSAGE_READY = "READY";
 const char * AT_MESSAGE_AT = "AT";
 const char * AT_MESSAGE_CONNECT = "?,CONNECT";
@@ -112,11 +115,11 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   uint8_t detected;
 
   public:
-  virtual void moduleReset () {}
-  virtual void moduleLost () {}
-  virtual void moduleFound () {}
-  virtual uint8_t handleATMessage () {return 0;}  
-  virtual void commandATListener (uint8_t identifier, uint8_t result) {}  
+  virtual void moduleReset () {};  
+  virtual void moduleLost () {};  
+  virtual void moduleFound () {};  
+  virtual uint8_t handleATMessage () {return 0;}; 
+  virtual void commandATListener (uint8_t identifier, uint8_t result) { UNUSED(identifier); UNUSED(result);};  
 
   
 
@@ -208,9 +211,10 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   uint8_t getATResult () {
     return commandResult;
   }
-  
+
+ 
   private:  
-  uint8_t sendArgPtr (const char * p, va_list *argptr) { 
+  void sendArgPtr (const char * p, va_list *argptr) { 
     if (p) {
       while (p) {
         serialWrite (p);      
@@ -314,7 +318,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
           if (server) server->notifyClientAvailableListener ();
         }
         return; 
-      } 
+      }               
       if (strcmpReceiveBuffer (AT_MESSAGE_CLOSED)==0) { clientClosed (); return; }   // client closed
       if (strcmpReceiveBuffer (AT_MESSAGE_CONNECT_FAIL)==0) { clientClosed (); return; }   // client closed
       if (strcmpReceiveBuffer (AT_MESSAGE_READY)==0) { 
@@ -327,8 +331,9 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
         if (strcmpReceiveBuffer (AT_ANSWER_OK)==0) resultATcommand (commandIdentifier, AT_RESULT_OK); 
         else if (strcmpReceiveBuffer (AT_ANSWER_SEND_OK)==0) resultATcommand (commandIdentifier, AT_RESULT_SEND_OK); 
         else if (strcmpReceiveBuffer (AT_ANSWER_ERROR)==0) resultATcommand (commandIdentifier, AT_RESULT_ERROR); 
-        else if (strcmpReceiveBuffer (AT_ANSWER_ERROR)==0) resultATcommand (commandIdentifier, AT_RESULT_FAIL); 
-        else if (strcmpReceiveBuffer (AT_ANSWER_ERROR)==0) resultATcommand (commandIdentifier, AT_RESULT_BUSY); 
+        else if (strcmpReceiveBuffer (AT_ANSWER_FAIL)==0) resultATcommand (commandIdentifier, AT_RESULT_FAIL); 
+        else if (strcmpReceiveBuffer (AT_ANSWER_BUSY)==0) resultATcommand (commandIdentifier, AT_RESULT_BUSY); 
+        else if (strcmpReceiveBuffer (AT_ANSWER_SEND_FAIL)==0) resultATcommand (commandIdentifier, AT_RESULT_SEND_FAIL); 
         else resultATcommand (commandIdentifier, AT_RESULT_MESSAGE);
         return;
       }         
@@ -356,8 +361,11 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
         } 
       }
       else if ((byte=='>') && (receiveBufferIndex==1)) {
-        receiveBuffer[receiveBufferIndex]=0;
+        receiveBufferIndex = 0;
         resultATcommand (commandIdentifier, AT_RESULT_SEND_READY);
+      }
+      else if ((byte==' ') && (receiveBufferIndex==1)) {
+        receiveBufferIndex = 0;
       }
     }      
   }
@@ -365,7 +373,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   
     
   public:
-  void handler () override {  
+  void handler () override {   // override CRemoteXYComm
        
     serial->handler ();
     
@@ -403,13 +411,13 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   private:
   void clientClosed () {
     uint8_t id = getATParamInt(0);
-    if (availableClientID == id) availableClientID = -1;
+    if (availableClientID == id) availableClientID = -1; 
     else {
       CRemoteXYClient_AT_Proto * p = clients;
       while (p) {
         if ((p->id == id) && (p->_connected)) {
           p->_connected = 0;
-          return;
+          //return;
         }
         p = p->next;
       }
@@ -431,7 +439,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   uint8_t client_connect (CRemoteXYClient_AT_Proto * client, const char *host, uint16_t port) {
     char sport[6]; 
     char sid[2];    
-    uint8_t i;
+    int8_t i;
     CRemoteXYClient_AT_Proto * p;
     if (client->_connected) client_stop (client);
     clientConnectingID = REMOTEXYCOMM_AT__NO_CHANNEL;
@@ -552,7 +560,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
           break;
       }
     }
-    if (*temp) return 1;
+    if (*str) return 1;
     return 0;
   }  
   
@@ -643,6 +651,7 @@ class CRemoteXYClient_AT : public CRemoteXYClient_AT_Proto {
   public:
   uint8_t connect (const char *host, uint16_t port) override {
     if (comm) return comm->client_connect (this, host, port);
+    return 0;
   }
   
   public:

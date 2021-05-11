@@ -19,7 +19,7 @@ class CRemoteXYWireStream : public CRemoteXYWire, public CRemoteXYReadByteListen
   uint16_t receiveBufferSize;
   uint16_t receiveIndex;
   uint8_t receiveModified;
-  volatile uint8_t receiveLock;
+  volatile uint8_t receiveLock;  // =1 only add to receive buffer
     
   
   public:
@@ -28,7 +28,13 @@ class CRemoteXYWireStream : public CRemoteXYWire, public CRemoteXYReadByteListen
     receiveBufferSize = data->receiveBufferSize;
     receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
   }
-  
+
+  public:
+  CRemoteXYWireStream (CRemoteXYData * data, uint8_t multiple) : CRemoteXYWire () {
+    stream = NULL;
+    receiveBufferSize = data->receiveBufferSize * multiple;
+    receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
+  }  
   
   public:
   void begin (CRemoteXYStream * _stream) {    
@@ -116,26 +122,24 @@ class CRemoteXYWireStream : public CRemoteXYWire, public CRemoteXYReadByteListen
   public:
   void readByte (uint8_t byte) override {
     uint16_t pi, i;
-    if (!receiveLock) {
        
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.writeInputHex (byte);  
+    RemoteXYDebugLog.writeInputHex (byte);  
 #endif   
-      if ((receiveIndex==0) && (byte!=REMOTEXY_PACKAGE_START_BYTE)) return; 
-      if (receiveIndex >= receiveBufferSize) {
-        pi = 0;
-        while (pi < receiveBufferSize) {
-          if (receiveBuffer[pi++] == REMOTEXY_PACKAGE_START_BYTE) break;
-        }      
-        receiveIndex = receiveBufferSize - pi;
-        i=0;
-        while (pi < receiveBufferSize) {
-          receiveBuffer[i++] = receiveBuffer[pi++];
-        }          
-      }
-      receiveBuffer[receiveIndex++]=byte;  
-      receiveModified = 1; 
+    if ((receiveIndex==0) && (byte!=REMOTEXY_PACKAGE_START_BYTE)) return; 
+    if (receiveIndex >= receiveBufferSize) {
+      if (receiveLock) return;      
+      pi = 1;
+      while (pi < receiveBufferSize) {
+        if (receiveBuffer[pi] == REMOTEXY_PACKAGE_START_BYTE) break;
+        pi++;
+      }      
+      receiveIndex = receiveBufferSize - pi;
+      i=0;
+      while (pi < receiveBufferSize) receiveBuffer[i++] = receiveBuffer[pi++];       
     }
+    receiveBuffer[receiveIndex++]=byte;  
+    receiveModified = 1; 
   }
   
   private:
@@ -144,35 +148,34 @@ class CRemoteXYWireStream : public CRemoteXYWire, public CRemoteXYReadByteListen
       receiveModified = 0;
       
       uint16_t crc; 
-      uint16_t pi, si;
+      uint16_t si, i;
       uint16_t packageLength;
       si = 0;
-      while (si + REMOTEXY_PACKAGE_MIN_LENGTH <= receiveIndex) {       
-        pi = si;
-        crc=REMOTEXY_INIT_CRC;
-        packageLength = receiveBuffer[si+1]|(receiveBuffer[si+2]<<8);
-        if (packageLength <= receiveIndex - si) {
-          while (pi < receiveIndex) {
-            updateCRC (&crc, receiveBuffer[pi++]);
-            if ((crc == 0) && (packageLength == pi - si)) {      
+      while (si + REMOTEXY_PACKAGE_MIN_LENGTH <= receiveIndex) {   
+        if (receiveBuffer[si] == REMOTEXY_PACKAGE_START_BYTE) {
+          packageLength = receiveBuffer[si+1]|(receiveBuffer[si+2]<<8);
+          if ((packageLength <= receiveIndex - si) && (packageLength >=6)) {
+            crc=REMOTEXY_INIT_CRC;
+            for (i = si; i < si + packageLength; i++) updateCRC (&crc, receiveBuffer[i]); 
+            if (crc == 0) {
               CRemoteXYPackage package;
               package.command = receiveBuffer[si+3];
               package.buffer = receiveBuffer+si+4;
               package.length = packageLength-6;
+
               receiveLock = 1;
-              notifyReceivePackageListener (&package); 
+              notifyReceivePackageListener (&package);   
+              si += packageLength;
+              i = 0;
+              while (si < receiveIndex) receiveBuffer[i++] = receiveBuffer[si++];
+              receiveIndex = i;
               receiveLock = 0;
-    
               si = 0;
-              while (pi < receiveIndex) receiveBuffer[si++] = receiveBuffer[pi++];
-              receiveIndex = si;        
-              return;
+              continue;
             }
-          }  
+          }
         }
-        while (si < receiveIndex) {
-          if (receiveBuffer[si++] == REMOTEXY_PACKAGE_START_BYTE) break;
-        } 
+        si++; 
       }
     }   
   }

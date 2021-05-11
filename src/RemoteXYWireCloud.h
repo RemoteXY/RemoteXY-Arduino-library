@@ -6,38 +6,41 @@
 
 #define REMOTEXYWIRECLOUD_FREE_ID 0xff
 
-class CRemoteXYCloudServer_Proto  {
+
+class CRemoteXYSendPackageListener {
   public:
-  CRemoteXYWireStream * wire;
+  virtual void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) = 0;
 };
 
 class CRemoteXYWireCloud: public CRemoteXYWire {
 
   public:
   CRemoteXYWireCloud * next;
-  uint8_t id;
+  uint8_t id;  // 0..7
   uint8_t newConnection;
-
+  
   private:
-  CRemoteXYCloudServer_Proto * cloudServer;
+  CRemoteXYSendPackageListener * sendPackageListener;
   
   public:
-  CRemoteXYWireCloud (CRemoteXYCloudServer_Proto * _cloudServer) : CRemoteXYWire () {
-    cloudServer = _cloudServer;
+  CRemoteXYWireCloud (CRemoteXYSendPackageListener * _sendPackageListener) : CRemoteXYWire () {
+    sendPackageListener = _sendPackageListener;
     id = REMOTEXYWIRECLOUD_FREE_ID;
     newConnection = 0; 
   }
-
+          
   public:
-  uint8_t init (uint8_t _id) {
+  void init (uint8_t _id) {
     id = _id;
     newConnection = 1;
-  }
-
+  }  
+  
+  /*
   public:
-  uint8_t begin () {
+  void begin () {
     newConnection = 0; 
-  }
+  }  
+  */ 
   
   public:    
   void stop () override {
@@ -60,7 +63,7 @@ class CRemoteXYWireCloud: public CRemoteXYWire {
         
   public:
   void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) override {
-    cloudServer->wire->sendPackage (command, buf, length, fromPgm);
+    sendPackageListener->sendPackage (command | (id<<1), buf, length, fromPgm);
   }
   
 

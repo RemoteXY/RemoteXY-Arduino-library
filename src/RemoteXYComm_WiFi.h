@@ -206,10 +206,10 @@ class CRemoteXYComm_WiFi : public CRemoteXYComm {
 };
 
 
-#if defined (ESP8266) || defined (ESP32)
 
 class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
   
+  uint8_t state;
   
   public:
   CRemoteXYComm_WiFiPoint (const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYComm () {
@@ -220,19 +220,55 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
     RemoteXYDebugLog.writeAdd(_wifiSsid);
     RemoteXYDebugLog.writeAdd(" ...");
 #endif
+
+#if defined (ESP8266) || defined (ESP32)
     
     WiFi.mode(WIFI_AP);
     WiFi.softAP(_wifiSsid, _wifiPassword);
-    
+    state = 1;
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("WiFi point created");
     RemoteXYDebugLog.write ("IP: ");
     RemoteXYDebugLog.serial->print (WiFi.softAPIP());    
 #endif
+    
+#elif defined (WiFiNINA_h)   // WiFiNINA
+
+    state = 0;
+    if (WiFi.status() == WL_NO_SHIELD) {    
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.write("WiFi module was not found");    
+#endif 
+      return;
+    }
+    if (WiFi.beginAP (_wifiSsid, _wifiPassword) != WL_AP_LISTENING) {
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.write("WiFi module does not support AP mode");    
+#endif 
+      return;    
+    }
+    state = 1;
+    
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.write("WiFi point created");    
+#endif  
+
+#else  // other boards not support AP mode
+    state = 0;
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.write("WiFi module does not support AP mode");    
+#endif 
+  
+#endif // ESP
 
   }
               
+  public:                   
+  uint8_t configured () override {
+    return state;
+  } 
   
+    
   public:  
   CRemoteXYServer * createServer (uint16_t _port) override {   
     return new CRemoteXYServer_WiFi (_port); 
@@ -244,7 +280,7 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
   }
 
 };
-#endif // ESP8266 ESP32
+
 
 #endif // WiFi_h
 

@@ -12,9 +12,19 @@
 #define REMOTEXY_CLOUD_ECHO_TIMEOUT 30000
 
 
-class CRemoteXYCloudServer : public CRemoteXYCloudServer_Proto, public CRemoteXYReceivePackageListener  {
+class CRemoteXYCloudClientAvailableListener {
   public:
+  virtual void clientAvailable (CRemoteXYWireCloud * wire) = 0;
+};
+
+
+class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSendPackageListener  {
+  public:
+  CRemoteXYWireStream * wire;
   CRemoteXYWireCloud * cloudWires;
+  
+  private:
+  CRemoteXYCloudClientAvailableListener * clientAvailableListener;
   
   uint8_t cloudRegistPackage[38];
   enum { Registring, Working, Stopped } state;
@@ -22,7 +32,7 @@ class CRemoteXYCloudServer : public CRemoteXYCloudServer_Proto, public CRemoteXY
 
   
   public:
-  CRemoteXYCloudServer (CRemoteXYData * data, const char * _cloudToken) {
+  CRemoteXYCloudServer (CRemoteXYData * data, const char * _cloudToken, CRemoteXYCloudClientAvailableListener * listener) {
     
     
     uint8_t i;
@@ -39,12 +49,17 @@ class CRemoteXYCloudServer : public CRemoteXYCloudServer_Proto, public CRemoteXY
     *len += 6+1;    
     len = (uint16_t*)(p+2);     
     *len = data->receiveBufferSize;
-
+#if REMOTEXY_MAX_CLIENTS == 1
     wire = new CRemoteXYWireStream (data);
+#else
+    wire = new CRemoteXYWireStream (data, 2);
+#endif    
     cloudWires = NULL;
-    state = Stopped;        
-    
+    state = Stopped;       
+     
+    clientAvailableListener = listener;
   }
+  
   
   public:
   void begin (CRemoteXYClient * client) {
@@ -86,38 +101,22 @@ class CRemoteXYCloudServer : public CRemoteXYCloudServer_Proto, public CRemoteXY
         }
         else if (state == Working) {
           if (millis() - timeOut > REMOTEXY_CLOUD_ECHO_TIMEOUT) {
-            stop ();
 #if defined(REMOTEXY__DEBUGLOG)
             RemoteXYDebugLog.write("Cloud server timed out");
 #endif
+            stop ();
            }
         }
       }
       else stop ();
     }
   }  
-
-  public:
-  CRemoteXYWire * availableWire () {
-
-    CRemoteXYWireCloud * wp = cloudWires;
-    while (wp) {
-      if (wp->isNewConnection ()) {
-        wp->begin ();
-        return wp;
-      }
-      wp=wp->next;
-    }
-
-    return NULL;
-    
-  }
-  
   
   public:
-  void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) {
+  void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) override {
     wire->sendPackage (command, buf, length, fromPgm);
   }
+  
   
   public:
   void receivePackage (CRemoteXYPackage * package) override {
@@ -125,33 +124,28 @@ class CRemoteXYCloudServer : public CRemoteXYCloudServer_Proto, public CRemoteXY
     if (package->command == 0x10) {
       wire->sendPackage (0x10, 0, 0, 0);
     }
-    else if (package->command == 0x11) {
-      CRemoteXYWireCloud * pw = getFreeWireCloud ();
-      pw->init (0);  
-      
+    else if (package->command == 0x11) {      
       state = Working;
 #if defined(REMOTEXY__DEBUGLOG)
       RemoteXYDebugLog.write ("Cloud server registration successfully");
 #endif   
     }
-    else if (package->command == 0x12) {
-      if (package->length == 1) {
-        uint8_t id = (*package->buffer) & 0x07;
-        CRemoteXYWireCloud * pw = getFreeWireCloud ();
-        pw->init (id);          
-      }
-    }
     else {
-      uint8_t id = package->command & 0x07;
-      package->command &= 0xf8;
+      uint8_t id = (package->command & 0x0e)>>1;   
+      package->command &= 0xf1;    
+
       CRemoteXYWireCloud * pw = cloudWires;   
       while (pw) {
         if ((pw->running ()) && (pw->id == id)) {    
           pw->receivePackage (package);
-          break;
+          return;
         }
         pw = pw->next;
       }
+      pw = getFreeWireCloud ();
+      pw->init (id);  
+      clientAvailableListener->clientAvailable (pw);
+      pw->receivePackage (package);     
     }
   }  
   

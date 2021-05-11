@@ -5,6 +5,7 @@
 #include "RemoteXYWire.h"
 #include "RemoteXYCloudServer.h"
 
+#define UNUSED(x) (void)(x)
 
 class CRemoteXYConnection { 
   
@@ -13,8 +14,8 @@ class CRemoteXYConnection {
   
   public:
   virtual void handler () {};
-  virtual void handleWire (CRemoteXYWire * wire) {};
-  virtual void stopThreadListener (CRemoteXYWire * wire) {};
+  virtual void handleWire (CRemoteXYWire * wire) {UNUSED (wire);};
+  virtual void stopThreadListener (CRemoteXYWire * wire) {UNUSED (wire);};
   
 };
 

@@ -25,7 +25,7 @@ uint8_t rxy_xctoi (char c) {
   return b&0x0f;
 }
 
-void rxy_getMacAddr (char* s, uint8_t* m) {
+void rxy_getMacAddr (const char* s, uint8_t* m) {
   uint8_t i, b;
   for (i=6; i>0; i--) {
     b=rxy_xctoi (*s++)<<4;

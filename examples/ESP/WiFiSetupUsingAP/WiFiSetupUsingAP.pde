@@ -4,7 +4,7 @@
    
    This source code of graphical user interface 
    has been generated automatically by RemoteXY editor.
-   To compile this code using RemoteXY library 2.4.3 or later version 
+   To compile this code using RemoteXY library 3.1.1 or later version 
    download by link http://remotexy.com/en/library/
    To connect using RemoteXY mobile app by link http://remotexy.com/en/download/                   
      - for ANDROID 4.5.1 or later version;

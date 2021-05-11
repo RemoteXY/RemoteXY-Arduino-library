@@ -31,7 +31,7 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   }
   
   
-  void moduleFound () override {
+  void moduleFound () override {       
     if ((state == Reset) || (state == SearchAfterReset)) moduleReset ();
     else {
       state = Reset;
@@ -41,18 +41,18 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   }
   
   protected:
-  void moduleLost () override { 
+  void moduleLost () override {         
     state = Search;
     findModule ();    
   }
   
   
   
-  uint8_t configured () override {
+  uint8_t configured () override {      
     return (state == Configured);
   }; 
   
-  virtual CRemoteXYServer * createServer (uint16_t _port) override {
+  virtual CRemoteXYServer * createServer (uint16_t _port) override {  
     if (!server) {
       server = new CRemoteXYServer_AT (this, _port);
       return server;    
@@ -61,7 +61,7 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   } 
   
   public:
-  CRemoteXYClient * newClient () override {
+  CRemoteXYClient * newClient () override {  
     return new CRemoteXYClient_AT (this);
   }
   
@@ -120,7 +120,7 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
     }  
   }  
     
-  virtual void handler () override {
+  virtual void handler () override {   // override CRemoteXYComm_AT  
     CRemoteXYComm_AT::handler ();
     if (state == Reset) {
       if (millis() - timeOut > 5000) {
@@ -134,7 +134,7 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
     }
   }
   
-  uint8_t handleATMessage () override {
+  uint8_t handleATMessage () override {    // override CRemoteXYComm_AT  
     if (strcmpReceiveBuffer (AT_MESSAGE_WIFI_DISCONNECT)==0) {
       if (state == Configured) state = Init;
       return 1;

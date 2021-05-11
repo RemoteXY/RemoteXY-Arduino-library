@@ -4,6 +4,7 @@
 #include <inttypes.h> 
 #include "RemoteXYDebugLog.h"
 
+#define UNUSED(x) (void)(x)
 
 class CRemoteXYReadByteListener {
   public:
@@ -34,10 +35,10 @@ class CRemoteXYStream {
     if (readByteListener) readByteListener->readByte (byte);
   }   
    
-  public:
+  public:     
   virtual void handler () {};   
-  virtual void startWrite (uint16_t size) {};
-  virtual void write (uint8_t byte) {};       
+  virtual void startWrite (uint16_t size) {UNUSED (size);};
+  virtual void write (uint8_t byte) {UNUSED (byte);};       
 };
 
 
