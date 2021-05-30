@@ -37,6 +37,10 @@
     #define REMOTEXY_MODE__ESP32CORE_BLE                     - data transfer using <BLEdevice.h> library
     #define REMOTEXY_MODE__ESP32CORE_BLUETOOTH               - data transfer using <BluetoothSerial.h> library of classic bluetooth
 
+   Only BLE Nano boards: 
+   
+    #define REMOTEXY_MODE__BLE_NANO   	- direct data trasnfer using the HardSerial
+    
    Parameters depending on the selected mode (for example):
     #define REMOTEXY_SERIAL Serial  // for Hardware Serial
     #define REMOTEXY_SERIAL_SPEED 115200 
@@ -94,7 +98,7 @@
 #define REMOTEXY__DEBUGLOGS_SPEED 115200
 
 
-#if defined(REMOTEXY_MODE__HARDSERIAL) || defined(REMOTEXY_MODE__SERIAL) || defined(REMOTEXY_MODE__HC05_HARDSERIAL) 
+#if defined(REMOTEXY_MODE__HARDSERIAL) || defined(REMOTEXY_MODE__SERIAL) || defined(REMOTEXY_MODE__HC05_HARDSERIAL) || defined(REMOTEXY_MODE__BLE_NANO)
   #define REMOTEXY_MOD__SERIAL
   #define REMOTEXY_PORT__HARDSERIAL
 #elif defined(REMOTEXY_MODE__SOFTSERIAL) || defined(REMOTEXY_MODE__SOFTWARESERIAL) || defined(REMOTEXY_MODE__HC05_SOFTSERIAL)

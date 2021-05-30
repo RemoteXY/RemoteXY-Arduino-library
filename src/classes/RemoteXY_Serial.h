@@ -11,7 +11,11 @@ public:
   HardwareSerial * serial;
   void initSerial (HardwareSerial * _serial, long _serialSpeed) {
     serial = _serial;
-    serial->begin (_serialSpeed);
+    #if defined(REMOTEXY_MODE__BLE_NANO)
+      Serial.begin (_serialSpeed);
+    #else
+      serial->begin (_serialSpeed);
+    #endif
   }
 #elif defined(REMOTEXY_PORT__SOFTSERIAL)
   #if defined(SoftwareSerial_h)
