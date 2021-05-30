@@ -23,14 +23,21 @@ public:
   protected:
 
   void sendByte (uint8_t b) {
-    serial->write (b);
-#if defined(REMOTEXY__DEBUGLOGS)
+    #if defined(REMOTEXY_MODE__BLE_NANO)
+      Serial.write (b);
+    #else
+      serial->write (b);
+    #endif#if defined(REMOTEXY__DEBUGLOGS)
     DEBUGLOGS_writeOutputHex (b);
 #endif
   }
   
   uint8_t receiveByte () {
-    uint8_t b = serial->read ();
+    #if defined(REMOTEXY_MODE__BLE_NANO)
+      uint8_t b = Serial.read ();
+    #else
+      uint8_t b = serial->read ();
+    #endif
 #if defined(REMOTEXY__DEBUGLOGS)
     DEBUGLOGS_writeInputHex (b); 
 #endif
@@ -39,7 +46,11 @@ public:
   
   
   uint8_t availableByte () {
-    return serial->available ();
+    #if defined(REMOTEXY_MODE__BLE_NANO)
+      return Serial.available ();
+    #else
+      return serial->available ();
+    #endif
   };  
 
 
