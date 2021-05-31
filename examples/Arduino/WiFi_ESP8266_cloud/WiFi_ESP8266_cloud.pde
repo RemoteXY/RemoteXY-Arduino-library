@@ -1,5 +1,6 @@
 /*
-   Simple button example using software serial.
+   Simple button example for Arduino and external ESP8266 on HardwareSerial
+   You must disconnect ESP8266 from pins when loading the program
    
    
    This source code of graphical user interface 
@@ -21,15 +22,14 @@
 //////////////////////////////////////////////
 
 // RemoteXY select connection mode and include library
-#define REMOTEXY__DEBUGLOG
+//#define REMOTEXY__DEBUGLOG 
 
-#include <SoftwareSerial.h>
 #include <RemoteXY.h>
 
 
 // RemoteXY configurate  
 #pragma pack(push, 1)
-uint8_t RemoteXY_CONF[] =
+uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =
   { 255,1,0,1,0,27,0,10,13,2,
   1,0,9,9,46,46,6,7,50,50,
   2,31,88,0,65,4,62,16,31,31,
@@ -61,15 +61,21 @@ CRemoteXY *remotexy;
 
 void setup() 
 {
-
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
     "", 
-    new CRemoteXYStream_SoftSerial (
-      2,       // REMOTEXY_SERIAL_RX
-      3,       // REMOTEXY_SERIAL_TX, 
-      9600     // REMOTEXY_SERIAL_SPEED
+    new CRemoteXYConnectionCloud (
+      new CRemoteXYComm_ESP8266 (
+        new CRemoteXYStream_HardSerial (
+          &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
+          115200
+        ),
+        "myHomeFiFi",         // REMOTEXY_WIFI_SSID
+        "myHomePass"),        // REMOTEXY_WIFI_PASSWORD
+      "cloud.remotexy.com",   // REMOTEXY_CLOUD_SERVER
+      6376,                   // REMOTEXY_CLOUD_PORT
+      "xxxxxxxxxxxxxxxxxxxx"  // REMOTEXY_CLOUD_TOKEN
     )
   ); 
   
@@ -78,7 +84,7 @@ void setup()
   
 }
 
-void loop()        
+void loop() 
 { 
   remotexy->handler ();
   
