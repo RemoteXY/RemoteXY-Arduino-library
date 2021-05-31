@@ -47,8 +47,10 @@ class CRemoteXYDebugLog {
   public:
   void writeTime () {
     uint32_t d = millis();
+    long ds = d/1000;
+    long dm = d%1000;
     char s[15];
-    sprintf (s, "[%5ld.%03ld] ",d/1000, d%1000);     
+    sprintf (s, "[%5ld.%03ld] ",ds, dm);       
     serial->println ();    
     serial->print (s);
   }
@@ -172,7 +174,7 @@ class CRemoteXYDebugLog {
 #elif defined (__AVR__)
     uint16_t size = RAMEND;
     uint8_t *buf;
-    while ((buf = malloc(size)) == NULL)  size--;
+    while ((buf = (uint8_t *)malloc(size)) == NULL)  size--;
     free(buf);
     return size;
 #else

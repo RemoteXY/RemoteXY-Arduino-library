@@ -95,6 +95,7 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     RemoteXYDebugLog.write("BLE client disconnected");
 #endif
     receiveBufferCount = 0;
+    pServer->getAdvertising ()->start ();
   }
 
   void onWrite (BLECharacteristic *pCharacteristic) {
