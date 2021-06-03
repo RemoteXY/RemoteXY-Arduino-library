@@ -115,7 +115,7 @@
 //#define REMOTEXY__DEBUGLOG_SPEED 115200
 
 
-
+#include <inttypes.h>
 #include <Arduino.h>
 #include "RemoteXYDebugLog.h"
 
