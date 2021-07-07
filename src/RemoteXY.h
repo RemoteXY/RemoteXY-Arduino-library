@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 3.1.6   
+   version 3.1.7   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -97,6 +97,8 @@
      - add NRF5XXX and BLEPeripheral.h library as Beta, need define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL;
    version 3.1.6
      - fixed some bugs;
+   version 3.1.7
+     - add CDC Serial for Leonardo, Micro, ;
           
 */
 
@@ -131,6 +133,7 @@
 
 #include "RemoteXYStream_HardSerial.h"
 #include "RemoteXYStream_SoftSerial.h"        // need SoftwareSerial.h or SoftSerial.h
+#include "RemoteXYStream_CDCSerial.h"         
 #include "RemoteXYStream_BluetoothSerial.h"   // need BluetoothSerial.h
 #include "RemoteXYStream_BLEDevice.h"         // need BLEDevice.h
 #include "RemoteXYStream_BLEPeripheral.h"     // need BLEPeripheral.h
@@ -156,6 +159,10 @@
 #elif defined(REMOTEXY_MODE__SOFTSERIAL) || defined(REMOTEXY_MODE__SOFTWARESERIAL) || defined(REMOTEXY_MODE__HC05_SOFTSERIAL)
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED)) 
+
+#elif defined(REMOTEXY_MODE__CDCSERIAL)
+  CRemoteXY *remotexy;   
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_CDCSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED)) 
 
 #elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
   CRemoteXY *remotexy;   
