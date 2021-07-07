@@ -15,6 +15,7 @@
    All boards:
     #define REMOTEXY_MODE__HARDSERIAL                 - direct data transfer via HARDSERIAL
     #define REMOTEXY_MODE__SOFTSERIAL                 - direct data transfer via SOFTSERIAL
+    #define REMOTEXY_MODE__CDCSERIAL                  - direct data transfer via CDC for ATmega32u4
     #define REMOTEXY_MODE__ETHERNET                   - data transfer using <ethernet.h> library and open server
     #define REMOTEXY_MODE__ETHERNET_CLOUD             - data transfer using <ethernet.h> library and cloud connection
     #define REMOTEXY_MODE__HARDSERIAL_ESP8266         - data transfer via HARDSERIAL using AT commands of ESP8266 and open server
@@ -98,7 +99,7 @@
    version 3.1.6
      - fixed some bugs;
    version 3.1.7
-     - add CDC Serial for Leonardo, Micro, ;
+     - add CDC Serial for Leonardo, Micro, ..;
           
 */
 

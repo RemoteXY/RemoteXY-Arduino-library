@@ -37,4 +37,6 @@ History:
    version 3.1.5
      - add NRF5XXX and BLEPeripheral.h library as Beta, need define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL;
    version 3.1.6
-     - fixed some bugs;    
+     - fixed some bugs;
+   version 3.1.7
+     - add CDC Serial for Leonardo, Micro, ..;     
