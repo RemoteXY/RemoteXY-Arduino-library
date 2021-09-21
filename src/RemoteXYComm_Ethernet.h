@@ -60,6 +60,14 @@ class CRemoteXYClient_Ethernet : public CRemoteXYClient {
   
 };
 
+#if defined (ESP32)
+class EthernetServerESP32: public EthernetServer {
+  public:
+  EthernetServerESP32 (uint16_t port) : EthernetServer (port) {}
+  void begin(uint16_t port=0) {}
+};
+#endif
+
 class CRemoteXYServer_Ethernet : public CRemoteXYServer {
   private:
   EthernetServer * server;
@@ -67,7 +75,11 @@ class CRemoteXYServer_Ethernet : public CRemoteXYServer {
 
   public: 
   CRemoteXYServer_Ethernet (uint16_t _port)  {
+#if defined (ESP32)
+    server = new EthernetServerESP32 (_port); 
+#else
     server = new EthernetServer (_port); 
+#endif
     for (uint8_t i = 0; i < MAX_SOCK_NUM; i++) soketConnectArr[i] = 0;  
   }
   
