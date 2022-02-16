@@ -1,6 +1,6 @@
 /*
    Example to setup WiFi client settings using BLE mode 
-   for ESP32 or ESP8266 
+   for ESP32 
    
    This source code of graphical user interface 
    has been generated automatically by RemoteXY editor.
@@ -15,29 +15,32 @@
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.    
 */
-#define REMOTEXY__DEBUGLOG
+//#define REMOTEXY__DEBUGLOG
 
 #include <EEPROM.h>
-#if defined (ESP8266)
-  #include <ESP8266WiFi.h>
-#elif defined (ESP32)
-  #include <WiFi.h>  
-#endif
+#include <WiFi.h>  
+#include "BLEDevice.h"
 
 #include <RemoteXY.h>
 
 #define PIN_BUTTON_WIFISETUP 3   // pin of button for wifi settings, press this button when devise reset
 #define DEVICE_NAME "RemoteXY"
+#define REMOTEXY_SERVER_PORT 6377
 
 #pragma pack(push, 1)
 ////////////////////////////////////////
 // WiFi settings configuration
 ////////////////////////////////////////
 
-#define ssid_EPPROM 0x0000
-#define pass_EPPROM ssid_EPPROM+21
-#define wiFiSettingsCheck_EPPROM ssid_EPPROM+21+21
-#define wiFiSettingsCheck 0x55
+#define ssidLength 21 // 20 chars max + zero
+#define passLength 21  // 20 chars max + zero
+#define checkLength 1  // 1 byte
+#define EPPROMLength ssidLength+passLength+checkLength
+
+#define ssid_EPPROM 0x0000 
+#define pass_EPPROM  ssid_EPPROM+ssidLength 
+#define check_EPPROM ssid_EPPROM+ssidLength+passLength 
+#define checkValueForEPPROM 0x55
 
 uint8_t const PROGMEM RemoteXY_CONF_WiFiSettings [] =
   { 255,43,0,0,0,106,0,10,172,2,
@@ -125,31 +128,42 @@ struct {
 CRemoteXY *remotexy;
 uint8_t wifiSettingMode = 0;
 
+
+boolean readRemoteXYFromEEPROM () {
+  if (EEPROM.read(check_EPPROM) == checkValueForEPPROM) {
+    for (uint8_t i = 0; i<ssidLength; i++) RemoteXY_WiFiSettings.ssid[i] = EEPROM.read(ssid_EPPROM+i); 
+    for (uint8_t i = 0; i<passLength; i++) RemoteXY_WiFiSettings.pass[i] = EEPROM.read(pass_EPPROM+i); 
+    return true;
+  }
+  return false;  
+}
+
+void writeRemoteXYToEEPROM () {
+  for (uint8_t i = 0; i<ssidLength; i++) EEPROM.write (ssid_EPPROM+i, RemoteXY_WiFiSettings.ssid[i]);  
+  for (uint8_t i = 0; i<passLength; i++) EEPROM.write (pass_EPPROM+i, RemoteXY_WiFiSettings.pass[i]);
+  EEPROM.write (check_EPPROM, checkValueForEPPROM);    
+  EEPROM.commit ();  
+}
+
 void setup() 
 {
-  EEPROM.begin(64);
+  EEPROM.begin(EPPROMLength);
   pinMode (PIN_BUTTON_WIFISETUP, INPUT);
   
-  if (!digitalRead(PIN_BUTTON_WIFISETUP) || (EEPROM.read(wiFiSettingsCheck_EPPROM) != wiFiSettingsCheck)) {
-    // wifi setup mode
+  boolean EEPROMisValid = readRemoteXYFromEEPROM ();
+  if (!digitalRead(PIN_BUTTON_WIFISETUP) || (!EEPROMisValid)) {
+    // wifi setup mode using BLE mode
     wifiSettingMode = 1;
-    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, "", new CRemoteXYStream_BLEDevice (DEVICE_NAME))    
-    
-    if (EEPROM.read(wiFiSettingsCheck_EPPROM) == wiFiSettingsCheck) {
-      for (uint8_t i = 0; i<21; i++) RemoteXY_WiFiSettings.ssid[i] = EEPROM.read(ssid_EPPROM+i); 
-      for (uint8_t i = 0; i<21; i++) RemoteXY_WiFiSettings.pass[i] = EEPROM.read(pass_EPPROM+i); 
-    }
+    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, "", new CRemoteXYStream_BLEDevice (DEVICE_NAME));    
   }
   else {
-    for (uint8_t i = 0; i<21; i++) RemoteXY_WiFiSettings.ssid[i] = EEPROM.read(ssid_EPPROM+i); 
-    for (uint8_t i = 0; i<21; i++) RemoteXY_WiFiSettings.pass[i] = EEPROM.read(pass_EPPROM+i);     
     remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, "", new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
-
   
     // TODO you setup code
-    
+
+    // example code
     RemoteXY.edit_level = 50; 
-  
+    // END example code
   } 
   
 }
@@ -163,10 +177,7 @@ void loop()
   if (wifiSettingMode) {
 
     if (RemoteXY_WiFiSettings.buttonReset) {
-      for (uint8_t i = 0; i<21; i++) EEPROM.write (ssid_EPPROM+i, RemoteXY_WiFiSettings.ssid[i]);  
-      for (uint8_t i = 0; i<21; i++) EEPROM.write (pass_EPPROM+i, RemoteXY_WiFiSettings.pass[i]);
-      EEPROM.write (wiFiSettingsCheck_EPPROM, wiFiSettingsCheck);    
-      EEPROM.commit ();  
+      writeRemoteXYToEEPROM ();  
       ESP.restart (); 
     }
   }  
@@ -184,6 +195,7 @@ void myLoop() {
 
   // TODO you loop code
 
+  // example code
   uint32_t t = millis ();
   if (t>prevMillis) {
     float dt = float (t - prevMillis)/1000.0;
@@ -211,5 +223,5 @@ void myLoop() {
     RemoteXY.level = level;
     RemoteXY.led_on_r = (pump==0)?0:255;
   }
-
+  // END example code
 }

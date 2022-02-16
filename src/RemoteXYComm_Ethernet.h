@@ -153,13 +153,15 @@ class CRemoteXYComm_Ethernet : public CRemoteXYComm {
 
   private:
   uint8_t linkON () {
-    return 1;
+    if (uint32_t(Ethernet.localIP()) != 0) return 1;
+    /*
     if (Ethernet.hardwareStatus () == EthernetW5100) {
       if (uint32_t(Ethernet.localIP()) != 0) return 1;
     }
     else {
       if (Ethernet.linkStatus () == LinkON) return 1;
     }
+    */
     return 0;
   }
   

@@ -40,3 +40,5 @@ History:
      - fixed some bugs;
    version 3.1.7
      - add CDC Serial for Leonardo, Micro, ..;     
+   version 3.1.8
+     - fixed some bugs;

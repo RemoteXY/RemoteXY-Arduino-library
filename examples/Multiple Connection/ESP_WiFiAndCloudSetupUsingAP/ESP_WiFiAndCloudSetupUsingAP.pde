@@ -1,5 +1,5 @@
 /*
-   Example to setup WiFi client settings using open access point mode 
+   Example to setup WiFi client and cloud server settings using open access point mode 
    for ESP32 or ESP8266
    
    This source code of graphical user interface 
@@ -30,45 +30,54 @@
 #define REMOTEXY_SERVER_PORT 6377
 #define DEVICE_NAME "RemoteXY"
 
+#define REMOTEXY_CLOUD_SERVER "cloud.remotexy.com" // url of cloud server, does not change
+#define REMOTEXY_CLOUD_PORT 6376 // port for cloud server, does not change
+
 #pragma pack(push, 1)
 ////////////////////////////////////////
-// WiFi settings configuration
+// WiFi+Cloud settings configuration
 ////////////////////////////////////////
 
 #define ssidLength 21 // 20 chars max + zero
 #define passLength 21  // 20 chars max + zero
+#define tokenLength 33 // 32 chars max + zero
 #define checkLength 1  // 1 byte
-#define EPPROMLength ssidLength+passLength+checkLength
+#define EPPROMLength ssidLength+passLength+tokenLength+checkLength
 
 #define ssid_EPPROM 0x0000 
 #define pass_EPPROM  ssid_EPPROM+ssidLength 
-#define check_EPPROM ssid_EPPROM+ssidLength+passLength 
+#define token_EPPROM ssid_EPPROM+ssidLength+passLength 
+#define check_EPPROM ssid_EPPROM+ssidLength+passLength+tokenLength
 #define checkValueForEPPROM 0x55
 
 uint8_t const PROGMEM RemoteXY_CONF_WiFiSettings [] =
-  { 255,43,0,0,0,106,0,10,172,2,
-  7,4,28,18,47,7,9,25,46,7,
-  24,31,2,21,7,4,28,34,47,7,
-  9,44,46,7,24,31,2,21,129,0,
-  28,13,34,4,9,20,35,4,31,87,
+  { 255,76,0,0,0,149,0,15,172,2,
+  7,4,28,9,47,6,9,15,46,6,
+  24,31,2,21,7,4,28,21,47,6,
+  9,30,46,6,24,31,2,21,129,0,
+  28,5,34,4,9,10,35,4,31,87,
   105,70,105,32,110,97,109,101,32,40,
   83,83,73,68,41,58,0,129,0,28,
-  29,35,4,9,39,35,4,31,80,97,
-  115,115,119,111,114,100,58,0,1,2,
-  28,46,47,8,8,61,48,8,190,31,
-  82,69,83,69,84,32,68,69,86,73,
-  67,69,0 };
+  17,35,4,9,25,35,4,31,87,105,
+  70,105,32,112,97,115,115,119,111,114,
+  100,58,0,129,0,28,32,30,4,9,
+  42,25,4,31,67,108,111,117,100,32,
+  116,111,107,101,110,58,0,7,4,28,
+  36,47,6,9,47,46,6,24,31,2,
+  33,1,2,28,51,47,8,8,83,48,
+  8,190,31,82,69,83,69,84,32,68,
+  69,86,73,67,69,0 };
 
 struct {
 
     // input variables
-  char ssid[21];  // =строка UTF8 оканчивающаяся нулем  
-  char pass[21];  // =строка UTF8 оканчивающаяся нулем  
-  uint8_t buttonReset; // =1 если кнопка нажата, иначе =0 
+  char ssid[21];  // string UTF8 end zero  
+  char pass[21];  // string UTF8 end zero  
+  char token[33];  // string UTF8 end zero  
+  uint8_t buttonReset; // =1 if button pressed, else =0 
 
     // other variable
   uint8_t connect_flag;  // =1 if wire connected, else =0 
-
 
 } RemoteXY_WiFiSettings;
 
@@ -135,6 +144,7 @@ boolean readRemoteXYFromEEPROM () {
   if (EEPROM.read(check_EPPROM) == checkValueForEPPROM) {
     for (uint8_t i = 0; i<ssidLength; i++) RemoteXY_WiFiSettings.ssid[i] = EEPROM.read(ssid_EPPROM+i); 
     for (uint8_t i = 0; i<passLength; i++) RemoteXY_WiFiSettings.pass[i] = EEPROM.read(pass_EPPROM+i); 
+    for (uint8_t i = 0; i<tokenLength; i++) RemoteXY_WiFiSettings.token[i] = EEPROM.read(token_EPPROM+i); 
     return true;
   }
   return false;  
@@ -143,6 +153,7 @@ boolean readRemoteXYFromEEPROM () {
 void writeRemoteXYToEEPROM () {
   for (uint8_t i = 0; i<ssidLength; i++) EEPROM.write (ssid_EPPROM+i, RemoteXY_WiFiSettings.ssid[i]);  
   for (uint8_t i = 0; i<passLength; i++) EEPROM.write (pass_EPPROM+i, RemoteXY_WiFiSettings.pass[i]);
+  for (uint8_t i = 0; i<tokenLength; i++) EEPROM.write (token_EPPROM+i, RemoteXY_WiFiSettings.token[i]);
   EEPROM.write (check_EPPROM, checkValueForEPPROM);    
   EEPROM.commit ();  
 }
@@ -151,7 +162,7 @@ void setup()
 {
   EEPROM.begin(EPPROMLength);
   pinMode (PIN_BUTTON_WIFISETUP, INPUT);
-  
+
   boolean EEPROMisValid = readRemoteXYFromEEPROM ();
   if (!digitalRead(PIN_BUTTON_WIFISETUP) || (!EEPROMisValid)) {
     // wifi setup mode
@@ -159,15 +170,12 @@ void setup()
     remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, "", new CRemoteXYConnectionServer (new CRemoteXYComm_WiFiPoint (DEVICE_NAME, ""), REMOTEXY_SERVER_PORT)); 
   }
   else {
-    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, "", new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
+    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, "", new CRemoteXYConnectionCloud (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, RemoteXY_WiFiSettings.token));      
 
-  
     // TODO you setup code
-    
     // example code
     RemoteXY.edit_level = 50; 
     // END example code
-  
   } 
   
 }
@@ -181,7 +189,7 @@ void loop()
   if (wifiSettingMode) {
 
     if (RemoteXY_WiFiSettings.buttonReset) {
-      writeRemoteXYToEEPROM (); 
+      writeRemoteXYToEEPROM ();  
       ESP.restart (); 
     }
   }  
@@ -198,7 +206,6 @@ uint32_t prevMillis = 0;
 void myLoop() {
 
   // TODO you loop code
-
   // example code
   uint32_t t = millis ();
   if (t>prevMillis) {
