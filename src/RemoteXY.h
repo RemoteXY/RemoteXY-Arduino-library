@@ -102,6 +102,8 @@
      - add CDC Serial for Leonardo, Micro, ..;
    version 3.1.8
      - fixed some bugs;
+   version 3.1.9
+     - added function RemoteXY_delay (ms) as alternative delay (ms);
                
 */
 
@@ -226,6 +228,7 @@
 #endif
 
 //API
+#define RemoteXY_delay(ms) remotexy->delay (ms)
 #define RemoteXY_isConnected() remotexy->isConnected ()
 
 

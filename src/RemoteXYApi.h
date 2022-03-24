@@ -115,18 +115,26 @@ class CRemoteXY {
     }    
       
 
-  }   
+  }  
+  
+   
 
   
 
 ///////////////////////////////////////////////////////////////////////////////
 // API - PUBLIC DOCUMENTED FUNCTIONS
 
+  public:
+  void delay (uint32_t ms) {
+    uint32_t t = millis ();
+    while (millis () - t < ms) handler ();
+  }
 
   public:
   uint8_t isConnected () {
     return *data.connect_flag;
   }
+  
   
 };
 
