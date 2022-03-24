@@ -42,3 +42,5 @@ History:
      - add CDC Serial for Leonardo, Micro, ..;     
    version 3.1.8
      - fixed some bugs;
+   version 3.1.9
+     - added function RemoteXY_delay (ms) as alternative delay (ms);
