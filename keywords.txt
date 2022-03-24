@@ -5,3 +5,5 @@
 RemoteXY	KEYWORD1
 RemoteXY_Init	KEYWORD2
 RemoteXY_Handler	KEYWORD2
+RemoteXY_delay	KEYWORD2
+RemoteXY_isConnected	KEYWORD2
