@@ -17,6 +17,7 @@
 #include "RemoteXYThread.h"
 #include "RemoteXYWire.h"
 #include "RemoteXYWireStream.h" 
+#include "RemoteXYStream_Stream.h" 
 
 #include "RemoteXYCloudServer.h"
 
@@ -82,8 +83,16 @@ class CRemoteXY {
     CRemoteXYConnection * conn = new CRemoteXYConnectionStream (comm);
     conn->init (&data);           
   } 
-  
-  
+
+#if defined(Stream_h)  
+  public:  
+  void addConnection (Stream * stream) {  
+    CRemoteXYStream_Stream * comm = new CRemoteXYStream_Stream (stream);
+    CRemoteXYConnection * conn = new CRemoteXYConnectionStream (comm);
+    conn->init (&data);           
+  }
+#endif
+    
   public:
   void handler () {
     uint8_t connect_flag = 0;
