@@ -13,20 +13,24 @@
         
    Supported modes: 
    All boards:
-    #define REMOTEXY_MODE__HARDSERIAL                 - direct data transfer via HARDSERIAL
-    #define REMOTEXY_MODE__SOFTSERIAL                 - direct data transfer via SOFTSERIAL
-    #define REMOTEXY_MODE__CDCSERIAL                  - direct data transfer via CDC for ATmega32u4
-    #define REMOTEXY_MODE__ETHERNET                   - data transfer using <ethernet.h> library and open server
-    #define REMOTEXY_MODE__ETHERNET_CLOUD             - data transfer using <ethernet.h> library and cloud connection
-    #define REMOTEXY_MODE__HARDSERIAL_ESP8266         - data transfer via HARDSERIAL using AT commands of ESP8266 and open server
-    #define REMOTEXY_MODE__HARDSERIAL_ESP8266_POINT   - data transfer via HARDSERIAL using AT commands of ESP8266 and open access point with a server
-    #define REMOTEXY_MODE__HARDSERIAL_ESP8266_CLOUD   - data transfer via HARDSERIAL using AT commands of ESP8266 and cloud connection
-    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266         - data transfer via SOFTSERIAL using AT commands of ESP8266 and open server
-    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_POINT   - data transfer via SOFTSERIAL using AT commands of ESP8266 and open access point with a server
-    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_CLOUD   - data transfer via SOFTSERIAL using AT commands of ESP8266 and cloud connection
-    #define REMOTEXY_MODE__WIFI                       - data transfer using generic wifi.h library and open server
-    #define REMOTEXY_MODE__WIFI_POINT                 - data transfer using generic wifi.h library and open access point with a server
-    #define REMOTEXY_MODE__WIFI_CLOUD                 - data transfer using generic wifi.h library and cloud connection
+    #define REMOTEXY_MODE__HARDSERIAL                  - direct data transfer via HARDSERIAL
+    #define REMOTEXY_MODE__SOFTSERIAL                  - direct data transfer via SOFTSERIAL
+    #define REMOTEXY_MODE__ALTSOFTSERIAL               - direct data transfer via AltSoftSerial.h library
+    #define REMOTEXY_MODE__CDCSERIAL                   - direct data transfer via CDC for ATmega32u4
+    #define REMOTEXY_MODE__ETHERNET                    - data transfer using <ethernet.h> library and open server
+    #define REMOTEXY_MODE__ETHERNET_CLOUD              - data transfer using <ethernet.h> library and cloud connection
+    #define REMOTEXY_MODE__HARDSERIAL_ESP8266          - data transfer via HARDSERIAL using AT commands of ESP8266 and open server
+    #define REMOTEXY_MODE__HARDSERIAL_ESP8266_POINT    - data transfer via HARDSERIAL using AT commands of ESP8266 and open access point with a server
+    #define REMOTEXY_MODE__HARDSERIAL_ESP8266_CLOUD    - data transfer via HARDSERIAL using AT commands of ESP8266 and cloud connection
+    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266          - data transfer via SOFTSERIAL using AT commands of ESP8266 and open server
+    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_POINT    - data transfer via SOFTSERIAL using AT commands of ESP8266 and open access point with a server
+    #define REMOTEXY_MODE__SOFTSERIAL_ESP8266_CLOUD    - data transfer via SOFTSERIAL using AT commands of ESP8266 and cloud connection
+    #define REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266       - data transfer via AltSoftSerial.h library using AT commands of ESP8266 and open server
+    #define REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266_POINT - data transfer via AltSoftSerial.h library using AT commands of ESP8266 and open access point with a server
+    #define REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266_CLOUD - data transfer via AltSoftSerial.h library using AT commands of ESP8266 and cloud connection
+    #define REMOTEXY_MODE__WIFI                        - data transfer using generic wifi.h library and open server
+    #define REMOTEXY_MODE__WIFI_POINT                  - data transfer using generic wifi.h library and open access point with a server
+    #define REMOTEXY_MODE__WIFI_CLOUD                  - data transfer using generic wifi.h library and cloud connection
     
    Only ESP8266 boards:
     #define REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI or REMOTEXY_MODE__WIFI                - data transfer using <esp8266wifi.h> library and open server
