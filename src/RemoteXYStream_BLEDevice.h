@@ -1,11 +1,12 @@
 #ifndef RemoteXYStream_BLEDevice_h
 #define RemoteXYStream_BLEDevice_h
 
-#if defined(MAIN_BLEDevice_H_)
+#if defined(MAIN_BLEDevice_H_) || defined(MAIN_NIMBLEDEVICE_H_)
 
 #include "RemoteXYComm.h"
+#ifdef MAIN_BLEDevice_H_
 #include <BLE2902.h>
-
+#endif
 
 #define REMOTEXYCOMM_BLEDEVICE__SEND_BUFFER_SIZE 20
 #define REMOTEXYCOMM_BLEDEVICE__RECEIVE_BUFFER_SIZE 1024
@@ -62,6 +63,17 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     // Create the BLE Service
     BLEService *pService = pServer->createService(REMOTEXYCOMM_BLEDEVICE__SERVICE_UUID);
 
+#ifdef MAIN_NIMBLEDEVICE_H_
+  // Create a BLE Characteristic
+  pRxTxCharacteristic = pService->createCharacteristic(
+                            REMOTEXYCOMM_BLEDEVICE__CHARACTERISTIC_UUID_RXTX,
+                            NIMBLE_PROPERTY::READ |
+                            NIMBLE_PROPERTY::NOTIFY |
+                            NIMBLE_PROPERTY::WRITE_NR 
+                          );
+    
+#endif
+#ifdef MAIN_BLEDevice_H_
     // Create a BLE Characteristic
     pRxTxCharacteristic = pService->createCharacteristic(
                             REMOTEXYCOMM_BLEDEVICE__CHARACTERISTIC_UUID_RXTX,
@@ -70,9 +82,11 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
                             BLECharacteristic::PROPERTY_WRITE_NR 
                           );
 
+
     BLE2902 *ble2902 = new BLE2902();
     ble2902->setNotifications(true);
     pRxTxCharacteristic->addDescriptor(ble2902);
+#endif
     pRxTxCharacteristic->setCallbacks(this);
 
     // Start the service
@@ -180,5 +194,5 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
   
 };
 
-#endif // MAIN_BLEDevice_H_
+#endif // MAIN_BLEDevice_H_ || MAIN_NIMBLEDEVICE_H_
 #endif // RemoteXYStream_BLEDevice_h
