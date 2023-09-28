@@ -9,14 +9,14 @@
   #endif  
 #endif
 
-#if defined(SoftwareSerial_h) || defined(SoftSerial_h)
+#if defined(SoftwareSerial_h) || defined(SoftSerial_h) || defined(__SoftwareSerial_h)
 
 #include "RemoteXYComm.h"
 
 
 class CRemoteXYStream_SoftSerial : public CRemoteXYStream {
   
-#if defined(SoftwareSerial_h)
+#if defined(SoftwareSerial_h) || defined(__SoftwareSerial_h)
 
   private:
   SoftwareSerial * serial;

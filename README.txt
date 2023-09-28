@@ -46,3 +46,4 @@ History:
      - added function RemoteXY_delay (ms) as alternative delay (ms);
    version 3.1.10
      - added suppot for AltSoftSerial.h library;
+     - support SoftwareSerial.h for ESP8266;
