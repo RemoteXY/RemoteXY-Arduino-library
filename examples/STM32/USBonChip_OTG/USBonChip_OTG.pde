@@ -1,10 +1,11 @@
 /*
    Example of USB connection to USB OTG phone. 
-   The on board USB-UART converter is used. 
+   Built-in on chip USB is used. 
+   Board: STM32F103
    
    This source code of graphical user interface 
    has been generated automatically by RemoteXY editor.
-   To compile this code using RemoteXY library 3.1.1 or later version 
+   To compile this code using RemoteXY library 3.1.11 or later version 
    download by link http://remotexy.com/en/library/
    To connect using RemoteXY mobile app by link http://remotexy.com/en/download/                   
      - for ANDROID 4.5.1 or later version;
@@ -65,7 +66,7 @@ void setup()
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
     "", 
-    new CRemoteXYStream_HardSerial (
+    new CRemoteXYStream_USBSerial (
       &Serial,       
       115200     // REMOTEXY_SERIAL_SPEED
     )

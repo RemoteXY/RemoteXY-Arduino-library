@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 3.1.10   
+   version 3.1.11   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -16,7 +16,7 @@
     #define REMOTEXY_MODE__HARDSERIAL                  - direct data transfer via HARDSERIAL
     #define REMOTEXY_MODE__SOFTSERIAL                  - direct data transfer via SOFTSERIAL
     #define REMOTEXY_MODE__ALTSOFTSERIAL               - direct data transfer via AltSoftSerial.h library
-    #define REMOTEXY_MODE__CDCSERIAL                   - direct data transfer via CDC for ATmega32u4
+    #define REMOTEXY_MODE__USBSERIAL                   - direct data transfer via USB CDC for ATmega32u4, STM32
     #define REMOTEXY_MODE__ETHERNET                    - data transfer using <ethernet.h> library and open server
     #define REMOTEXY_MODE__ETHERNET_CLOUD              - data transfer using <ethernet.h> library and cloud connection
     #define REMOTEXY_MODE__HARDSERIAL_ESP8266          - data transfer via HARDSERIAL using AT commands of ESP8266 and open server
@@ -103,7 +103,7 @@
    version 3.1.6
      - fixed some bugs;
    version 3.1.7
-     - add CDC Serial for Leonardo, Micro, ..;
+     - add USB CDC Serial for Leonardo, Micro, ..;
    version 3.1.8
      - fixed some bugs;
    version 3.1.9
@@ -111,6 +111,8 @@
    version 3.1.10
      - added support for AltSoftSerial.h library;
      - support SoftwareSerial.h for ESP8266;
+   version 3.1.11
+     - add USB CDC serial for STM32;
                
 */
 
@@ -145,8 +147,8 @@
 
 #include "RemoteXYStream_Stream.h"           // any stream
 #include "RemoteXYStream_HardSerial.h"
-#include "RemoteXYStream_SoftSerial.h"        // need SoftwareSerial.h or SoftSerial.h
-#include "RemoteXYStream_CDCSerial.h"         
+#include "RemoteXYStream_SoftSerial.h"        // need SoftwareSerial.h or SoftSerial.h      
+#include "RemoteXYStream_USBSerial.h"         
 #include "RemoteXYStream_AltSoftSerial.h"     // need AltSoftSerial.h    
 #include "RemoteXYStream_BluetoothSerial.h"   // need BluetoothSerial.h
 #include "RemoteXYStream_BLEDevice.h"         // need BLEDevice.h
@@ -174,9 +176,9 @@
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED)) 
 
-#elif defined(REMOTEXY_MODE__CDCSERIAL)
+#elif defined(REMOTEXY_MODE__USBSERIAL) || defined(REMOTEXY_MODE__CDCSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_CDCSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED)) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_USBSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED)) 
 
 #elif defined(REMOTEXY_MODE__ALTSOFTSERIAL) 
   CRemoteXY *remotexy;   
