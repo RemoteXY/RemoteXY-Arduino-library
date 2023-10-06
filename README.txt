@@ -39,7 +39,7 @@ History:
    version 3.1.6
      - fixed some bugs;
    version 3.1.7
-     - add CDC Serial for Leonardo, Micro, ..;     
+     - add USB CDC Serial for Leonardo, Micro, ..;     
    version 3.1.8
      - fixed some bugs;
    version 3.1.9
