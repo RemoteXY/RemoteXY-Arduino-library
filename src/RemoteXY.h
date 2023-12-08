@@ -42,6 +42,7 @@
     #define REMOTEXY_MODE__ESP32CORE_WIFI_POINT or REMOTEXY_MODE__WIFI_POINT      - data transfer using <wifi.h> library and open access point with a server
     #define REMOTEXY_MODE__ESP32CORE_WIFI_CLOUD or REMOTEXY_MODE__WIFI_CLOUD      - data transfer using <wifi.h> library and cloud connection
     #define REMOTEXY_MODE__ESP32CORE_BLE                     - data transfer using <BLEdevice.h> library
+    #define REMOTEXY_MODE__ESP32CORE_NIMBLE                   - data transfer using <NimBLEDevice.h> library
     #define REMOTEXY_MODE__ESP32CORE_BLUETOOTH               - data transfer using <BluetoothSerial.h> library
 
    Only NRF52xx based boards: 
@@ -142,7 +143,8 @@
   #include "BluetoothSerial.h"
 #elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
   #include "BLEDevice.h"
-
+#elif defined(REMOTEXY_MODE__ESP32CORE_NIMBLE)
+  #include "NimBLEDevice.h"
 #endif
 
 
@@ -190,6 +192,10 @@
 #elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
   CRemoteXY *remotexy;   
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYStream_BLEDevice (REMOTEXY_BLUETOOTH_NAME), REMOTEXY_ACCESS_PASSWORD) 
+
+#elif defined(REMOTEXY_MODE__ESP32CORE_NIMBLE)
+  CRemoteXY *remotexy;   
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, REMOTEXY_ACCESS_PASSWORD, new CRemoteXYStream_BLEDevice (REMOTEXY_BLUETOOTH_NAME)) 
 
 #elif defined(REMOTEXY_MODE__ESP32CORE_WIFI) || defined(REMOTEXY_MODE__ESP8266CORE_ESP8266WIFI) || defined(REMOTEXY_MODE__ESP8266WIFI_LIB) || defined(REMOTEXY_MODE__WIFI)
   CRemoteXY *remotexy;   
