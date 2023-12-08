@@ -3,34 +3,21 @@
 
 #if defined (BluetoothSerial_h) || defined (_BLUETOOTH_SERIAL_H_)
 
-#include "RemoteXYComm.h"
+#include "RemoteXYStream_Stream.h"
 
 
-class CRemoteXYStream_BluetoothSerial : public CRemoteXYStream {
-  
-  private:
-  BluetoothSerial * serial;
+class CRemoteXYStream_BluetoothSerial : public CRemoteXYStream_Stream {
   
   public:
-  CRemoteXYStream_BluetoothSerial (const char * _bleDeviceName) : CRemoteXYStream () {
-    serial = new  BluetoothSerial ();
+  CRemoteXYStream_BluetoothSerial (const char * _bleDeviceName) : CRemoteXYStream_Stream () {
+    BluetoothSerial *serial = new BluetoothSerial ();
     serial->begin (_bleDeviceName);
-
+    setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init bluetooth serial");
+    RemoteXYDebugLog.write("Init bluetooth serial: ");
+    RemoteXYDebugLog.writeAdd(_bleDeviceName);
 #endif
   }              
-  
-  
-  void handler () override {   
-    while (serial->available ()) notifyReadByteListener (serial->read ());
-  }
-
-
-  void write (uint8_t byte) override {
-    serial->write (byte);
-  }
-
 
 };
 

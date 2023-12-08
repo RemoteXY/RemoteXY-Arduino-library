@@ -10,7 +10,7 @@
 class CRemoteXYConnection { 
   
   public:
-  virtual void init (CRemoteXYData * _data);
+  virtual void init (CRemoteXYData * _data) {UNUSED (_data);};
   
   public:
   virtual void handler () {};

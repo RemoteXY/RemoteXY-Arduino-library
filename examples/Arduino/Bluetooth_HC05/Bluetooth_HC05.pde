@@ -65,7 +65,6 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYStream_SoftSerial (
       2,       // REMOTEXY_SERIAL_RX
       3,       // REMOTEXY_SERIAL_TX, 

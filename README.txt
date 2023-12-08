@@ -49,3 +49,6 @@ History:
      - support SoftwareSerial.h for ESP8266;
    version 3.1.11
      - add USB CDC serial for STM32;
+   version 3.1.12
+     - fixed some bugs;
+     - any Stream class can be used for communication: example/RemoteXY/Various/AnyStreamClass.pde

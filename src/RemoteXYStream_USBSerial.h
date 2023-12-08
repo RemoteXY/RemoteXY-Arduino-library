@@ -3,42 +3,31 @@
 
 
 #if defined(USBCON)
-#define RemoteXYStream_USBSerial_Type Serial_
-
+#define RemoteXYStream_USBSerial_T Serial_
 #elif defined(_WIRISH_USB_SERIAL_H_)
-#define RemoteXYStream_USBSerial_Type USBSerial
-
+#define RemoteXYStream_USBSerial_T USBSerial
+#elif defined(ARDUINO_UNOR4_MINIMA) || defined(ARDUINO_UNOR4_WIFI)
+#define RemoteXYStream_USBSerial_T _SerialUSB
 #endif
 
-#if defined(RemoteXYStream_USBSerial_Type)
+#if defined(RemoteXYStream_USBSerial_T)
 
 
-#include "RemoteXYStream.h"
+#include "RemoteXYStream_Stream.h"
 
 
-class CRemoteXYStream_USBSerial : public CRemoteXYStream {
+class CRemoteXYStream_USBSerial : public CRemoteXYStream_Stream {
   
-  private:
-  RemoteXYStream_USBSerial_Type * serial;
-  
-  public:
-  CRemoteXYStream_USBSerial (RemoteXYStream_USBSerial_Type * _serial, long _serialSpeed) : CRemoteXYStream () {
-    serial = _serial;
-    serial->begin (_serialSpeed);
+  public:    
+  CRemoteXYStream_USBSerial (RemoteXYStream_USBSerial_T * _serial, long _serialSpeed) : CRemoteXYStream_Stream () {
+    _serial->begin (_serialSpeed);
+    setStream (_serial);
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Init USB CDC serial ");
     RemoteXYDebugLog.writeAdd(_serialSpeed);
     RemoteXYDebugLog.writeAdd(" baud");
 #endif
   }              
-  
-  void handler () override {   
-    while (serial->available ()) notifyReadByteListener (serial->read ());
-  }
-
-  void write (uint8_t byte) override {
-    serial->write (byte);
-  }
   
 };
 

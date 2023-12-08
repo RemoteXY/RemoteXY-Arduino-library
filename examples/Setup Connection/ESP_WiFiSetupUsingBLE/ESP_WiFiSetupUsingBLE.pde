@@ -154,10 +154,10 @@ void setup()
   if (!digitalRead(PIN_BUTTON_WIFISETUP) || (!EEPROMisValid)) {
     // wifi setup mode using BLE mode
     wifiSettingMode = 1;
-    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, "", new CRemoteXYStream_BLEDevice (DEVICE_NAME));    
+    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, new CRemoteXYStream_BLEDevice (DEVICE_NAME));    
   }
   else {
-    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, "", new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
+    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
   
     // TODO you setup code
 

@@ -9,22 +9,27 @@
   #endif  
 #endif
 
-#if defined(SoftwareSerial_h) || defined(SoftSerial_h) || defined(__SoftwareSerial_h)
 
-#include "RemoteXYComm.h"
+#if defined(SoftwareSerial_h) || defined(__SoftwareSerial_h) || defined(__SOFTWARE_SERIAL_H__)
+#define RemoteXYStream_SoftSerial_T SoftwareSerial
+#elif defined(SoftSerial_h)
+#define RemoteXYStream_SoftSerial_T SoftSerial
+#endif
 
 
-class CRemoteXYStream_SoftSerial : public CRemoteXYStream {
-  
-#if defined(SoftwareSerial_h) || defined(__SoftwareSerial_h)
 
-  private:
-  SoftwareSerial * serial;
+#if defined(RemoteXYStream_SoftSerial_T)
+
+#include "RemoteXYStream_Stream.h"
+
+
+class CRemoteXYStream_SoftSerial : public CRemoteXYStream_Stream {
   
   public:
-  CRemoteXYStream_SoftSerial (uint8_t _serialRx, uint8_t _serialTx, long _serialSpeed) : CRemoteXYStream () { 
-    serial = new SoftwareSerial (_serialRx, _serialTx);
+  CRemoteXYStream_SoftSerial (uint8_t _serialRx, uint8_t _serialTx, long _serialSpeed) : CRemoteXYStream_Stream () { 
+    RemoteXYStream_SoftSerial_T * serial = new RemoteXYStream_SoftSerial_T (_serialRx, _serialTx);
     serial->begin (_serialSpeed);
+    setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Init software serial ");
     RemoteXYDebugLog.writeAdd(_serialSpeed);
@@ -36,41 +41,9 @@ class CRemoteXYStream_SoftSerial : public CRemoteXYStream {
 #endif
   }              
   
-#elif defined(SoftSerial_h)
-
-  private:
-  SoftSerial * serial;
-  
-  public:
-  CRemoteXYStream_SoftSerial (uint8_t _serialRx, uint8_t _serialTx, long _serialSpeed) : CRemoteXYStream () { 
-    serial = new SoftSerial (_serialRx, _serialTx);
-    serial->begin (_serialSpeed);
-#if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init soft serial ");
-    RemoteXYDebugLog.writeAdd(_serialSpeed);
-    RemoteXYDebugLog.writeAdd(" baud");
-    RemoteXYDebugLog.write("pin RX=");
-    RemoteXYDebugLog.writeAdd(_serialRx);
-    RemoteXYDebugLog.writeAdd("; pin TX=");
-    RemoteXYDebugLog.writeAdd(_serialTx);
-#endif
-  }              
-
-
-#endif  
-  
-  void handler () override {   
-    while (serial->available ()) notifyReadByteListener (serial->read ());
-  }
-  
-  void write (uint8_t byte) override {
-    serial->write (byte);
-  }
-
-  
 };
 
 
-#endif  // SoftwareSerial_h  SoftSerial_h
+#endif  // RemoteXYStream_SoftSerial_T
 
 #endif //RemoteXYStream_SoftSerial_h

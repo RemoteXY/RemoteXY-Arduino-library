@@ -100,14 +100,14 @@ void setup()
     "myPass"                       // REMOTEXY_WIFI_PASSWORD
   );
   
-  remotexy_1 = new CRemoteXY (RemoteXY_CONF_PROGMEM_1, &RemoteXY_1, ""); 
+  remotexy_1 = new CRemoteXY (RemoteXY_CONF_PROGMEM_1, &RemoteXY_1); 
   remotexy_1->addConnection (new CRemoteXYConnectionCloud ( wifi, 
     "cloud.remotexy.com",                     // REMOTEXY_CLOUD_SERVER 
     6376,                                     // REMOTEXY_CLOUD_PORT
     "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"        // REMOTEXY_CLOUD_TOKEN
   ));
   
-  remotexy_2 = new CRemoteXY (RemoteXY_CONF_PROGMEM_2, &RemoteXY_2, ""); 
+  remotexy_2 = new CRemoteXY (RemoteXY_CONF_PROGMEM_2, &RemoteXY_2); 
   remotexy_2->addConnection (new CRemoteXYConnectionCloud ( wifi, 
     "cloud.remotexy.com",                     // REMOTEXY_CLOUD_SERVER 
     6376,                                     // REMOTEXY_CLOUD_PORT

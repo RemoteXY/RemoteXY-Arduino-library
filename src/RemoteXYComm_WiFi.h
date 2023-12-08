@@ -12,8 +12,7 @@
 #define REMOREXYCOMM_WIFI__SEND_BUFFER_SIZE 64
 #endif
 
-
-
+#define REMOREXYCOMM_WIFI__RECONNECT_TIMEOUT 20000  // reconnect in 20 sec
 
 
 class CRemoteXYClient_WiFi : public CRemoteXYClient {
@@ -114,6 +113,7 @@ class CRemoteXYComm_WiFi : public CRemoteXYComm {
   char * wifiSsid;
   char * wifiPassword;
   uint8_t wifiStatus;
+  uint32_t timeOut;  // for reconnect
   
   
   public:
@@ -121,14 +121,54 @@ class CRemoteXYComm_WiFi : public CRemoteXYComm {
     wifiSsid = (char *)_wifiSsid;
     wifiPassword = (char *)_wifiPassword;
     
+    timeOut = millis ();
+    wifiStatus = WiFi.status();
+    connectToWiFi ();             
+  }
+  
+  
+  void handler () override {            
+  
+#if defined(REMOTEXY__DEBUGLOG)
+    uint8_t prev_wifiStatus = wifiStatus;
+#endif      
 
     wifiStatus = WiFi.status();
+        
+    if (wifiStatus == WL_CONNECTED) {
+      timeOut = millis ();  
+#if defined(REMOTEXY__DEBUGLOG)
+      if (prev_wifiStatus != WL_CONNECTED) {
+        RemoteXYDebugLog.write ("WiFi connected");
+        RemoteXYDebugLog.write ("IP: ");
+        RemoteXYDebugLog.serial->print (WiFi.localIP());    
+      }  
+#endif      
+    }
+    else {  // != WL_CONNECTED 
+    
+#if defined(REMOTEXY__DEBUGLOG)
+      if (prev_wifiStatus == WL_CONNECTED) { 
+        RemoteXYDebugLog.write ("WiFi disconnected");
+      }
+#endif
 
+      if (millis() - timeOut > REMOREXYCOMM_WIFI__RECONNECT_TIMEOUT) {
+        timeOut = millis ();  
+        connectToWiFi ();        
+      }
+    }
+  } 
+  
+  private:
+  void connectToWiFi () {
+  
 #if defined (ESP8266) || defined (ESP32)
 
     WiFi.disconnect();
     WiFi.softAPdisconnect(true);    
     WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(false);    
     
 #else // NOT ESP
 
@@ -145,46 +185,12 @@ class CRemoteXYComm_WiFi : public CRemoteXYComm {
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Сonnecting to WiFi: ");
     RemoteXYDebugLog.writeAdd(wifiSsid);
-    RemoteXYDebugLog.writeAdd(" ...");
+    RemoteXYDebugLog.writeAdd(" ...");   
 #endif    
 
-    WiFi.begin(wifiSsid, wifiPassword);   
-     
-#if defined (ESP8266) || defined (ESP32)
-    WiFi.setAutoReconnect (true);
-#endif  
-     
+    WiFi.begin(wifiSsid, wifiPassword);
+  
   }
-  
-  
-  void handler () override {            
-  
-    uint8_t prev_wifiStatus = wifiStatus;
-    wifiStatus = WiFi.status();
-    
-    if (wifiStatus == WL_CONNECTED) {
-      if (prev_wifiStatus != WL_CONNECTED) {
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("WiFi connected");
-        RemoteXYDebugLog.write ("IP: ");
-        RemoteXYDebugLog.serial->print (WiFi.localIP());    
-#endif
-        
-      }    
-    }
-    else {  // != WL_CONNECTED 
-      if (prev_wifiStatus == WL_CONNECTED) { 
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("WiFi disconnected");
-#endif
-#if defined (ESP32)
-        WiFi.disconnect();  
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(wifiSsid, wifiPassword); 
-#endif
-      }
-    }
-  } 
   
          
   public:                   

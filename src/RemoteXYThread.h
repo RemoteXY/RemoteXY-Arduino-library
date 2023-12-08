@@ -84,29 +84,31 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
   public:
   void receivePackage (CRemoteXYPackage * package) override {
     uint16_t i, length;
-    uint8_t *p, *kp, *ip; 
+    uint8_t *p, *kp, *ip;
+    uint8_t allowAccess; 
     
     if (wire == NULL) return;  
     if ((package->command != 0x00) && (!connect_flag)) return;
     switch (package->command) {  
-      case 0x00:  
-        uint8_t available;
-        if (package->length==0) {
-          if (*data->accessPassword==0) available=1;
-          else available=0;
+      case 0x00:          
+        allowAccess = 0;
+        if (package->length==0) { 
+          if (data->accessPassword == NULL) allowAccess=1;
         }
         else {
-          uint8_t ch;
-          available = 1;
-          p = package->buffer;
-          kp = data->accessPassword; 
-          while (true) {
-            ch=*kp++;
-            if (ch!=*p++) available=0;
-            if (!ch) break;
-          }                               
+          if (data->accessPassword != NULL) {
+            uint8_t ch;
+            allowAccess = 1;
+            p = package->buffer;
+            kp = data->accessPassword; 
+            while (true) {
+              ch=*kp++;
+              if (ch!=*p++) allowAccess=0;
+              if (!ch) break;
+            }  
+          }                          
         } 
-        if (available!=0) {
+        if (allowAccess!=0) {
           wire->sendPackage (0x00, data->conf, data->confLength,  1);
           connect_flag = 1;
         }

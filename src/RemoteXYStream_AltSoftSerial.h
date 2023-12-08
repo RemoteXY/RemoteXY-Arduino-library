@@ -15,34 +15,23 @@
 // Wiring-S           5         6          4
 // Sanguino          13        14         12
 
-#include "RemoteXYComm.h"
+#include "RemoteXYStream_Stream.h"
 
 
-class CRemoteXYStream_AltSoftSerial : public CRemoteXYStream {
+class CRemoteXYStream_AltSoftSerial : public CRemoteXYStream_Stream {
   
-  private:
-  AltSoftSerial * serial;
   
   public:
-  CRemoteXYStream_AltSoftSerial (long _serialSpeed) : CRemoteXYStream () { 
-    serial = new AltSoftSerial ();
+  CRemoteXYStream_AltSoftSerial (long _serialSpeed) : CRemoteXYStream_Stream () { 
+    AltSoftSerial serial = new AltSoftSerial ();
     serial->begin (_serialSpeed);
+    setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Init alt soft serial ");
     RemoteXYDebugLog.writeAdd(_serialSpeed);
     RemoteXYDebugLog.writeAdd(" baud");
 #endif
   }              
-  
-  
-  void handler () override {   
-    while (serial->available ()) notifyReadByteListener (serial->read ());
-  }
-  
-  void write (uint8_t byte) override {
-    serial->write (byte);
-  }
-
   
 };
 

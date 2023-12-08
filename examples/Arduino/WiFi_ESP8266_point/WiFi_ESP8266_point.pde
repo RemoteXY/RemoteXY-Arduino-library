@@ -64,7 +64,6 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYConnectionServer (
       new CRemoteXYComm_ESP8266Point (
         new CRemoteXYStream_HardSerial (

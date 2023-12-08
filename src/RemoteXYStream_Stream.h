@@ -1,7 +1,7 @@
 #ifndef RemoteXYStream_Stream_h
 #define RemoteXYStream_Stream_h
 
-#if defined(Stream_h)
+#include <Stream.h>
 
 // This class allows you to connect 
 // any communication method that is inherited from the stream class (stream.h)
@@ -15,15 +15,27 @@
 
 
 class CRemoteXYStream_Stream : public CRemoteXYStream {
-  private:
+  protected:
   Stream * stream;  
+  
   public:
   CRemoteXYStream_Stream (Stream * _stream) : CRemoteXYStream () { 
     stream = _stream;
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Init stream");
 #endif
-  }              
+  } 
+  
+  protected:
+  CRemoteXYStream_Stream () : CRemoteXYStream () { 
+    // use setStream to set stream
+  }           
+          
+  
+  protected: 
+  void setStream (Stream * _stream) { 
+    stream = _stream;
+  }   
   
   
   void handler () override {   
@@ -38,6 +50,5 @@ class CRemoteXYStream_Stream : public CRemoteXYStream {
 };
 
 
-#endif  // Stream_h
 
 #endif //RemoteXYStream_Stream_h

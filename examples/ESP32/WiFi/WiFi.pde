@@ -63,7 +63,6 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYConnectionServer (
       new CRemoteXYComm_WiFi (
         "myHomeFiFi",       // REMOTEXY_WIFI_SSID

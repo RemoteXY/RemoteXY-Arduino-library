@@ -69,7 +69,7 @@ void setup()
     "myPass"                                 // REMOTEXY_WIFI_PASSWORD
   );
   
-  remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, "");
+  remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY);
   
   remotexy->addConnection (new CRemoteXYStream_BLEDevice (
     "REMOTEXY"                               // REMOTEXY_BLUETOOTH_NAME 

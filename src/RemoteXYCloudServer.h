@@ -48,7 +48,7 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
     if (data->confLength>*len) *len = data->confLength;   
     *len += 6+1;    
     len = (uint16_t*)(p+2);     
-    *len = data->receiveBufferSize;
+    *len = data->getReceiveBufferSize ();
 #if REMOTEXY_MAX_CLIENTS == 1
     wire = new CRemoteXYWireStream (data);
 #else

@@ -4,6 +4,7 @@
 #include <inttypes.h> 
 #include <stdlib.h>
 #include <Arduino.h>
+#include <Stream.h>
 
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYApiData.h"
@@ -29,7 +30,7 @@ class CRemoteXY {
 
 
   public:
-  CRemoteXY (const void * _conf, void * _var, const char * _accessPassword) {                     
+  CRemoteXY (const void * _conf, void * _var, const char * _accessPassword = NULL) {                     
     data.init (_conf, _var, _accessPassword);
     
 #if defined(REMOTEXY__DEBUGLOG)
@@ -39,7 +40,7 @@ class CRemoteXY {
   }
    
   public:
-  CRemoteXY (const void * _conf, void * _var, const char * _accessPassword, CRemoteXYConnectionComm * _conn) {                     
+  CRemoteXY (const void * _conf, void * _var, CRemoteXYConnectionComm * _conn, const char * _accessPassword = NULL) {                     
     data.init (_conf, _var, _accessPassword);
     addConnection (_conn);
   
@@ -50,7 +51,7 @@ class CRemoteXY {
   }
   
   public:
-  CRemoteXY (const void * _conf, void * _var, const char * _accessPassword, CRemoteXYStream * _comm) {                     
+  CRemoteXY (const void * _conf, void * _var, CRemoteXYStream * _comm, const char * _accessPassword = NULL) {                     
     data.init (_conf, _var, _accessPassword);
     addConnection (_comm);
   
@@ -60,7 +61,22 @@ class CRemoteXY {
 #endif 
   }
   
-
+  public:
+  CRemoteXY (const void * _conf, void * _var, Stream * _stream, const char * _accessPassword = NULL) {                     
+    data.init (_conf, _var, _accessPassword);
+    addConnection (_stream);
+  
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.init ();
+    RemoteXYDebugLog.write("RemoteXY started");
+#endif 
+  }
+  
+  public:
+  void setPassword (const char * _accessPassword) {
+    data.setPassword (_accessPassword); 
+  }
+  
   
   public:  
   void addConnection (CRemoteXYConnectionComm * conn) {   
@@ -84,14 +100,14 @@ class CRemoteXY {
     conn->init (&data);           
   } 
 
-#if defined(Stream_h)  
+
   public:  
   void addConnection (Stream * stream) {  
     CRemoteXYStream_Stream * comm = new CRemoteXYStream_Stream (stream);
     CRemoteXYConnection * conn = new CRemoteXYConnectionStream (comm);
     conn->init (&data);           
   }
-#endif
+
     
   public:
   void handler () {

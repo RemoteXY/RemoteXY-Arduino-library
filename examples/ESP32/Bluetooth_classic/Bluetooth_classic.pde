@@ -63,7 +63,6 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYStream_BluetoothSerial (
       "myRemoteXY"       // REMOTEXY_BLUETOOTH_NAME
     )

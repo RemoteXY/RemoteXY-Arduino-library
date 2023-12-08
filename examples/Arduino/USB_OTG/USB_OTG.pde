@@ -64,7 +64,6 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYStream_HardSerial (
       &Serial,       
       115200     // REMOTEXY_SERIAL_SPEED

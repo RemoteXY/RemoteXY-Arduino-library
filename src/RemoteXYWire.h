@@ -42,9 +42,9 @@ class CRemoteXYWire {
 
   public:
   virtual void handler () {};
-  virtual uint8_t running ();
-  virtual void stop ();
-  virtual void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm);
+  virtual uint8_t running () {return 0;};
+  virtual void stop () {};
+  virtual void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) {UNUSED (command); UNUSED (buf); UNUSED (length); UNUSED (fromPgm);};
   
 };
 

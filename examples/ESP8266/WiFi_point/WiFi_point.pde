@@ -64,11 +64,10 @@ void setup()
   remotexy = new CRemoteXY (
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
-    "", 
     new CRemoteXYConnectionServer (
       new CRemoteXYComm_WiFiPoint (
         "myRemoteXY",       // REMOTEXY_WIFI_SSID
-        "myPass"),          // REMOTEXY_WIFI_PASSWORD
+        "12345678"),        // REMOTEXY_WIFI_PASSWORD
       6377                  // REMOTEXY_SERVER_PORT
     )
   ); 

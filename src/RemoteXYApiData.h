@@ -23,7 +23,6 @@ class CRemoteXYData {
   uint16_t confLength;
   uint8_t *connect_flag;
 
-  uint16_t receiveBufferSize;  
   
   CRemoteXYThread * threads;  
   CRemoteXYComm * comms;    
@@ -31,7 +30,7 @@ class CRemoteXYData {
 
 
   public:
-  void init (const void * _conf, void * _var, const char * _accessPassword) {
+  void init (const void * _conf, void * _var, const char * _accessPassword = NULL) {
   
     uint8_t i;
     uint8_t* p = (uint8_t*)_conf;
@@ -40,7 +39,7 @@ class CRemoteXYData {
     if (b==0xff) {
       inputLength = getConfByte (p++);
       inputLength |= getConfByte (p++)<<8;
-      outputLength = getConfByte (p++);
+      outputLength = getConfByte (p++); 
       outputLength |= getConfByte (p++)<<8;
     }
     else {
@@ -56,15 +55,12 @@ class CRemoteXYData {
     connect_flag = var + varLength;
     *connect_flag = 0;   
         
-    accessPassword = (uint8_t*)_accessPassword;          
+    setPassword (_accessPassword);        
     
     p = var;
     i = varLength;
     while (i--) *p++=0;    
     
-    receiveBufferSize = inputLength;
-    if ((*accessPassword != 0) && (receiveBufferSize < REMOTEXY_PASSWORD_LENGTH_MAX)) receiveBufferSize = REMOTEXY_PASSWORD_LENGTH_MAX;
-    receiveBufferSize +=6;   
     
     comms = NULL;
     connections = NULL;    
@@ -72,9 +68,29 @@ class CRemoteXYData {
   }
   
   public:
+  void setPassword (const char * _accessPassword) {
+    accessPassword = NULL;  
+    if (_accessPassword != NULL) {
+      if (*_accessPassword != 0) {
+        accessPassword = (uint8_t*)_accessPassword;
+      }
+    }   
+  }
+  
+  public:
+  uint16_t getReceiveBufferSize () {
+    uint16_t receiveBufferSize = inputLength;
+    if (accessPassword != NULL) {
+      if (receiveBufferSize < REMOTEXY_PASSWORD_LENGTH_MAX) receiveBufferSize = REMOTEXY_PASSWORD_LENGTH_MAX;
+    }
+    receiveBufferSize +=6;     
+    return receiveBufferSize;
+  }
+  
+  public:
   inline uint8_t getConfByte (uint8_t* p) {
     return pgm_read_byte_near (p);                                     
-  }
+  } 
   
   
 };

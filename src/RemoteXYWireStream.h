@@ -25,14 +25,14 @@ class CRemoteXYWireStream : public CRemoteXYWire, public CRemoteXYReadByteListen
   public:
   CRemoteXYWireStream (CRemoteXYData * data) : CRemoteXYWire () {
     stream = NULL;
-    receiveBufferSize = data->receiveBufferSize;
+    receiveBufferSize = data->getReceiveBufferSize ();
     receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
   }
 
   public:
   CRemoteXYWireStream (CRemoteXYData * data, uint8_t multiple) : CRemoteXYWire () {
     stream = NULL;
-    receiveBufferSize = data->receiveBufferSize * multiple;
+    receiveBufferSize = data->getReceiveBufferSize () * multiple;
     receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
   }  
   
