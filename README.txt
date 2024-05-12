@@ -52,3 +52,8 @@ History:
    version 3.1.12
      - fixed some bugs;
      - any Stream class can be used for communication: example/RemoteXY/Various/AnyStreamClass.pde
+   version 3.1.13
+     - fixed some bugs;
+     - added support for the arduinoBLE.h library
+     - added support for the WiFiS3.h library, which uses Arduino UNO R4 WiFi
+     

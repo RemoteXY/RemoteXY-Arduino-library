@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 3.1.12   
+   version 3.1.13   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -45,7 +45,10 @@
     #define REMOTEXY_MODE__ESP32CORE_BLUETOOTH               - data transfer using <BluetoothSerial.h> library
 
    Only NRF52xx based boards: 
-    #define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL                    - data transfer using <BLEPeripheral.h> library
+    #define REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL             - data transfer using <BLEPeripheral.h> library
+
+   Boards supporting the ArduinoBLE.h library: 
+    #define REMOTEXY_MODE__ARDUINOBLE                        - data transfer using <ArduinoBLE.h> library
 
    Parameters depending on the selected mode (for example):
     #define REMOTEXY_SERIAL Serial  // for Hardware Serial
@@ -112,10 +115,14 @@
      - added support for AltSoftSerial.h library;
      - support SoftwareSerial.h for ESP8266;
    version 3.1.11
-     - add USB CDC serial for STM32;
+     - added support USB CDC serial for STM32;
    version 3.1.12
      - fixed some bugs;
      - any Stream class can be used for communication: example/RemoteXY/Various/AnyStreamClass.pde
+   version 3.1.13
+     - fixed some bugs;
+     - added support for the arduinoBLE.h library
+     - added support for the WiFiS3.h library, which uses Arduino UNO R4 WiFi
                
 */
 
@@ -156,6 +163,7 @@
 #include "RemoteXYStream_BluetoothSerial.h"   // need BluetoothSerial.h
 #include "RemoteXYStream_BLEDevice.h"         // need BLEDevice.h
 #include "RemoteXYStream_BLEPeripheral.h"     // need BLEPeripheral.h
+#include "RemoteXYStream_ArduinoBLE.h"        // need ArduinoBLEl.h
 #include "RemoteXYComm_WiFi.h"                // need ESP8266WiFi.h (ESP8266) or WiFi.h (ESP32) or WiFi.h (Arduino shield) 
 #include "RemoteXYComm_Ethernet.h"            // need Ethernet.h 
 #include "RemoteXYComm_ESP8266.h"
@@ -254,6 +262,10 @@
 #elif defined(REMOTEXY_MODE__NRFCORE_BLEPERIPHERAL)
   CRemoteXY *remotexy;      
   #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYStream_BLEPeripheral (REMOTEXY_BLUETOOTH_NAME), REMOTEXY_ACCESS_PASSWORD) 
+
+#elif defined(REMOTEXY_MODE__ARDUINOBLE) 
+  CRemoteXY *remotexy;   
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYStream_ArduinoBLE (REMOTEXY_BLUETOOTH_NAME), REMOTEXY_ACCESS_PASSWORD) 
 
 #endif
 

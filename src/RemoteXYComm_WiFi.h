@@ -1,12 +1,14 @@
 #ifndef RemoteXYComm_WiFi_h
 #define RemoteXYComm_WiFi_h
 
+#include "RemoteXYFunc.h" 
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYComm.h"
  
-#if defined (WiFi_h) 
+ // only WiFi.h library
+#if defined (WiFi_h) || defined (WiFiNINA_h) || defined (WiFiS3_h)
 
-#if defined (ESP8266) || defined (ESP32)
+#if defined (ESP8266) || defined (ESP32) || defined (WiFiS3_h)
 #define REMOREXYCOMM_WIFI__SEND_BUFFER_SIZE 256
 #else  // arduino shield
 #define REMOREXYCOMM_WIFI__SEND_BUFFER_SIZE 64
@@ -14,6 +16,12 @@
 
 #define REMOREXYCOMM_WIFI__RECONNECT_TIMEOUT 20000  // reconnect in 20 sec
 
+#if defined (WiFiS3_h) 
+  // The server.available () function can return the same client 
+  // even if it has been connected for a long time.
+  // Need to cut off clients who are already working 
+#define REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL
+#endif
 
 class CRemoteXYClient_WiFi : public CRemoteXYClient {
   public:
@@ -65,6 +73,11 @@ class CRemoteXYClient_WiFi : public CRemoteXYClient {
 class CRemoteXYServer_WiFi : public CRemoteXYServer {
   private:
   WiFiServer * server;
+  
+#if defined (REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL)
+  WiFiClient clients[REMOTEXY_MAX_CLIENTS];
+  uint8_t clientsConnected[REMOTEXY_MAX_CLIENTS];
+#endif
 
   public: 
   CRemoteXYServer_WiFi (uint16_t _port)  {
@@ -74,6 +87,11 @@ class CRemoteXYServer_WiFi : public CRemoteXYServer {
   
   public:  
   virtual uint8_t begin () override {
+  
+#if defined (REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL)
+    for (uint8_t i=0; i<REMOTEXY_MAX_CLIENTS; i++) clientsConnected[i] = 0;
+#endif
+
     server->begin (); 
     return 1;   
   }
@@ -87,16 +105,46 @@ class CRemoteXYServer_WiFi : public CRemoteXYServer {
  
 
 
-  uint8_t available (CRemoteXYClient * client) override {     
+  uint8_t available (CRemoteXYClient * client) override {
+       
 #if defined (ESP8266) || defined (ESP32)  
     if (!server->hasClient()) return 0; 
 #endif        
+      
+#if defined (REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL)
+    for (uint8_t i=0; i<REMOTEXY_MAX_CLIENTS; i++) {
+      if (clientsConnected[i] != 0) {
+        if (!clients[i].connected ()) {
+          clientsConnected[i] = 0;
+        }
+      }
+    } 
+#endif // REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL
+      
     WiFiClient cl = server->available ();
     if (cl) {
+    
       if (cl.connected ()) {
+      
 #if defined (ESP8266) 
         cl.disableKeepAlive ();     // remove memory leak
-#endif
+#endif // ESP8266
+
+#if defined (REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL) 
+        int8_t free = -1; 
+        for (uint8_t i=0; i<REMOTEXY_MAX_CLIENTS; i++) {
+          if (clientsConnected[i] == 0) {
+            free = i;
+          }
+          else {
+            if (clients[i] == cl) return 0; // already use it
+          }
+        }
+        if (free<0) return 0; // reject
+        clientsConnected[free] = 1;
+        clients[free] = cl;
+#endif // REMOREXYCOMM_WIFI__ADDITIONAL_CLIENT_CONTROL
+        
         ((CRemoteXYClient_WiFi*) client)->client = cl;
         return 1;
       }
@@ -227,7 +275,8 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
     RemoteXYDebugLog.writeAdd(" ...");
 #endif
 
-#if defined (ESP8266) || defined (ESP32)
+#if defined (ESP8266) || defined (ESP32) 
+// ESP8266 and ESP32
     
     WiFi.mode(WIFI_AP);
     WiFi.softAP(_wifiSsid, _wifiPassword);
@@ -237,8 +286,10 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
     RemoteXYDebugLog.write ("IP: ");
     RemoteXYDebugLog.serial->print (WiFi.softAPIP());    
 #endif
+
     
-#elif defined (WiFiNINA_h)   // WiFiNINA
+#elif defined (WiFiNINA_h) || defined (WiFiS3_h)  
+// WiFiNINA.h and WiFiS3.h
 
     state = 0;
     if (WiFi.status() == WL_NO_SHIELD) {    
@@ -249,7 +300,7 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
     }
     if (WiFi.beginAP (_wifiSsid, _wifiPassword) != WL_AP_LISTENING) {
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("WiFi module does not support AP mode");    
+      RemoteXYDebugLog.write("WiFi point was not created");    
 #endif 
       return;    
     }
@@ -257,9 +308,13 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
     
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("WiFi point created");    
+    RemoteXYDebugLog.write ("IP: ");
+    RemoteXYDebugLog.serial->print (WiFi.localIP());  
 #endif  
 
-#else  // other boards not support AP mode
+#else  
+// other boards not support AP mode
+
     state = 0;
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("WiFi module does not support AP mode");    

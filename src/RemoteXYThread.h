@@ -90,10 +90,11 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     if (wire == NULL) return;  
     if ((package->command != 0x00) && (!connect_flag)) return;
     switch (package->command) {  
-      case 0x00:          
+      case 0x00:      
         allowAccess = 0;
         if (package->length==0) { 
           if (data->accessPassword == NULL) allowAccess=1;
+          else if (*data->accessPassword == 0) allowAccess=1;
         }
         else {
           if (data->accessPassword != NULL) {

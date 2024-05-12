@@ -148,12 +148,17 @@ class CRemoteXY {
 
 ///////////////////////////////////////////////////////////////////////////////
 // API - PUBLIC DOCUMENTED FUNCTIONS
-
+  
   public:
   void delay (uint32_t ms) {
-    uint32_t t = millis ();
-    while (millis () - t < ms) handler ();
+    uint32_t t = millis ();   
+    while (true) {
+      handler ();
+      ::delay (1); // if does not use the delay it does not work on ESP8266 
+      if (millis () - t >= ms) break;
+    }
   }
+  
 
   public:
   uint8_t isConnected () {

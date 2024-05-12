@@ -106,8 +106,12 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
   }
 
   void onWrite (BLECharacteristic *pCharacteristic) {
+    
+#if (ESP_ARDUINO_VERSION_MAJOR >= 3) 
+    String rxValue = pCharacteristic->getValue();
+#else
     std::string rxValue = pCharacteristic->getValue();
-
+#endif
     if (rxValue.length() > 0) {
       while (receiveBufferLook!=0) { delay(1); } 
       receiveBufferLook=1; 

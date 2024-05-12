@@ -32,7 +32,6 @@ class CRemoteXYData {
   public:
   void init (const void * _conf, void * _var, const char * _accessPassword = NULL) {
   
-    uint8_t i;
     uint8_t* p = (uint8_t*)_conf;
     uint8_t b = getConfByte (p++);
 
@@ -58,7 +57,7 @@ class CRemoteXYData {
     setPassword (_accessPassword);        
     
     p = var;
-    i = varLength;
+    uint16_t i = varLength;
     while (i--) *p++=0;    
     
     
@@ -71,9 +70,7 @@ class CRemoteXYData {
   void setPassword (const char * _accessPassword) {
     accessPassword = NULL;  
     if (_accessPassword != NULL) {
-      if (*_accessPassword != 0) {
-        accessPassword = (uint8_t*)_accessPassword;
-      }
+      accessPassword = (uint8_t*)_accessPassword;
     }   
   }
   
