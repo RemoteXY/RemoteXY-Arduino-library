@@ -56,4 +56,5 @@ History:
      - fixed some bugs;
      - added support for the arduinoBLE.h library
      - added support for the WiFiS3.h library, which uses Arduino UNO R4 WiFi
-     
+   version 3.1.14
+     - support ESP32 ver.3.0.x     
