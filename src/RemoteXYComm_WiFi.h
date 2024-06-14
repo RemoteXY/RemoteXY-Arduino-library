@@ -4,9 +4,14 @@
 #include "RemoteXYFunc.h" 
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYComm.h"
+
  
+#if defined (WIFI_AP) && defined (WIFI_STA) && defined (ESP32) && ESP_ARDUINO_VERSION_MAJOR >= 3
+#define REMOREXYCOMM_WIFI__ESP32v3
+#endif
+
  // only WiFi.h library
-#if defined (WiFi_h) || defined (WiFiNINA_h) || defined (WiFiS3_h)
+#if defined (WiFi_h) || defined (WiFiNINA_h) || defined (WiFiS3_h) || defined (REMOREXYCOMM_WIFI__ESP32v3) 
 
 #if defined (ESP8266) || defined (ESP32) || defined (WiFiS3_h)
 #define REMOREXYCOMM_WIFI__SEND_BUFFER_SIZE 256
