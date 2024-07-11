@@ -20,10 +20,9 @@
 
 class CRemoteXYStream_AltSoftSerial : public CRemoteXYStream_Stream {
   
-  
   public:
   CRemoteXYStream_AltSoftSerial (long _serialSpeed) : CRemoteXYStream_Stream () { 
-    AltSoftSerial serial = new AltSoftSerial ();
+    AltSoftSerial * serial = new AltSoftSerial ();
     serial->begin (_serialSpeed);
     setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
