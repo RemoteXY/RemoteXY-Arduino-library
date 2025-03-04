@@ -293,8 +293,10 @@ class CRemoteXYComm_WiFiPoint : public CRemoteXYComm {
 #endif
 
     
-#elif defined (WiFiNINA_h) || defined (WiFiS3_h)  
-// WiFiNINA.h and WiFiS3.h
+#elif defined (WiFiNINA_h) || defined (WiFiS3_h) || defined (ARDUINO_ARCH_MBED) 
+// WiFiNINA.h
+// WiFiS3.h
+// MBED platform
 
     state = 0;
     if (WiFi.status() == WL_NO_SHIELD) {    
