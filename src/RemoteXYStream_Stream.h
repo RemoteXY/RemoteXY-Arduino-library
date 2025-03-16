@@ -11,7 +11,7 @@
 //   write (uint8_t)
 // You must initialize and configure the stream yourself
 
-#include "RemoteXYComm.h"
+#include "RemoteXYNet.h"
 
 
 class CRemoteXYStream_Stream : public CRemoteXYStream {

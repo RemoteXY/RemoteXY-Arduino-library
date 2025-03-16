@@ -65,7 +65,7 @@ void setup()
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
     new CRemoteXYConnectionServer (
-      new CRemoteXYComm_ESP8266Point (
+      new CRemoteXYNet_ESP8266Point (
         new CRemoteXYStream_HardSerial (
           &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
           115200

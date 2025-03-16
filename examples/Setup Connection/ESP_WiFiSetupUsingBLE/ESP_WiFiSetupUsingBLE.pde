@@ -157,7 +157,7 @@ void setup()
     remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, new CRemoteXYStream_BLEDevice (DEVICE_NAME));    
   }
   else {
-    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
+    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_SERVER_PORT)); 
   
     // TODO you setup code
 

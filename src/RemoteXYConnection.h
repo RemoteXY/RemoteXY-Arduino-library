@@ -1,16 +1,17 @@
 #ifndef RemoteXYConnection_h
 #define RemoteXYConnection_h
 
-#include "RemoteXYComm.h"
+#include "RemoteXYGuiData.h"
+#include "RemoteXYNet.h"
 #include "RemoteXYWire.h"
-#include "RemoteXYCloudServer.h"
+//#include "RemoteXYCloudServer.h"
 
 #define UNUSED(x) (void)(x)
 
 class CRemoteXYConnection { 
   
   public:
-  virtual void init (CRemoteXYData * _data) {UNUSED (_data);};
+  virtual void init (CRemoteXYGuiData * _data) {UNUSED (_data);};
   
   public:
   virtual void handler () {};
@@ -20,14 +21,14 @@ class CRemoteXYConnection {
 };
 
 
-class CRemoteXYConnectionComm : public CRemoteXYConnection { 
+class CRemoteXYConnectionNet : public CRemoteXYConnection { 
   public:   
-  CRemoteXYConnectionComm * next;  
-  CRemoteXYComm * comm;
+  CRemoteXYConnectionNet * next;  
+  CRemoteXYNet * net;
   
   public:
-  CRemoteXYConnectionComm (CRemoteXYComm * _comm) {
-    comm = _comm;
+  CRemoteXYConnectionNet (CRemoteXYNet * _net) {
+    net = _net;
   }  
   
 };

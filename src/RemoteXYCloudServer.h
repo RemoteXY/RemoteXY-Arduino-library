@@ -2,29 +2,23 @@
 #define RemoteXYCloudServer_h  
  
 
-#include "RemoteXYApiData.h"
-#include "RemoteXYComm.h"
+#include "RemoteXYGuiData.h"
+//#include "RemoteXYNet.h"
+#include "RemoteXYConnection.h"
 #include "RemoteXYWire.h"
-#include "RemoteXYWireStream.h"
-#include "RemoteXYWireCloud.h"
+#include "RemoteXYThread.h"
 
 #define REMOTEXY_CLOUD_CONNECT_TIMEOUT 10000
 #define REMOTEXY_CLOUD_ECHO_TIMEOUT 30000
 
 
-class CRemoteXYCloudClientAvailableListener {
-  public:
-  virtual void clientAvailable (CRemoteXYWireCloud * wire) = 0;
-};
 
-
-class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSendPackageListener  {
+class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener  {
   public:
-  CRemoteXYWireStream * wire;
-  CRemoteXYWireCloud * cloudWires;
+  CRemoteXYGuiData * data;
+  CRemoteXYConnection * conn;
+  CRemoteXYWire * wire;
   
-  private:
-  CRemoteXYCloudClientAvailableListener * clientAvailableListener;
   
   uint8_t cloudRegistPackage[38];
   enum { Registring, Working, Stopped } state;
@@ -32,12 +26,13 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
 
   
   public:
-  CRemoteXYCloudServer (CRemoteXYData * data, const char * _cloudToken, CRemoteXYCloudClientAvailableListener * listener) {
+  CRemoteXYCloudServer (CRemoteXYGuiData * _data, CRemoteXYConnection * _conn, const char * _cloudToken) {
     
-    
+    data = _data;
+    conn = _conn;
     uint8_t i;
     uint8_t *p = cloudRegistPackage;
-    *p++ = data->getConfByte(data->conf+0);
+    *p++ = rxy_readConfByte(data->conf+0);
     *p++ = 0;    
     for (i=0; i<32; i++) {
       if (*_cloudToken==0) *(p++)=0;
@@ -50,14 +45,11 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
     len = (uint16_t*)(p+2);     
     *len = data->getReceiveBufferSize ();
 #if REMOTEXY_MAX_CLIENTS == 1
-    wire = new CRemoteXYWireStream (data);
+    wire = new CRemoteXYWire (data);
 #else
-    wire = new CRemoteXYWireStream (data, 2);
+    wire = new CRemoteXYWire (data, 2);
 #endif    
-    cloudWires = NULL;
-    state = Stopped;       
-     
-    clientAvailableListener = listener;
+    state = Stopped;           
   }
   
   
@@ -66,7 +58,7 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
     wire->begin(client);
     wire->setReceivePackageListener (this);
     state = Registring;        
-    wire->sendPackage (0x11, cloudRegistPackage, 38, 0);
+    wire->sendPackage (0x11, 0, cloudRegistPackage, 38);
     timeOut = millis ();
   }
   
@@ -91,7 +83,7 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
   public:
   void handler () {
     if (state != Stopped)  {
-      CRemoteXYClient * client = wire->getClient ();
+      CRemoteXYClient * client = (CRemoteXYClient*)wire->stream;
       wire->handler ();
       if (!client->connected ()) stop ();
       if (wire->running ()) {
@@ -108,21 +100,21 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
            }
         }
       }
-      else stop ();
+      else {
+        stop ();
+      }
     }
   }  
   
-  public:
-  void sendPackage (uint8_t command, uint8_t *buf, uint16_t length, uint8_t fromPgm) override {
-    wire->sendPackage (command, buf, length, fromPgm);
-  }
+  
+
   
   
   public:
   void receivePackage (CRemoteXYPackage * package) override {
     timeOut = millis ();
     if (package->command == 0x10) {
-      wire->sendPackage (0x10, 0, 0, 0);
+      wire->sendEmptyPackage (0x10, 0);
     }
     else if (package->command == 0x11) {      
       state = Working;
@@ -130,37 +122,36 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener, CRemoteXYSe
       RemoteXYDebugLog.write ("Cloud server registration successfully");
 #endif   
     }
-    else {
-      uint8_t id = (package->command & 0x0e)>>1;   
-      package->command &= 0xf1;    
+    else {  
 
-      CRemoteXYWireCloud * pw = cloudWires;   
-      while (pw) {
-        if ((pw->running ()) && (pw->id == id)) {    
-          pw->receivePackage (package);
-          return;
+      CRemoteXYThread * thread = data->threads;            
+      while (thread) {
+        if (thread->running ()) {
+          if ((thread->wire == wire) && (thread->clientId == package->clientId)) {    
+            thread->receivePackage (package);
+            return;
+          }
         }
-        pw = pw->next;
+        thread = thread->next;
       }
-      pw = getFreeWireCloud ();
-      pw->init (id);  
-      clientAvailableListener->clientAvailable (pw);
-      pw->receivePackage (package);     
+
+      // new connect
+      thread = CRemoteXYThread::getUnusedThread (data);
+      if (thread) {
+        thread->begin (conn, wire, 1);
+        thread->setClientId (package->clientId);
+        thread->receivePackage (package);     
+      }
+#if defined(REMOTEXY__DEBUGLOG)
+      else {
+        RemoteXYDebugLog.write ("Client reject");
+      }
+#endif 
+
     }
   }  
   
-  private:
-  CRemoteXYWireCloud * getFreeWireCloud () {
-    CRemoteXYWireCloud * pw = cloudWires;
-    while (pw) {
-      if (!pw->running ()) return pw;
-      pw = pw->next;
-    }
-    pw = new CRemoteXYWireCloud (this);
-    pw->next = cloudWires;
-    cloudWires = pw;
-    return pw;
-  }
+
 };
 
 

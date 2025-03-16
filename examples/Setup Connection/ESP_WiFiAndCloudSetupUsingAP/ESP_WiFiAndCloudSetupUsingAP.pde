@@ -167,10 +167,10 @@ void setup()
   if (!digitalRead(PIN_BUTTON_WIFISETUP) || (!EEPROMisValid)) {
     // wifi setup mode
     wifiSettingMode = 1;
-    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, new CRemoteXYConnectionServer (new CRemoteXYComm_WiFiPoint (DEVICE_NAME, ""), REMOTEXY_SERVER_PORT)); 
+    remotexy = new CRemoteXY (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings, new CRemoteXYConnectionServer (new CRemoteXYNet_WiFiPoint (DEVICE_NAME, ""), REMOTEXY_SERVER_PORT)); 
   }
   else {
-    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYComm_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, RemoteXY_WiFiSettings.token));      
+    remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_WiFi (RemoteXY_WiFiSettings.ssid, RemoteXY_WiFiSettings.pass), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, RemoteXY_WiFiSettings.token));      
 
     // TODO you setup code
     // example code

@@ -1,21 +1,21 @@
-#ifndef RemoteXYComm_Ethernet_h
-#define RemoteXYComm_Ethernet_h
+#ifndef RemoteXYNet_Ethernet_h
+#define RemoteXYNet_Ethernet_h
 
  
 #if defined (ethernet_h_) 
 
 #include "RemoteXYDebugLog.h"
-#include "RemoteXYComm.h"
+#include "RemoteXYNet.h"
 #include "RemoteXYFunc.h"
 
 
-#define REMOREXYCOMM_ETHERNET__SEND_BUFFER_SIZE 32
+#define REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE 32
 
 class CRemoteXYClient_Ethernet : public CRemoteXYClient {
   public:
   EthernetClient client;
   
-  uint8_t sendBuffer[REMOREXYCOMM_ETHERNET__SEND_BUFFER_SIZE];
+  uint8_t sendBuffer[REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE];
   uint16_t sendBufferCount; 
   uint16_t sendBytesAvailable;  
 
@@ -51,7 +51,7 @@ class CRemoteXYClient_Ethernet : public CRemoteXYClient {
   void write (uint8_t b) override {
     sendBuffer[sendBufferCount++] = b;
     sendBytesAvailable--;       
-    if ((sendBufferCount == REMOREXYCOMM_ETHERNET__SEND_BUFFER_SIZE) || (sendBytesAvailable==0)) {  
+    if ((sendBufferCount == REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE) || (sendBytesAvailable==0)) {  
       client.write (sendBuffer, sendBufferCount);
       sendBufferCount=0;    
     } 
@@ -85,13 +85,13 @@ class CRemoteXYServer_Ethernet : public CRemoteXYServer {
   
   
   public:  
-  virtual uint8_t begin () override {
+  uint8_t begin () override {
     server->begin (); 
     return 1;   
   }
   
 
-  uint8_t available (CRemoteXYClient * client) override {  
+  void handler () override {  
     EthernetClient cl; 
     uint8_t i;
     for (i = 0; i < MAX_SOCK_NUM; i++) {
@@ -104,28 +104,58 @@ class CRemoteXYServer_Ethernet : public CRemoteXYServer {
       if (i<MAX_SOCK_NUM) {
         if (soketConnectArr[i] == 0) {
           soketConnectArr[i] = 1;
-          ((CRemoteXYClient_Ethernet*) client)->client = cl;
-          return 1;
+          
+          CRemoteXYClient_Ethernet * client = (CRemoteXYClient_Ethernet*)getUnusedClient ();
+          if (client == NULL) {
+            client = new CRemoteXYClient_Ethernet ();
+            addClient (client);
+          }
+          client->client = cl; 
+          notifyClientAvailableListener (client);        
         }
       }
     }
-    return 0;
   } 
   
 };
 
-
-class CRemoteXYComm_Ethernet : public CRemoteXYComm {
+#define CRemoteXYComm_Ethernet CRemoteXYNet_Ethernet
+class CRemoteXYNet_Ethernet : public CRemoteXYNet {
 
   private:
   uint8_t mac[6];
   enum {NoHardware, LinkDetecting, Work} state;
   uint32_t timeout;
   
-  
   public:
-  CRemoteXYComm_Ethernet (const char * macAddress) : CRemoteXYComm () {   
-    rxy_getMacAddr (macAddress, mac);  
+  CRemoteXYNet_Ethernet () : CRemoteXYNet () {   
+     
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.write("Ethernet begin ...");
+#endif 
+
+    Ethernet.begin(mac, 1000);
+    
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) { 
+      state = NoHardware;   
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.write("Ethernet module was not found");    
+#endif 
+    }
+    else {
+      state = LinkDetecting;         
+#if defined(REMOTEXY__DEBUGLOG)
+      if (!linkON ()) { 
+        RemoteXYDebugLog.write("Ethernet link OFF");
+      }
+#endif 
+    }  
+    timeout = millis ();  
+  }
+    
+  public:
+  CRemoteXYNet_Ethernet (const char * macAddress) : CRemoteXYNet () {   
+    rxy_strParseMacAddr (macAddress, mac);  
      
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("Ethernet begin ...");
@@ -168,7 +198,7 @@ class CRemoteXYComm_Ethernet : public CRemoteXYComm {
   
   public:
   void handler () override {          
-  
+    
     if (state == NoHardware) return;
     
     if (linkON ()) {
@@ -214,10 +244,15 @@ class CRemoteXYComm_Ethernet : public CRemoteXYComm {
   CRemoteXYClient * newClient () override {
     return new CRemoteXYClient_Ethernet ();
   }
-
+  
+  /*
+  CRemoteXYHttpRequest_Proto * createHttpRequest () override { 
+    return new CRemoteXYHttpRequest (this);
+  }
+  */
 };
 
 
 #endif // ethernet_h_
 
-#endif //RemoteXYComm_Ethernet_h
+#endif //RemoteXYNet_Ethernet_h

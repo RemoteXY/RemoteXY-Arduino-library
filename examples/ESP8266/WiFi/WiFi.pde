@@ -65,7 +65,7 @@ void setup()
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
     new CRemoteXYConnectionServer (
-      new CRemoteXYComm_WiFi (
+      new CRemoteXYNet_WiFi (
         "myHomeFiFi",       // REMOTEXY_WIFI_SSID
         "myPass"),          // REMOTEXY_WIFI_PASSWORD
       6377                  // REMOTEXY_SERVER_PORT

@@ -1,20 +1,20 @@
-#ifndef RemoteXYComm_AT_h
-#define RemoteXYComm_AT_h
+#ifndef RemoteXYNet_AT_h
+#define RemoteXYNet_AT_h
 
 #include "RemoteXYDebugLog.h"
-#include "RemoteXYComm.h"
+#include "RemoteXYNet.h"
 #include "RemoteXYFunc.h"
 #include <stdarg.h>
 
 #define UNUSED(x) (void)(x)
 
-#define REMOTEXYCOMM_AT__RECEIVE_BUFFER_SIZE 32 // maximum response length
+#define REMOREXYNET_AT__RECEIVE_BUFFER_SIZE 32 // maximum response length
 
-#define REMOTEXYCOMM_AT__COMMAND_TIMEOUT 1000
-#define REMOTEXYCOMM_AT__SEND_TIMEOUT 5000
-#define REMOTEXYCOMM_AT__TEST_TIMEOUT 30000
-#define REMOTEXYCOMM_AT__CONNECT_TIMEOUT 20000
-#define REMOTEXYCOMM_AT__NO_CHANNEL 0xff
+#define REMOREXYNET_AT__COMMAND_TIMEOUT 1000
+#define REMOREXYNET_AT__SEND_TIMEOUT 5000
+#define REMOREXYNET_AT__TEST_TIMEOUT 30000
+#define REMOREXYNET_AT__CONNECT_TIMEOUT 20000
+#define REMOREXYNET_AT__NO_CHANNEL 0xff
 
 
 #define AT_ID_BLOCKING 255
@@ -50,33 +50,56 @@ const char * AT_MESSAGE_CIPCLOSE = "AT+CIPCLOSE=";
 const char * AT_MESSAGE_CIPSTART = "AT+CIPSTART=";
 
 
-
-class CRemoteXYClient_AT;
-class CRemoteXYComm_AT;
-
-class CRemoteXYClient_AT_Proto : public CRemoteXYClient {
+class CRemoteXYNet_AT_ReadByteListener {
   public:
-  CRemoteXYComm_AT * comm;
-  uint8_t id;
-  uint8_t _connected;
-  CRemoteXYClient_AT_Proto * next;
-   
+  virtual void readByte (uint8_t byte) = 0;
 };
 
-             
 
-class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener {
-
-  private:
-  CRemoteXYStream * serial;
+class CRemoteXYNet_AT_Client {
 
   public:
-  CRemoteXYServer * server;
-  CRemoteXYClient_AT_Proto * clients;
+  CRemoteXYNet_AT_Client * next;
+  uint8_t id;
+  uint8_t connected;
+  CRemoteXYNet_AT_ReadByteListener * readByteListener;
+  
+  public:
+  CRemoteXYNet_AT_Client () {
+    connected = 0;
+    readByteListener = NULL;
+  }
+  
+  
+  public:
+  void setReadByteListener (CRemoteXYNet_AT_ReadByteListener * listener) {
+    readByteListener = listener;
+  } 
+  
+  public:   
+  void notifyReadByteListener (uint8_t byte) {
+    if (readByteListener && connected) readByteListener->readByte (byte);
+  }
+};
+
+class CRemoteXYNet_AT_ClientAvalaibleListener {
+  public:
+  virtual void clientAvailable (CRemoteXYNet_AT_Client * client) = 0;
+};
+             
+
+class CRemoteXYNet_AT : public CRemoteXYNet, public CRemoteXYReadByteListener {
+
+  private:
+  CRemoteXYStream * stream;
+
+  public:
+  CRemoteXYNet_AT_ClientAvalaibleListener * clientAvalaibleListener;
+  CRemoteXYNet_AT_Client * clients;
   
   
   protected:
-  char receiveBuffer[REMOTEXYCOMM_AT__RECEIVE_BUFFER_SIZE];
+  char receiveBuffer[REMOREXYNET_AT__RECEIVE_BUFFER_SIZE];
   uint8_t receiveBufferIndex;
   
   char * params[3];
@@ -100,9 +123,8 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   
   uint16_t ipdId;
   uint16_t ipdSize;
-  CRemoteXYClient_AT_Proto * ipdClient;
+  CRemoteXYNet_AT_Client * ipdClient;
   
-  int8_t availableClientID;
   
   uint8_t findModuleTryCount;
   uint8_t haveEcho;
@@ -126,19 +148,18 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   
   
   public:
-  CRemoteXYComm_AT (CRemoteXYStream *_serial, uint16_t _sendByteMax) : CRemoteXYComm () {
-    serial = _serial;
-    serial->setReadByteListener (this);
+  CRemoteXYNet_AT (CRemoteXYStream *_stream, uint16_t _sendByteMax) : CRemoteXYNet () {
+    stream = _stream;
+    stream->setReadByteListener (this);
     sendByteMax = _sendByteMax;
     receiveBufferIndex=0;
     
     ipdSize = 0;
     lastAnswerTime = millis ();
     
-    server = NULL;
+    clientAvalaibleListener = NULL;
     clients = NULL;
-    availableClientID = -1;
-    clientConnectingID = REMOTEXYCOMM_AT__NO_CHANNEL;
+    clientConnectingID = REMOREXYNET_AT__NO_CHANNEL;
     detected = 0;    // ???
     
     
@@ -184,9 +205,9 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   
     
   private:
-  void serialWrite (const char *p) {
+  void streamWrite (const char *p) {
      while (*p) {
-       serial->write (*p++); 
+       stream->write (*p++); 
     }
   }  
   
@@ -217,19 +238,19 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   void sendArgPtr (const char * p, va_list *argptr) { 
     if (p) {
       while (p) {
-        serialWrite (p);      
+        streamWrite (p);      
 #if defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.writeOutput (p);
 #endif     
         p=va_arg(*argptr,char*);
       }        
-      serialWrite ("\r\n");
+      streamWrite ("\r\n");
 #if defined(REMOTEXY__DEBUGLOG)
       RemoteXYDebugLog.writeInputNewString ();
 #endif  
     }
     commandTimeOut = millis();   
-    if (commandDelay == 0) commandDelay = REMOTEXYCOMM_AT__COMMAND_TIMEOUT;
+    if (commandDelay == 0) commandDelay = REMOREXYNET_AT__COMMAND_TIMEOUT;
     commandResult = 0;
   }
   
@@ -273,7 +294,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
       if (millis() - commandTimeOut > commandDelay) {
         resultATcommand (commandIdentifier, AT_RESULT_TIMEOUT);
       }
-      else serial->handler ();
+      else stream->handler ();
     }   
     commandBlocking = 0;    
     return commandResult;       
@@ -314,8 +335,11 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
       if (strcmpReceiveBuffer (AT_MESSAGE_CONNECT)==0) {   // new client
         uint8_t id = getATParamInt(0);
         if (id != clientConnectingID) {
-          availableClientID = id; 
-          if (server) server->notifyClientAvailableListener ();
+          
+          CRemoteXYNet_AT_Client * client = getUnusedClient ();
+          client->id = id;
+          client->connected = 1;
+          if (clientAvalaibleListener) clientAvalaibleListener->clientAvailable (client);
         }
         return; 
       }               
@@ -340,7 +364,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
     }
     else {
       if ((byte>0x60) && (byte<=0x7a)) byte-=0x20;
-      if (receiveBufferIndex<REMOTEXYCOMM_AT__RECEIVE_BUFFER_SIZE-1) receiveBuffer[receiveBufferIndex++]=byte;  
+      if (receiveBufferIndex<REMOREXYNET_AT__RECEIVE_BUFFER_SIZE-1) receiveBuffer[receiveBufferIndex++]=byte;  
       if (byte==':') {
         lastAnswerTime = millis ();
         receiveBuffer[receiveBufferIndex]=0;
@@ -351,9 +375,9 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
 #endif
           ipdId = getATParamInt(0); 
           ipdSize = getATParamInt(1);
-          CRemoteXYClient_AT_Proto * p = clients;
+          CRemoteXYNet_AT_Client * p = clients;
           while (p) {
-            if ((p->id == ipdId) && (p->_connected)) break;
+            if ((p->id == ipdId) && (p->connected)) break;
             p = p->next;
           }
           ipdClient = p;
@@ -373,9 +397,9 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   
     
   public:
-  void handler () override {   // override CRemoteXYComm
+  void handler () override {   // override CRemoteXYNet
        
-    serial->handler ();
+    stream->handler ();
     
     if (!ipdSize) { 
       if (commandIdentifier) {
@@ -384,7 +408,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
         }
       } 
       else if (findModuleTryCount) {      
-        if (millis() - lastAnswerTime > REMOTEXYCOMM_AT__COMMAND_TIMEOUT) { 
+        if (millis() - lastAnswerTime > REMOREXYNET_AT__COMMAND_TIMEOUT) { 
           findModuleTryCount--;
           if (findModuleTryCount == 0) {
 #if defined(REMOTEXY__DEBUGLOG)
@@ -397,7 +421,7 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
         }      
       } 
       else {
-        if (millis() - lastAnswerTime > REMOTEXYCOMM_AT__TEST_TIMEOUT) { 
+        if (millis() - lastAnswerTime > REMOREXYNET_AT__TEST_TIMEOUT) { 
           haveEcho = 0;
           if (sendATCommand (AT_ID_TESTMODULE, AT_MESSAGE_AT, NULL)) {
             lastAnswerTime = millis();           
@@ -411,42 +435,28 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   private:
   void clientClosed () {
     uint8_t id = getATParamInt(0);
-    if (availableClientID == id) availableClientID = -1; 
-    else {
-      CRemoteXYClient_AT_Proto * p = clients;
-      while (p) {
-        if ((p->id == id) && (p->_connected)) {
-          p->_connected = 0;
-          //return;
-        }
-        p = p->next;
+    CRemoteXYNet_AT_Client * p = clients;
+    while (p) {
+      if ((p->id == id) && (p->connected)) {
+        p->connected = 0;
+        //return;
       }
+      p = p->next;
     }
   }  
   
-  public:
-  uint8_t server_available (CRemoteXYClient_AT_Proto * client) {
-    if (availableClientID >= 0) {
-      client->id = availableClientID;
-      client->_connected = 1;
-      availableClientID = -1;
-      return 1;
-    }
-    return 0;
-  }  
   
   public:
-  uint8_t client_connect (CRemoteXYClient_AT_Proto * client, const char *host, uint16_t port) {
+  CRemoteXYNet_AT_Client * client_connect (const char *host, uint16_t port) {
     char sport[6]; 
     char sid[2];    
     int8_t i;
-    CRemoteXYClient_AT_Proto * p;
-    if (client->_connected) client_stop (client);
-    clientConnectingID = REMOTEXYCOMM_AT__NO_CHANNEL;
+    CRemoteXYNet_AT_Client * p;
+    clientConnectingID = REMOREXYNET_AT__NO_CHANNEL;
     for (i=3; i>=0; i--) {
       p = clients;
       while (p) {
-        if ((p->_connected) && (client->id == i)) break;
+        if ((p->connected) && (p->id == i)) break;
         p=p->next;
       }
       if (!p) {
@@ -454,24 +464,25 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
         break;
       }
     }
-    if (clientConnectingID == REMOTEXYCOMM_AT__NO_CHANNEL) return 0;
-    rxy_itos (port, sport);
+    if (clientConnectingID == REMOREXYNET_AT__NO_CHANNEL) return NULL;
+    rxy_intToStr (port, sport);
     *sid=clientConnectingID+0x30;
     *(sid+1)=0;  
-    setATTimeOut (REMOTEXYCOMM_AT__CONNECT_TIMEOUT);
+    setATTimeOut (REMOREXYNET_AT__CONNECT_TIMEOUT);
     uint8_t res = sendATCommandForResult (AT_MESSAGE_CIPSTART, sid, ",\"TCP\",\"", host,"\",", sport,NULL);
     i = clientConnectingID;
-    clientConnectingID = REMOTEXYCOMM_AT__NO_CHANNEL; 
-    if (res != AT_RESULT_OK) return 0;
-    client->id = i;
-    client->_connected = 1;
-    return 1;
+    clientConnectingID = REMOREXYNET_AT__NO_CHANNEL; 
+    if (res != AT_RESULT_OK) return NULL;
+    p = getUnusedClient ();
+    p->id = i;
+    p->connected = 1;  
+    return p;
   }
   
   public:
-  void client_stop (CRemoteXYClient_AT_Proto * client) {
-    if (client->_connected) {  
-      client->_connected = 0;
+  void client_stop (CRemoteXYNet_AT_Client * client) {
+    if (client->connected) {  
+      client->connected = 0;
       char s[2];
       *s=client->id+0x30;
       *(s+1) = 0;
@@ -480,14 +491,14 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   }
   
   public:
-  void client_startWrite (CRemoteXYClient_AT_Proto * client, uint16_t size) {
-    if (client->_connected) {  
+  void client_startWrite (CRemoteXYNet_AT_Client * client, uint16_t size) {
+    if (client->connected) {  
       char s[8];
       sendByteSize = size;
       if (sendByteSize > sendByteMax) sendByteSize = sendByteMax;
       sendByteNext = size - sendByteSize;
       
-      rxy_itos (sendByteSize, s+2);
+      rxy_intToStr (sendByteSize, s+2);
       *s=client->id+0x30;
       *(s+1)=',';      
 #if defined(REMOTEXY__DEBUGLOG)
@@ -508,12 +519,12 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
   }
   
   public:
-  void client_write (CRemoteXYClient_AT_Proto * client, uint8_t byte) {
+  void client_write (CRemoteXYNet_AT_Client * client, uint8_t byte) {
     if (sendByteSize) {
-      serial->write (byte); 
+      stream->write (byte); 
       sendByteSize--;
       if (sendByteSize == 0) {
-        setATTimeOut (REMOTEXYCOMM_AT__SEND_TIMEOUT);
+        setATTimeOut (REMOREXYNET_AT__SEND_TIMEOUT);
         if (waitATResult () == AT_RESULT_SEND_OK) {
           if (sendByteNext) client_startWrite (client, sendByteNext);
         }
@@ -521,9 +532,22 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
     }
   }
   
-
+  public:
+  uint8_t server_begin (uint16_t port, CRemoteXYNet_AT_ClientAvalaibleListener * listener) {
+    char sport[6];    
+    rxy_intToStr (port, sport);
+    if (sendATCommandForResult ("AT+CIPSERVER=1,", sport, NULL) != AT_RESULT_OK) return 0;  
+    if (sendATCommandForResult ("AT+CIPSTO=30", NULL) != AT_RESULT_OK) return 0;
+    clientAvalaibleListener = listener;  
+    return 1;  
+  }
   
-  
+  public:
+  void server_stop () {
+    sendATCommandForResult ("AT+CIPSERVER=0", NULL);
+    clientAvalaibleListener = NULL;
+  }
+    
   public:
   void findModule () {  
     findModuleTryCount=10;
@@ -573,109 +597,103 @@ class CRemoteXYComm_AT : public CRemoteXYComm, public CRemoteXYReadByteListener 
     return res;
   }  
   
-  public:
-  void registerClient (CRemoteXYClient_AT_Proto * client) {
-    client->next = clients;
-    clients = client;
-  }    
   
   public:
-  void removeClient (CRemoteXYClient_AT_Proto * client) {
-    CRemoteXYClient_AT_Proto ** pclient = &clients;
-    while (*pclient) {
-      if (*pclient == client) {
-        if ((*pclient)->_connected) client_stop (*pclient);
-        *pclient = client->next;
-        return;
-      }
-      pclient =  &((*pclient)->next);
+  CRemoteXYNet_AT_Client * getUnusedClient () {
+    CRemoteXYNet_AT_Client * p = clients;
+    while (p) {
+      if (p->connected == 0) return p;
+      p = p->next;
     }
-  }    
-  
+    p = new CRemoteXYNet_AT_Client ();
+    p->next = clients;
+    clients = p; 
+    return p;  
+  } 
 
 };
 
-
-class CRemoteXYServer_AT : public CRemoteXYServer {  
-
-
-  protected:
-  CRemoteXYComm_AT * comm;
-  uint16_t port;
-  
-  public:
-  CRemoteXYServer_AT (CRemoteXYComm_AT * _comm, uint16_t _port) {
-    comm = _comm;
-    port = _port;
-    comm->server = this;
-  } 
-  
-  ~CRemoteXYServer_AT () {
-    if (comm) comm->server = NULL;
-  }
-  
-    
-  public:
-  uint8_t available (CRemoteXYClient * client) override {
-    return comm->server_available ((CRemoteXYClient_AT_Proto *)client);
-  }
-    
-  uint8_t begin () override {
-    char sport[6];    
-    rxy_itos (port, sport);
-    if (comm->sendATCommandForResult ("AT+CIPSERVER=1,", sport, NULL) != AT_RESULT_OK) return 0;  
-    if (comm->sendATCommandForResult ("AT+CIPSTO=30", NULL) != AT_RESULT_OK) return 0;  
-    return 1;
-  }
-  
-  void stop () override {
-    comm->sendATCommandForResult ("AT+CIPSERVER=0", NULL);
-  }
-
-}; 
-
-
-class CRemoteXYClient_AT : public CRemoteXYClient_AT_Proto {
+class CRemoteXYClient_AT : public CRemoteXYClient, public CRemoteXYNet_AT_ReadByteListener {
 
   public:
-  CRemoteXYClient_AT (CRemoteXYComm_AT * _comm) {
-    comm = _comm;
-    _connected = 0;
-    comm->registerClient (this);
+  CRemoteXYNet_AT * net;
+  CRemoteXYNet_AT_Client * client;
+
+  public:
+  CRemoteXYClient_AT (CRemoteXYNet_AT * _net) {
+    net = _net;
+    client = NULL;
   }
   
-  ~CRemoteXYClient_AT () {
-    if (comm) comm->removeClient (this);
-  }
 
   public:
   uint8_t connect (const char *host, uint16_t port) override {
-    if (comm) return comm->client_connect (this, host, port);
+    client = net->client_connect (host, port);
+    if (client) {
+      client->setReadByteListener (this);
+      return client->connected;
+    }
     return 0;
   }
   
   public:
   uint8_t connected () override {
-    return _connected;
+    if (client) return client->connected;
+    return 0;
   }
   
   public:
   void stop () override {
-    if (comm) comm->client_stop (this);
+    if (client) net->client_stop (client);
   }
 
   void startWrite (uint16_t size) override {
-    if (comm) comm->client_startWrite (this, size);
+    if (client) net->client_startWrite (client, size);
   }   
   
   void write (uint8_t byte) override {
-    if (comm) comm->client_write (this, byte);
+    if (client) net->client_write (client, byte);
   }   
+  
+  void readByte (uint8_t byte) override {
+    notifyReadByteListener (byte);
+  }
        
 };
+        
+
+class CRemoteXYServer_AT : public CRemoteXYServer, public CRemoteXYNet_AT_ClientAvalaibleListener {  
+
+  protected:
+  CRemoteXYNet_AT * net;
+  uint16_t port;
+  
+  public:
+  CRemoteXYServer_AT (CRemoteXYNet_AT * _net, uint16_t _port) {
+    net = _net;
+    port = _port;
+  } 
+
+       
+  uint8_t begin () override {
+    return net->server_begin (port, this);
+  }
+  
+  void stop () override {
+    net->server_stop ();
+  }
+  
+  void clientAvailable (CRemoteXYNet_AT_Client * atClient) override {
+    CRemoteXYClient_AT * client = (CRemoteXYClient_AT*)getUnusedClient();
+    if (client == NULL) {
+      client = new CRemoteXYClient_AT (net);
+      addClient (client);
+    }
+    client->client = atClient;    
+    notifyClientAvailableListener (client);        
+  }
+
+}; 
 
 
-
-
-
-#endif  // RemoteXYComm_AT_h
+#endif  // RemoteXYNet_AT_h

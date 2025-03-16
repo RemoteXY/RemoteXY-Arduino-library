@@ -1,20 +1,21 @@
-#ifndef RemoteXYComm_ESP8266_h
-#define RemoteXYComm_ESP8266_h
+#ifndef RemoteXYNet_ESP8266_h
+#define RemoteXYNet_ESP8266_h
 
 #include "RemoteXYDebugLog.h"
-#include "RemoteXYComm_AT.h"
+#include "RemoteXYNet_AT.h"
 
-#define REMOTEXYCOMM_ESP8266__SERVER_TIMEOUT 10000
-#define REMOTEXYCOMM_ESP8266__WIFICONNECT_TIMEOUT 30000
 
-#define REMOTEXYCOMM_ESP8266__ID_WIFICONNECT 1
+#define REMOREXYNET_ESP8266__SERVER_TIMEOUT 10000
+#define REMOREXYNET_ESP8266__WIFICONNECT_TIMEOUT 30000
 
-#define REMOTEXYCOMM_ESP8266__MAX_SEND_BYTE_SIZE 2048      
+#define REMOREXYNET_ESP8266__ID_WIFICONNECT 1
+
+#define REMOREXYNET_ESP8266__MAX_SEND_BYTE_SIZE 2048      
 
 const char * AT_MESSAGE_WIFI_DISCONNECT = "WIFI DISCONNECT";
 
 
-class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
+class CRemoteXYNet_ESP8266_Proto : public CRemoteXYNet_AT {
 
   protected:  
   const char * wifiSsid;
@@ -23,7 +24,7 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   uint32_t timeOut;  
   
   public:
-  CRemoteXYComm_ESP8266_Proto (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYComm_AT (_serial, REMOTEXYCOMM_ESP8266__MAX_SEND_BYTE_SIZE) {
+  CRemoteXYNet_ESP8266_Proto (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_AT (_serial, REMOREXYNET_ESP8266__MAX_SEND_BYTE_SIZE) {
     wifiSsid = _wifiSsid;
     wifiPassword = _wifiPassword;
     state = Search;
@@ -53,11 +54,7 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   }; 
   
   virtual CRemoteXYServer * createServer (uint16_t _port) override {  
-    if (!server) {
-      server = new CRemoteXYServer_AT (this, _port);
-      return server;    
-    }
-    return NULL;
+    return new CRemoteXYServer_AT (this, _port); 
   } 
   
   public:
@@ -67,10 +64,11 @@ class CRemoteXYComm_ESP8266_Proto : public CRemoteXYComm_AT {
   
 };
 
-class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
+#define CRemoteXYComm_ESP8266 CRemoteXYNet_ESP8266
+class CRemoteXYNet_ESP8266 : public CRemoteXYNet_ESP8266_Proto {
 
   public:
-  CRemoteXYComm_ESP8266 (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYComm_ESP8266_Proto (_serial, _wifiSsid, _wifiPassword) {
+  CRemoteXYNet_ESP8266 (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ESP8266_Proto (_serial, _wifiSsid, _wifiPassword) {
   }
 
   protected:
@@ -99,14 +97,14 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
   private:
   void beginWiFi () {
     state = Init;
-    setATTimeOut (REMOTEXYCOMM_ESP8266__WIFICONNECT_TIMEOUT);
-    if (sendATCommand (REMOTEXYCOMM_ESP8266__ID_WIFICONNECT, "AT+CWJAP=\"",wifiSsid,"\",\"",wifiPassword,"\"",NULL)) state = WaitWiFi;  
+    setATTimeOut (REMOREXYNET_ESP8266__WIFICONNECT_TIMEOUT);
+    if (sendATCommand (REMOREXYNET_ESP8266__ID_WIFICONNECT, "AT+CWJAP=\"",wifiSsid,"\",\"",wifiPassword,"\"",NULL)) state = WaitWiFi;  
   }
   
   
   protected:
   void commandATListener (uint8_t identifier, uint8_t result) override  {
-    if (identifier == REMOTEXYCOMM_ESP8266__ID_WIFICONNECT) {
+    if (identifier == REMOREXYNET_ESP8266__ID_WIFICONNECT) {
       if (result == AT_RESULT_OK) {
 #if defined(REMOTEXY__DEBUGLOG)
         sendATCommandForResult ("AT+CIPSTA?",NULL);
@@ -120,8 +118,9 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
     }  
   }  
     
-  virtual void handler () override {   // override CRemoteXYComm_AT  
-    CRemoteXYComm_AT::handler ();
+  virtual void handler () override {   // override CRemoteXYNet_AT  
+    CRemoteXYNet_AT::handler ();
+        
     if (state == Reset) {
       if (millis() - timeOut > 5000) {
         state = SearchAfterReset;
@@ -130,11 +129,11 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
     }
     else if (state == Init) beginWiFi ();
     else if (state == WaitReconnect) {
-      if (millis() - timeOut > REMOTEXYCOMM_ESP8266__WIFICONNECT_TIMEOUT) beginWiFi ();
+      if (millis() - timeOut > REMOREXYNET_ESP8266__WIFICONNECT_TIMEOUT) beginWiFi ();
     }
   }
   
-  uint8_t handleATMessage () override {    // override CRemoteXYComm_AT  
+  uint8_t handleATMessage () override {    // override CRemoteXYNet_AT  
     if (strcmpReceiveBuffer (AT_MESSAGE_WIFI_DISCONNECT)==0) {
       if (state == Configured) state = Init;
       return 1;
@@ -142,14 +141,29 @@ class CRemoteXYComm_ESP8266 : public CRemoteXYComm_ESP8266_Proto {
     return 0;
   }
   
+  uint8_t hasInternet () override {
+    return 1;
+  }
   
+  /*
+  CRemoteXYRealTime * createRealTime () override {
+    return new CRemoteXYRealTimeNet (this);
+  };
+   */
+  /*
+  CRemoteXYHttpRequest_Proto * createHttpRequest () override { 
+    return new CRemoteXYHttpRequest (this);
+  }
+  */
+
 };       
 
 
-class CRemoteXYComm_ESP8266Point : public CRemoteXYComm_ESP8266_Proto {
+#define CRemoteXYComm_ESP8266Point CRemoteXYNet_ESP8266Point
+class CRemoteXYNet_ESP8266Point : public CRemoteXYNet_ESP8266_Proto {
 
   public:
-  CRemoteXYComm_ESP8266Point (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYComm_ESP8266_Proto (_serial, _wifiSsid, _wifiPassword) {
+  CRemoteXYNet_ESP8266Point (CRemoteXYStream *_serial, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ESP8266_Proto (_serial, _wifiSsid, _wifiPassword) {
   }
   
   protected:
@@ -177,7 +191,7 @@ class CRemoteXYComm_ESP8266Point : public CRemoteXYComm_ESP8266_Proto {
   }
   
   virtual void handler () override {
-    CRemoteXYComm_AT::handler ();
+    CRemoteXYNet_AT::handler ();
     if (state == Reset) {
       if (millis() - timeOut > 5000) {
         state = SearchAfterReset;
@@ -186,9 +200,10 @@ class CRemoteXYComm_ESP8266Point : public CRemoteXYComm_ESP8266_Proto {
     }
   }
   
+  
 };      
 
 
 
 
-#endif // RemoteXYComm_ESP8266_h
+#endif // RemoteXYNet_ESP8266_h

@@ -3,44 +3,45 @@
 
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYConnection.h"
-#include "RemoteXYWireStream.h"
+#include "RemoteXYWire.h"
 #include "RemoteXYThread.h"
 
 
 
-class CRemoteXYConnectionServer: public CRemoteXYConnectionComm, public CRemoteXYClientAvailableListener { 
+class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXYClientAvailableListener { 
   public:
   uint16_t port;
-  CRemoteXYData * data;
+  CRemoteXYGuiData * data;
   CRemoteXYServer * server;
-  CRemoteXYClient * clients;
-  CRemoteXYWireStream * wires;
+  CRemoteXYWire * wires;
   uint8_t serverRunning;
   
   
-  CRemoteXYConnectionServer (CRemoteXYComm * _comm, uint16_t _port = 0) : CRemoteXYConnectionComm (_comm) {
+  CRemoteXYConnectionServer (CRemoteXYNet * _net, uint16_t _port = 0) : CRemoteXYConnectionNet (_net) {
     port = _port;
-    clients = NULL;
-    server = comm->createServer (port); 
-    server->setClientAvailabListener (this);
-#if defined(REMOTEXY__DEBUGLOG)
-    if (!server) {
-      RemoteXYDebugLog.write ("Server was not created");
-    }
-#endif     
     serverRunning = 0;
     wires = NULL;  
+    server = net->createServer (port); 
+    if (!server) {
+#if defined(REMOTEXY__DEBUGLOG) 
+      RemoteXYDebugLog.write ("Server was not created");
+#endif    
+      return;
+    } 
+    server->setClientAvailableListener (this); 
   }
   
-  void init (CRemoteXYData * _data) {
+  void init (CRemoteXYGuiData * _data) {
     data = _data;
   }
   
   public:  
   void handler () override {
     if (!server) return;
-    if (comm->configured ()) {
-      if (serverRunning) clientAvailable ();
+    if (net->configured ()) {
+      if (serverRunning) {
+        server->handler ();  
+      }
       else {
         if (server->begin ()) {
           serverRunning=1;
@@ -64,53 +65,43 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionComm, public CRemoteX
     }
   }
   
-  void clientAvailable () override {  
-    CRemoteXYClient * client = clients;
-    while (client) {
-      if (!client->connected ()) break;
-      client = client->next;
-    }
-    if (!client) {   
-      client = comm->newClient ();
-      client->next = clients;
-      clients = client;
-    }
-    if (server->available (client)) {
-      
-      if (CRemoteXYThread::runningCount (data) < REMOTEXY_MAX_CLIENTS) { 
-        CRemoteXYWireStream * wire = wires;
-        while (wire) {         
-          if (!wire->running()) break;  
-          wire = wire->next;
-        }
-        if (!wire) {
-          wire = new CRemoteXYWireStream (data);
-          wire->next = wires;
-          wires = wire;        
-        }
-        wire->begin (client);
-        CRemoteXYThread::startThread (data, this, wire, 1);        
+  void clientAvailable (CRemoteXYClient * client) override {  
+
+    CRemoteXYThread * thread = CRemoteXYThread::getUnusedThread (data);
+    if (thread) {
+      CRemoteXYWire * wire = wires;
+      while (wire) {         
+        if (!wire->running()) break;  
+        wire = wire->next;
       }
-      else {
-        client->stop ();
+      if (!wire) {
+        wire = new CRemoteXYWire (data);
+        wire->next = wires;
+        wires = wire;        
+      }
+      wire->begin (client);
+      thread->begin (this, wire, 1);
+      wire->setReceivePackageListener (thread);   
+    }
+    else {
+      client->stop ();
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Client reject");
+      RemoteXYDebugLog.write ("Client reject");
 #endif  
-      }
     }
       
   }
   
   void handleWire (CRemoteXYWire * wire) override {
-    CRemoteXYClient * client = ((CRemoteXYWireStream*)wire)->getClient ();
+    CRemoteXYClient * client = (CRemoteXYClient*)wire->stream;
     if (client) {
-      if (client->connected () && serverRunning && comm->configured ()) wire->handler (); 
+      if (client->connected () && serverRunning && net->configured ()) wire->handler (); 
       else stopThreadListener (wire);
     }
   }
 
   void stopThreadListener (CRemoteXYWire * wire) override {
-    CRemoteXYClient * client = ((CRemoteXYWireStream*)wire)->getClient ();
+    CRemoteXYClient * client = (CRemoteXYClient*)wire->stream;
     if (client) {
       client->stop ();
       wire->stop ();

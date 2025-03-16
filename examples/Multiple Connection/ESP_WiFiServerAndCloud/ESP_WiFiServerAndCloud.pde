@@ -66,7 +66,7 @@ CRemoteXY *remotexy;
 void setup() 
 {
   
-  CRemoteXYComm_WiFi * wifi =  new CRemoteXYComm_WiFi (
+  CRemoteXYNet_WiFi * wifi =  new CRemoteXYNet_WiFi (
     "myHomeFiFi",                            // REMOTEXY_WIFI_SSID
     "myPass"                                 // REMOTEXY_WIFI_PASSWORD
   );

@@ -38,7 +38,13 @@ class CRemoteXYStream {
   public:     
   virtual void handler () {};   
   virtual void startWrite (uint16_t size) {UNUSED (size);};
-  virtual void write (uint8_t byte) {UNUSED (byte);};       
+  virtual void write (uint8_t byte) {UNUSED (byte);};  
+  
+  void writeBuf (uint8_t * buf, uint16_t size) {
+    while (size--) write (*buf++);
+  }; 
+  
+      
 };
 
 

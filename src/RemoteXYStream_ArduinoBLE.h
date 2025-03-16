@@ -5,11 +5,11 @@
 
 #include "RemoteXYStream.h"
                                                          
-#define REMOTEXYCOMM_ARDUINOBLE__SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // NORDIC UART service UUID
-#define REMOTEXYCOMM_ARDUINOBLE__RX_CHARACTERISTIC_UUID "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"    
-#define REMOTEXYCOMM_ARDUINOBLE__TX_CHARACTERISTIC_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"    
-#define REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE 20  
-#define REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE 1024
+#define RemoteXYNet_ARDUINOBLE__SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // NORDIC UART service UUID
+#define RemoteXYNet_ARDUINOBLE__RX_CHARACTERISTIC_UUID "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"    
+#define RemoteXYNet_ARDUINOBLE__TX_CHARACTERISTIC_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"    
+#define RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE 20  
+#define RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE 1024
 
 class CRemoteXYStream_ArduinoBLE;
 CRemoteXYStream_ArduinoBLE * CRemoteXYStream_ArduinoBLE_instance = NULL;
@@ -28,11 +28,11 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
   BLECharacteristic * txCharacteristic;
   BLEDescriptor * txDescriptor;
     
-  uint8_t sendBuffer[REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE];
+  uint8_t sendBuffer[RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE];
   uint16_t sendBufferCount;
   uint16_t sendBytesAvailable;
   
-  uint8_t receiveBuffer[REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE];
+  uint8_t receiveBuffer[RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE];
   uint16_t receiveBufferStart;
   uint16_t receiveBufferPos;
   uint16_t receiveBufferCount;
@@ -62,10 +62,10 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
     
     BLE.setLocalName(_bleDeviceName);
     BLE.setDeviceName(_bleDeviceName);
-    service = new BLEService(REMOTEXYCOMM_ARDUINOBLE__SERVICE_UUID); 
+    service = new BLEService(RemoteXYNet_ARDUINOBLE__SERVICE_UUID); 
     BLE.setAdvertisedService(*service);
-    rxCharacteristic =  new BLECharacteristic(REMOTEXYCOMM_ARDUINOBLE__RX_CHARACTERISTIC_UUID, BLEWriteWithoutResponse, REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE);   
-    txCharacteristic =  new BLECharacteristic(REMOTEXYCOMM_ARDUINOBLE__TX_CHARACTERISTIC_UUID, BLENotify, REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE);   
+    rxCharacteristic =  new BLECharacteristic(RemoteXYNet_ARDUINOBLE__RX_CHARACTERISTIC_UUID, BLEWriteWithoutResponse, RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE);   
+    txCharacteristic =  new BLECharacteristic(RemoteXYNet_ARDUINOBLE__TX_CHARACTERISTIC_UUID, BLENotify, RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE);   
     uint8_t descriptorValue[2] = {00, 00};
     txDescriptor = new BLEDescriptor ("2902", descriptorValue, sizeof (descriptorValue));
     txCharacteristic->addDescriptor (*txDescriptor);
@@ -100,7 +100,7 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
     if (failed !=0) return;
     sendBuffer[sendBufferCount++] = b;
     sendBytesAvailable--;
-    if ((sendBufferCount == REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE) || (sendBytesAvailable == 0)) {
+    if ((sendBufferCount == RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE) || (sendBytesAvailable == 0)) {
       if (connected != 0) {
         txCharacteristic->writeValue(sendBuffer, sendBufferCount);
         BLE.poll();     
@@ -135,7 +135,7 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
     BLE.poll();
     while (receiveBufferCount > 0) {     
       b =  receiveBuffer[receiveBufferStart++];
-      if (receiveBufferStart >= REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferStart=0;
+      if (receiveBufferStart >= RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferStart=0;
       receiveBufferCount--;
       notifyReadByteListener (b);
     }
@@ -143,8 +143,8 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
     /*
     BLE.poll();
     if (rxCharacteristic->written ()) {
-      uint8_t buff[REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE];
-      uint8_t cnt = rxCharacteristic->readValue (buff, REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE);    
+      uint8_t buff[RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE];
+      uint8_t cnt = rxCharacteristic->readValue (buff, RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE);    
       for (uint8_t i=0; i<cnt; i++) {     
         notifyReadByteListener (buff[i]);
       }
@@ -154,16 +154,16 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
   
   public:
   void onBLEWritten () {
-    uint8_t buff[REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE];
-    uint8_t cnt = rxCharacteristic->readValue (buff, REMOTEXYCOMM_ARDUINOBLE__CHARACTERISTIC_SIZE);    
+    uint8_t buff[RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE];
+    uint8_t cnt = rxCharacteristic->readValue (buff, RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE);    
 
     for (uint8_t i = 0; i < cnt; i++) {                
       receiveBuffer[receiveBufferPos++] =  buff[i];
-      if (receiveBufferPos >= REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferPos=0; 
-      if (receiveBufferCount < REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferCount++;
+      if (receiveBufferPos >= RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferPos=0; 
+      if (receiveBufferCount < RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferCount++;
       else {
         receiveBufferStart++;
-        if (receiveBufferStart >= REMOTEXYCOMM_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferStart=0;
+        if (receiveBufferStart >= RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE) receiveBufferStart=0;
       }       
     } 
   }   
