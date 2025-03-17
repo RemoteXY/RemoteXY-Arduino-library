@@ -14,6 +14,7 @@ class CRemoteXYData {
   public:
   
   CRemoteXYNet * nets;  
+  CRemoteXYBoardTime boardTime;
   CRemoteXYRealTime * realTime;
 
 
@@ -23,10 +24,6 @@ class CRemoteXYData {
   RemoteXYEepromItem * boardId; 
 #endif 
            
-  RemoteXYTimeStamp getBoardTime () {
-    if (realTime != NULL) return realTime->getBoardTime ();
-    return RemoteXYTimeStamp();
-  }         
                    
 };
 

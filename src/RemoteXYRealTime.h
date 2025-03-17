@@ -5,47 +5,52 @@
 #include "RemoteXYWire.h"
 #include "RemoteXYTimeStamp.h"
 
-class CRemoteXYRealTime {
-  protected:
-  RemoteXYTimeStamp boardTime;   
+class CRemoteXYBoardTime {
+  public:
+  RemoteXYTimeStamp time;   
   uint32_t handlerMillis;
   
   public:
-  CRemoteXYRealTime () {
-    handlerMillis = millis ();
-    boardTime.set (0, handlerMillis);  
+  CRemoteXYBoardTime () {
+    handlerMillis = 0;
+    time.setNull ();  
   }
-  
-  RemoteXYTimeStamp getBoardTime () {
-    return boardTime;    
-  }
-  
-  virtual void handler () {
+   
+  void handler () {
     uint32_t t = millis ();
-    boardTime.add (t - handlerMillis);
+    time.add (t - handlerMillis);
     handlerMillis = t;     
   };  
-  
-  virtual void receivePackage (CRemoteXYPackage * package) {}
+};
+
+
+class CRemoteXYRealTime {
+  public:
+  virtual void handler () = 0;
+  virtual void receivePackage (CRemoteXYPackage * package) = 0;
 };
 
 
 class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
   public:
+  CRemoteXYBoardTime * boardTime;
   RemoteXYTimeStamp offsetTime; 
   
   public: 
-  CRemoteXYRealTimeApp () : CRemoteXYRealTime () {
+  CRemoteXYRealTimeApp (CRemoteXYBoardTime * _boardTime) {
+    boardTime = _boardTime;
     offsetTime.setNull ();
   }
  
   RemoteXYTimeStamp getTime () {
     RemoteXYTimeStamp time (offsetTime);
     if (!time.isNull ()) {
-      time.add (boardTime); 
+      time.add (boardTime->time); 
     }
     return time;
   }
+  
+  void handler () override {}
 
   void receivePackage (CRemoteXYPackage * package) override {
     if (package->length==8) {
@@ -55,13 +60,13 @@ class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
 
   public:
   void setRealTime (const RemoteXYTimeStamp &time) {
-    RemoteXYTimeStamp offset = time - boardTime;
+    RemoteXYTimeStamp offset = time - boardTime->time;
     if (offsetTime.isNull ()) {
       offsetTime = offset;
     }
     else {  // adjust board time
-      boardTime += offset - offsetTime; 
-      offsetTime = time - boardTime;
+      boardTime->time += offset - offsetTime; 
+      offsetTime = time - boardTime->time;
     }
   }
 
@@ -81,7 +86,7 @@ class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
     RemoteXYDebugLog.writeAdd(" millis");
 #endif     
      
-  }
+  } 
 };
             
             

@@ -39,7 +39,7 @@ class CRemoteXY: public CRemoteXYData {
   void init () {
     nets = NULL;
     guis = NULL;   
-    realTime = NULL;   
+    realTime = NULL; 
     
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.init ();
@@ -153,13 +153,14 @@ class CRemoteXY: public CRemoteXYData {
     
     
   public:
-  void handler () {     
+  void handler () {   
+  
+    boardTime.handler ();
+    if (realTime != NULL) realTime->handler ();
+  
 #if defined(REMOTEXY_HAS_EEPROM)
     if (initEeprom ()) eeprom.handler ();
 #endif  
-
-    if (realTime == NULL) realTime = new CRemoteXYRealTime ();
-    realTime->handler ();
     
     // nets handler    
     
@@ -182,16 +183,12 @@ class CRemoteXY: public CRemoteXYData {
  
   public:
   void initRealTime () {
-    if (realTime == NULL) {  
-      realTime = new CRemoteXYRealTimeApp (); 
-    }
+    if (realTime == NULL) realTime = new CRemoteXYRealTimeApp (&boardTime); 
   }
   
   public:
   void initRealTimeNet () { 
-    if (realTime == NULL) { 
-      realTime = new CRemoteXYRealTimeNet (nets);
-    }
+    if (realTime == NULL) realTime = new CRemoteXYRealTimeNet (&boardTime, nets);
   }  
   
   

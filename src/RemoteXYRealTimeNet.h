@@ -24,7 +24,7 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
   uint32_t timeout;
   RemoteXYTimeStamp answerTime;
 
-  CRemoteXYRealTimeNet (CRemoteXYNet * _nets) : CRemoteXYRealTimeApp () {
+  CRemoteXYRealTimeNet (CRemoteXYBoardTime * _boardTime, CRemoteXYNet * _nets) : CRemoteXYRealTimeApp (_boardTime) {
     nets = _nets;
     httpRequest = NULL;
     state = REMOTEXYREALTIMENET_STATE_NO;
@@ -39,8 +39,6 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     
   void handler () override {
 
-    CRemoteXYRealTime::handler ();
-    
     if (state == REMOTEXYREALTIMENET_STATE_LATENCY) {
       if (millis () - timeout >= REMOTEXYREALTIMENET_LATENCY_TIME) {
         setState (REMOTEXYREALTIMENET_STATE_NO);
@@ -53,7 +51,7 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     }
     else {
       if (state == REMOTEXYREALTIMENET_STATE_NO) {
-        RemoteXYTimeStamp dt = boardTime;
+        RemoteXYTimeStamp dt = boardTime->time;
         dt.sub (answerTime);
         if ((answerTime.isNull()) || (dt.getDays() > 3)) {
 
@@ -87,7 +85,7 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
           RemoteXYDebugLog.write("RealTime request: OK");
 #endif 
           updateFromBuf (httpRequestAnswerBuffer);
-          answerTime = boardTime;
+          answerTime = boardTime->time;
           setState (REMOTEXYREALTIMENET_STATE_NO);
           return;
         }
