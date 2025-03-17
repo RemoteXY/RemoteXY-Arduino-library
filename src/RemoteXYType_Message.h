@@ -9,13 +9,13 @@
 
 
 
-class RemoteXYType_Message : public RemoteXYType {
+class CRemoteXYType_Message : public CRemoteXYType {
   
   protected:
-  RemoteXYStorage_Heap * heap;
+  CRemoteXYStorage_Heap * heap;
   
   public:
-  RemoteXYType_Message () {
+  CRemoteXYType_Message () {
   }
     
   
@@ -28,18 +28,18 @@ class RemoteXYType_Message : public RemoteXYType {
 };
 
 
-class RemoteXYType_Message_64 : public RemoteXYType_Message {
+class RemoteXYType_Message_64 : public CRemoteXYType_Message {
   public:
-  RemoteXYStorage_Heap_64 heapInstance;    
-  RemoteXYType_Message_64 () : RemoteXYType_Message() {
+  CRemoteXYStorage_Heap_64 heapInstance;    
+  RemoteXYType_Message_64 () : CRemoteXYType_Message() {
     heap = &heapInstance;
   }
 };
 
-class RemoteXYType_Message_128 : public RemoteXYType_Message {
+class RemoteXYType_Message_128 : public CRemoteXYType_Message {
   public:
-  RemoteXYStorage_Heap_128 heapInstance; 
-  RemoteXYType_Message_128 () : RemoteXYType_Message() {
+  CRemoteXYStorage_Heap_128 heapInstance; 
+  RemoteXYType_Message_128 () : CRemoteXYType_Message() {
     heap = &heapInstance;
   }
 };

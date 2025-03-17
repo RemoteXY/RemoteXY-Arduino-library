@@ -11,7 +11,7 @@ struct RemoteXYStorage_Heap_Head {
 };
 #pragma pack(pop)
 
-class RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap {
   
   private:
   uint8_t * heap;
@@ -23,7 +23,7 @@ class RemoteXYStorage_Heap {
   
   
   public:
-  RemoteXYStorage_Heap () {
+  CRemoteXYStorage_Heap () {
     firstIndex = 0;
     fillSize = 0;
     nextId = 1;  
@@ -139,50 +139,50 @@ class RemoteXYStorage_Heap {
     
 };
 
-class RemoteXYStorage_Heap_64 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_64 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[64];  
-  RemoteXYStorage_Heap_64 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_64 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 64);
   }
 };
 
-class RemoteXYStorage_Heap_128 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_128 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[128];  
-  RemoteXYStorage_Heap_128 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_128 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 128);
   }
 };
 
-class RemoteXYStorage_Heap_256 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_256 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[256];  
-  RemoteXYStorage_Heap_256 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_256 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 256);
   }
 };
 
-class RemoteXYStorage_Heap_512 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_512 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[512];  
-  RemoteXYStorage_Heap_512 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_512 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 512);
   }
 };
 
-class RemoteXYStorage_Heap_1024 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_1024 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[1024];  
-  RemoteXYStorage_Heap_1024 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_1024 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 1024);
   }
 };
 
-class RemoteXYStorage_Heap_2048 : public RemoteXYStorage_Heap {
+class CRemoteXYStorage_Heap_2048 : public CRemoteXYStorage_Heap {
   public:
   uint8_t heapBytes[2048];  
-  RemoteXYStorage_Heap_2048 () : RemoteXYStorage_Heap() {
+  CRemoteXYStorage_Heap_2048 () : CRemoteXYStorage_Heap() {
     initHeap (heapBytes, 2048);
   }
 };

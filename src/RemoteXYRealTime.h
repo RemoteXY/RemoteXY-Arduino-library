@@ -3,39 +3,48 @@
 
 
 #include "RemoteXYWire.h"
+#include "RemoteXYTimeStamp.h"
 
 class CRemoteXYRealTime {
+  protected:
+  RemoteXYTimeStamp boardTime;   
+  uint32_t handlerMillis;
+  
   public:
-  virtual void handler () {};
+  CRemoteXYRealTime () {
+    handlerMillis = millis ();
+    boardTime.set (0, handlerMillis);  
+  }
+  
+  RemoteXYTimeStamp getBoardTime () {
+    return boardTime;    
+  }
+  
+  virtual void handler () {
+    uint32_t t = millis ();
+    boardTime.add (t - handlerMillis);
+    handlerMillis = t;     
+  };  
+  
   virtual void receivePackage (CRemoteXYPackage * package) {}
 };
 
+
 class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
   public:
-  RemoteXYTime shiftTime;  
-  RemoteXYTime realTime; // real GMT time when the controller was started
-  uint32_t handlerMillis;
+  RemoteXYTimeStamp offsetTime; 
   
   public: 
-  CRemoteXYRealTimeApp () {
-    handlerMillis = ::millis ();
-    shiftTime.set (handlerMillis);
-    realTime.setNull ();
+  CRemoteXYRealTimeApp () : CRemoteXYRealTime () {
+    offsetTime.setNull ();
   }
-
-  // timeZone - minutes 
-  RemoteXYTime getTime () {
-    RemoteXYTime time = realTime;
+ 
+  RemoteXYTimeStamp getTime () {
+    RemoteXYTimeStamp time (offsetTime);
     if (!time.isNull ()) {
-      time.add (shiftTime); 
+      time.add (boardTime); 
     }
     return time;
-  }
-  
-  void handler () override {   
-    uint32_t t = ::millis ();
-    shiftTime.add (t - handlerMillis);
-    handlerMillis = t;   
   }
 
   void receivePackage (CRemoteXYPackage * package) override {
@@ -45,15 +54,38 @@ class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
   }
 
   public:
+  void setRealTime (const RemoteXYTimeStamp &time) {
+    RemoteXYTimeStamp offset = time - boardTime;
+    if (offsetTime.isNull ()) {
+      offsetTime = offset;
+    }
+    else {  // adjust board time
+      boardTime += offset - offsetTime; 
+      offsetTime = time - boardTime;
+    }
+  }
+
+  public:
   void updateFromBuf (uint8_t * buf) {
     uint32_t days, millis;
     rxy_bufCopy ((uint8_t*)&days, buf, 4);
     rxy_bufCopy ((uint8_t*)&millis, buf+4, 4);
-    realTime.set(days, millis);
-    shiftTime.setNull();
-    handlerMillis = ::millis ();     
+    RemoteXYTimeStamp time (days, millis);
+    setRealTime (time);    
+    
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.write("RealTime updated: ");
+    RemoteXYDebugLog.writeAdd(time.getDays());
+    RemoteXYDebugLog.writeAdd(" days ");
+    RemoteXYDebugLog.writeAdd(time.getMillis());
+    RemoteXYDebugLog.writeAdd(" millis");
+#endif     
+     
   }
 };
+            
+            
+            
                      
 
 #endif //RemoteXYRealTime_h

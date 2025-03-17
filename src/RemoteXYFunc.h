@@ -187,32 +187,6 @@ void rxy_updateCRC (uint16_t *crc, uint8_t b) {
   }
 } 
 
-/*
-// s = "000.000.000.000.000" 
-uint32_t rxy_strParseVersion (const char* s) {
-  uint32_t ver = 0;
-  uint32_t m = 1;
-  uint8_t d = 0;
-  const char * p = s;
-  while (*p!=0) p++;
-  while (p != s) {
-    p--;
-    if (*p == 0x2E) {
-      while (d<3) {
-        m *=10;
-        d++;
-      }
-      d=0;
-    }
-    else {
-      ver += (*p - 0x30) * m;
-      m *=10;
-      d++;
-    } 
-  }
-  return ver; 
-}
-*/
 
 
 #endif //RemoteXYFunc_h

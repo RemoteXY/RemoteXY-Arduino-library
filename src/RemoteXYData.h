@@ -4,6 +4,7 @@
 
 #include "RemoteXYEeprom.h"  
 #include "RemoteXYNet.h"
+
 #include "RemoteXYRealTime.h"
 
 class CRemoteXYNet;
@@ -12,8 +13,7 @@ class CRemoteXYData {
 
   public:
   
-  CRemoteXYNet * nets;    
-  //CRemoteXYHttpRequest_Proto * httpRequest;  
+  CRemoteXYNet * nets;  
   CRemoteXYRealTime * realTime;
 
 
@@ -22,21 +22,12 @@ class CRemoteXYData {
   RemoteXYEeprom eeprom;
   RemoteXYEepromItem * boardId; 
 #endif 
-             
-             /*         
-  public:
-  CRemoteXYHttpRequest_Proto * getHttpRequest () {
-    if (httpRequest == NULL) {
-      CRemoteXYNet * net = nets; 
-      while (net) {
-        httpRequest = ((CRemoteXYNet*)net)->createHttpRequest (); 
-        if (httpRequest != NULL) break;
-        net = net->next;
-      } 
-    }
-    return httpRequest;
-  }            
-  */          
+           
+  RemoteXYTimeStamp getBoardTime () {
+    if (realTime != NULL) return realTime->getBoardTime ();
+    return RemoteXYTimeStamp();
+  }         
+                   
 };
 
 #endif //RemoteXYData_h

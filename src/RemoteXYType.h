@@ -5,7 +5,7 @@
 
 #define UNUSED(x) (void)(x)
 
-class RemoteXYType {
+class CRemoteXYType {
 
   public:
   CRemoteXYGuiData * guiData;

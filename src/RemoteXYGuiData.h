@@ -33,9 +33,6 @@ class CRemoteXYGuiData {
   uint8_t *complexVar;
   uint16_t complexVarCount;
   
-  //uint8_t *eepromConf;
-  //uint16_t eepromCount;
-  
   CRemoteXYThread * threads;  
   CRemoteXYConnectionNet * connections;  
   

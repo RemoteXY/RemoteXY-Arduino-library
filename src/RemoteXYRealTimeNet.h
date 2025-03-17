@@ -19,15 +19,16 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
   public:
   CRemoteXYNet * nets;
   CRemoteXYHttpRequest * httpRequest; // may be NULL   
-  uint8_t buf[8];
+  uint8_t httpRequestAnswerBuffer[8];
   uint8_t state;
   uint32_t timeout;
-  
+  RemoteXYTimeStamp answerTime;
 
   CRemoteXYRealTimeNet (CRemoteXYNet * _nets) : CRemoteXYRealTimeApp () {
     nets = _nets;
     httpRequest = NULL;
     state = REMOTEXYREALTIMENET_STATE_NO;
+    answerTime.setNull ();
   }
   
   void setState (uint8_t _state) {
@@ -38,7 +39,7 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     
   void handler () override {
 
-    CRemoteXYRealTimeApp::handler ();
+    CRemoteXYRealTime::handler ();
     
     if (state == REMOTEXYREALTIMENET_STATE_LATENCY) {
       if (millis () - timeout >= REMOTEXYREALTIMENET_LATENCY_TIME) {
@@ -52,14 +53,16 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     }
     else {
       if (state == REMOTEXYREALTIMENET_STATE_NO) {
-        if ((realTime.isNull()) || (shiftTime.getDays() > 7)) {
+        RemoteXYTimeStamp dt = boardTime;
+        dt.sub (answerTime);
+        if ((answerTime.isNull()) || (dt.getDays() > 3)) {
 
           // real time needs to be updated
           httpRequest = CRemoteXYHttpRequest::getHttpRequest (nets);
           if (httpRequest != NULL) {
             setState (REMOTEXYREALTIMENET_STATE_REQUEST);
             httpRequest->setCompletion (this);
-            httpRequest->setAnswerBuffer (buf, 8);
+            httpRequest->setAnswerBuffer (httpRequestAnswerBuffer, 8);
             httpRequest->setRequest (
                 REMOTEXY_HTTPREQUEST_HOST_REMOTEXY, 
                 REMOTEXY_HTTPREQUEST_PORT_REMOTEXY, 
@@ -80,21 +83,18 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     if (state == REMOTEXYREALTIMENET_STATE_REQUEST) {
       if (httpRequest->getState () == REMOTEXY_HTTPREQUEST_OK) {
         if (httpRequest->getContentLength () == 8) {
-          updateFromBuf (buf);
 #if defined(REMOTEXY__DEBUGLOG)
-          RemoteXYDebugLog.write("Get RealTime answer: ");
-          RemoteXYDebugLog.writeAdd(realTime.getDays());
-          RemoteXYDebugLog.writeAdd(" days ");
-          RemoteXYDebugLog.writeAdd(realTime.getMillis());
-          RemoteXYDebugLog.writeAdd(" millis");
+          RemoteXYDebugLog.write("RealTime request: OK");
 #endif 
+          updateFromBuf (httpRequestAnswerBuffer);
+          answerTime = boardTime;
           setState (REMOTEXYREALTIMENET_STATE_NO);
           return;
         }
       }
     }
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("RealTime request error");
+    RemoteXYDebugLog.write("RealTime request: ERROR");
 #endif 
     setState (REMOTEXYREALTIMENET_STATE_LATENCY);
     timeout = millis ();

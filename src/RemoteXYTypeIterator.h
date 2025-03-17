@@ -8,13 +8,13 @@
 
 
 
-class RemoteXYTypeIterator {
+class CRemoteXYTypeIterator {
   public:
   CRemoteXYGuiData * data;
   uint8_t *conf;  
   uint16_t count;
   uint8_t spec;
-  RemoteXYType * var;
+  CRemoteXYType * var;
 
   
   void start (CRemoteXYGuiData * _data) {
@@ -27,10 +27,10 @@ class RemoteXYTypeIterator {
   
   uint8_t next () {
     if (var == NULL) {
-      var = (RemoteXYType*)data->complexVar;
+      var = (CRemoteXYType*)data->complexVar;
     }
     else {
-      var = (RemoteXYType*)(((uint8_t*)var) + getSize ());
+      var = (CRemoteXYType*)(((uint8_t*)var) + getSize ());
     }    
     if (count) {
       spec = rxy_readConfByte (conf++);     
@@ -47,7 +47,6 @@ class RemoteXYTypeIterator {
     if (tp == 1) {
       if (dat == 0) {}
     }
-#if defined REMOTEXY_HAS_EEPROM
     if (tp == 2) {
       if (dat == 0) return sizeof (RemoteXYType_Notification_64);
       if (dat == 1) return sizeof (RemoteXYType_Notification_128);
@@ -55,7 +54,6 @@ class RemoteXYTypeIterator {
       if (dat == 3) return sizeof (RemoteXYType_Notification_512);
       return 0;
     }
-#endif
     return 0;
   }
   

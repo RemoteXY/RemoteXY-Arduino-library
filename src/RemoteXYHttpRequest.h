@@ -42,7 +42,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   CRemoteXYNet * net;
   
   private:
-  CRemoteXYHttpRequestCompletion * completion;
+  CRemoteXYHttpRequestCompletion * completion; 
   CRemoteXYClient * client;
   uint8_t state;
 
@@ -119,8 +119,8 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     
   void setPostData (const uint8_t * data, uint16_t length) {
     postData = (uint8_t *)data;
-    postDataLength = length;
-  }
+    postDataLength = length;   
+  }         
 
   void addHeaderLine (const char * headerLine) {
     for (uint8_t i = 0; i< REMOTEXY_HTTPREQUEST_HEADERS_COUNT; i++) {
@@ -211,7 +211,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   private: 
   void sendPostData () {
     if (postDataLength > 0) {
-      client->startWrite (postDataLength); 
+      client->startWrite (postDataLength);   
       client->writeBuf (postData, postDataLength);
     } 
   }  

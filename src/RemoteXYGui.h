@@ -13,7 +13,7 @@ class CRemoteXYGui: public CRemoteXYGuiData {
 
   public:
   CRemoteXYGui *next;
-  RemoteXYTypeIterator complexVarIterator; 
+  CRemoteXYTypeIterator complexVarIterator; 
 
   public:
   CRemoteXYGui (CRemoteXYData * _data, const void * _conf, void * _var, const char * _accessPassword = NULL) {

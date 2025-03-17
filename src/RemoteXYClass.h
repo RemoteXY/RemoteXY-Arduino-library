@@ -38,7 +38,6 @@ class CRemoteXY: public CRemoteXYData {
   private:
   void init () {
     nets = NULL;
-    //httpRequest = NULL;
     guis = NULL;   
     realTime = NULL;   
     
@@ -159,7 +158,8 @@ class CRemoteXY: public CRemoteXYData {
     if (initEeprom ()) eeprom.handler ();
 #endif  
 
-    if (realTime != NULL) realTime->handler ();
+    if (realTime == NULL) realTime = new CRemoteXYRealTime ();
+    realTime->handler ();
     
     // nets handler    
     
@@ -194,18 +194,21 @@ class CRemoteXY: public CRemoteXYData {
     }
   }  
   
+  
   public:
-  RemoteXYTime getRealTimeUTC () {    
-    if (realTime == NULL) return RemoteXYTime ();
-    return ((CRemoteXYRealTimeApp*)realTime)->getTime ();
-  }   
+  RemoteXYTimeStamp getRealTimeStamp (int16_t timeZone) {    
+    if (realTime == NULL) return RemoteXYTimeStamp ();
+    RemoteXYTimeStamp time = ((CRemoteXYRealTimeApp*)realTime)->getTime ();
+    time.applyTimeZone (timeZone);
+    return time;
+  }    
   
   public:
   RemoteXYTime getRealTime (int16_t timeZone) {    
-    if (realTime == NULL) return RemoteXYTime ();
-    RemoteXYTime time = ((CRemoteXYRealTimeApp*)realTime)->getTime ();
+    if (realTime == NULL) return RemoteXYTimeStamp ();
+    RemoteXYTimeStamp time = ((CRemoteXYRealTimeApp*)realTime)->getTime ();
     time.applyTimeZone (timeZone);
-    return time;
+    return RemoteXYTime (time);
   }     
   
 

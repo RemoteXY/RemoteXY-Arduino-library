@@ -1,8 +1,6 @@
 #ifndef RemoteXYType_Notification_h
 #define RemoteXYType_Notification_h
 
-#if defined REMOTEXY_HAS_EEPROM
-
 #include "RemoteXYData.h"
 #include "RemoteXYType.h"
 #include "RemoteXYEeprom.h"
@@ -10,198 +8,175 @@
 #include "RemoteXYNet.h"
 #include "RemoteXYHttpRequest.h"
 
-const char * REMOTEXY_NOTIFICATION_URL = "/api/notification";
+#if defined(REMOTEXY_HAS_EEPROM)
+#define REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST
+#endif
+
+const char * REMOTEXY_NOTIFICATION_URL = "/board/notification";
 
 #define REMOTEXY_NOTIFICATION_STATE_NO 0                      
-#define REMOTEXY_NOTIFICATION_STATE_CONNECTING 1                      
-#define REMOTEXY_NOTIFICATION_STATE_WAITANSWER 2                                          
-#define REMOTEXY_NOTIFICATION_STATE_WAITRECONNECT 9                      
+#define REMOTEXY_NOTIFICATION_STATE_LATENCY 1                                          
+#define REMOTEXY_NOTIFICATION_STATE_REQUEST 2                                           
                    
-
                
-#define REMOTEXY_NOTIFICATION_WAITRECONNECT_TIMEOUT 60000  
-
-
-#define REMOTEXY_NOTIFICATION_HTTP_VERSION 1                      
+#define REMOTEXY_NOTIFICATION_LATENCY_TIME 60000  
+                   
 
 #pragma pack(push, 1)
 struct RemoteXYType_Notification_Head {
-  RemoteXYTime time;  
+  RemoteXYTimeStamp time;  
   uint8_t track;
   uint8_t messageId;
 };
 #pragma pack(pop)
 
-class RemoteXYType_Notification : public RemoteXYType {
+
+class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCompletion {
 
   protected:
-  RemoteXYStorage_Heap * heap;
+  CRemoteXYStorage_Heap * heap;
 
   private:
-  //CRemoteXYNet * net;
-  uint8_t state;
-  uint32_t timeOut;
-  CRemoteXYHttpRequest * httpRequest;
-  uint16_t boardIdEepromAddress;
-  uint16_t sendMessageId;
+  CRemoteXYData *data;
+  
+#if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
+  CRemoteXYHttpRequest * httpRequest; // may be NULL  
+  uint8_t httpRequestState;
+  uint32_t httpRequestTimeout;
+  uint8_t httpRequestAnswerBuffer[8];
+  uint8_t *httpRequestPostData;
+  uint16_t httpRequestPostDataLen;
+  uint16_t httpRequestMessageId;
+#endif  
+ 
   
   
   public: 
-  RemoteXYType_Notification () {
-    state = REMOTEXY_NOTIFICATION_STATE_NO;
-   // client = NULL;
+  CRemoteXYType_Notification () {
+#if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
+    httpRequest = NULL;
+    httpRequestState = REMOTEXY_NOTIFICATION_STATE_NO;
+#endif  
   }
   
   public:
   void init (CRemoteXYGuiData * _guiData) override  {
-    RemoteXYType::init (_guiData);
-    CRemoteXYData *data = guiData->data;
+    CRemoteXYType::init (_guiData);
+    data = guiData->data;
+#if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
     if (data->boardId == NULL) {
-      data->boardId = data->eeprom.addItem (REMOTEXY_BOARDID_LENGTH, REMOTEXY_BOARDID_EEPROM_KEY);
+      data->boardId = data->eeprom.addItem (REMOTEXY_BOARDID_LENGTH, REMOTEXY_BOARDID_EEPROM_KEY);      
     }
+#endif
   };
-          
-  
-  /*
-  public: 
-  void findClient () {
-    CRemoteXYNet * _net = guiData->nets;
-    while (_net) {
-      if (_net->configured ()) {
-        if (_net->hasInternetAccess ()) break;
-      }
-    }
-    if (_net) {
-      client = _net->newClient ();
-      if (client != NULL) {
-        net = _net;
-        httpRequest.init (client);      
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Notification initiated");
-#endif  
-      }    
-    }  
-  }
-  */
-  
-  void findHttpRequest () {
-    CRemoteXYNet * net = guiData->data->nets;
-    while (net) {
-      if (_net->configured ()) {
-        httpRequest = net->getHttpRequest (); 
-        if (httpRequest != NULL) break;
-      }
-    }
-  }
-  
-  void unuseHttpRequest () {
-    httpRequest->unused (); 
-    httpRequest = NULL;  
+
+#if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
+
+  void setState (uint8_t state) {
+    httpRequestState = state; 
+    if (state != REMOTEXY_NOTIFICATION_STATE_REQUEST) httpRequest = NULL;
+    if (state == REMOTEXY_NOTIFICATION_STATE_LATENCY) httpRequestTimeout = millis ();
   }
 
   public: 
   void handler () override {    
 
-    uint8_t * boardId = guiData->data->boardId->data;
-    if (boardId == NULL) return; // no board ID
-    
-    if (state == REMOTEXY_NOTIFICATION_STATE_NO) {
-      if (heap->notEmpty ()) {
-        if (net->configured ()) {
-          if (rxy_bufIsEmpty (boardId, REMOTEXY_BOARDID_LENGTH)) {
-#if defined(REMOTEXY__DEBUGLOG)
-            RemoteXYDebugLog.write ("Notification connects to host");
-#endif      
-            findHttpRequest ();
-            if (httpRequest == NULL) return;
-
-            httpRequest.connect (REMOTEXY_HTTPREQUEST_HOST_REMOTEXY, REMOTEXY_HTTPREQUEST_PORT_REMOTEXY);
-            timeOut = millis(); 
-            state = REMOTEXY_NOTIFICATION_STATE_CONNECTING;
-          }
-        }
+    if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_LATENCY) {
+      if (millis () - httpRequestTimeout >= REMOTEXY_NOTIFICATION_LATENCY_TIME) {
+        setState (REMOTEXY_NOTIFICATION_STATE_NO);
       }
     }
-    else if (state == REMOTEXY_NOTIFICATION_STATE_CONNECTING) {
-      if (httpRequest.getState () == REMOTEXY_HTTPREQUEST_CONNECTED) {
-        if (heap->notEmpty ()) {
 
-          RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
-          sendMessageId = head.id;
-          uint16_t messageLength = head.len;
-        
-          uint16_t contentLength = 
-            REMOTEXY_BOARDID_LENGTH + messageLength + 1;
+    if (httpRequest != NULL) {
+      httpRequest->handler ();
+    }
+    else {
+      if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_NO) {
+        if (heap->notEmpty ()) {
+          uint8_t * boardId = data->boardId->data; 
+          if (rxy_bufIsEmpty (boardId, REMOTEXY_BOARDID_LENGTH)) {       
+            httpRequest = CRemoteXYHttpRequest::getHttpRequest (data->nets);
+            if (httpRequest != NULL) {    
+                    
+              RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
+              httpRequestMessageId = head.id;
+              uint16_t messageLength = head.len;
+              httpRequestPostDataLen = REMOTEXY_BOARDID_LENGTH+1+messageLength+sizeof (RemoteXYStorage_Heap_Head);
+              httpRequestPostData = (uint8_t*)malloc (httpRequestPostDataLen);
+              if (httpRequestPostData == NULL) {
+#if defined(REMOTEXY__DEBUGLOG)
+                RemoteXYDebugLog.write("Out of RAM to send Notification request");              
+#endif 
+                setState (REMOTEXY_NOTIFICATION_STATE_LATENCY);
+                return;
+              }
+              uint8_t *p = httpRequestPostData;
+              *p++ = REMOTEXY_LIBRARY_VERSION;
+              rxy_bufCopy (p, boardId, REMOTEXY_BOARDID_LENGTH);
+              p+=REMOTEXY_BOARDID_LENGTH;
+              
+              uint8_t *ph = (uint8_t*)&head;
+              for (uint16_t i = 0; i < sizeof (RemoteXYStorage_Heap_Head); i++) {
+                *p++ = *ph++;
+              }            
+              p+=sizeof (RemoteXYStorage_Heap_Head);
+                         
+              for (uint16_t i = 0; i < messageLength; i++) {
+                *p++ = heap->getNextByte();
+              }                       
             
-          httpRequest.setMethod (REMOTEXY_HTTPREQUEST_METHOD_POST);  
-          httpRequest.setUrl (REMOTEXY_NOTIFICATION_URL);  
-          httpRequest.sendStartHeaders ();
-          httpRequest.sendHeaderContentLength (contentLength);
-          httpRequest.sendEndHeaders ();
-    
-          uint16_t bufLen = REMOTEXY_BOARDID_LENGTH+1;
-          if (messageLength > bufLen) bufLen = messageLength;
-          uint8_t buf[bufLen];
-          uint8_t *p;
-          
-          // boardId   
-          p = buf;
-          *p++ = REMOTEXY_NOTIFICATION_HTTP_VERSION;
-          rxy_bufCopy (p, boardId, REMOTEXY_BOARDID_LENGTH);
-          httpRequest.sendData (buf, REMOTEXY_BOARDID_LENGTH+1);
-          
-          // message   
-          p = buf;                 
-          for (uint16_t i = 0; i < messageLength; i++) {
-            *p++ = heap->getNextByte();
-          }
-          httpRequest.sendData (buf, messageLength);
-          
-          timeOut = millis(); 
-          state = REMOTEXY_NOTIFICATION_STATE_WAITANSWER;
+              setState (REMOTEXY_NOTIFICATION_STATE_REQUEST);
+              httpRequest->setCompletion (this);
+              httpRequest->setAnswerBuffer (httpRequestAnswerBuffer, 8);
+              httpRequest->setRequest (
+                  REMOTEXY_HTTPREQUEST_HOST_REMOTEXY, 
+                  REMOTEXY_HTTPREQUEST_PORT_REMOTEXY, 
+                  REMOTEXY_NOTIFICATION_URL,
+                  REMOTEXY_HTTPREQUEST_METHOD_POST);
+              httpRequest->setPostData (httpRequestPostData, httpRequestPostDataLen);    
 #if defined(REMOTEXY__DEBUGLOG)
-          RemoteXYDebugLog.write ("Notification answer sent");
-#endif      
-          return;
-
+              RemoteXYDebugLog.write("Send Notification request...");
+#endif 
+              httpRequest->send ();            
+            }
+          }
         }
       }
-      else {
-        state = REMOTEXY_NOTIFICATION_STATE_WAITRECONNECT; 
-        unuseHttpRequest ();
-      }
-    }
-    else if (state == REMOTEXY_NOTIFICATION_STATE_WAITANSWER) {
-      if (httpRequest.getState () == REMOTEXY_HTTPREQUEST_ANSWER_OK) {
+    }  
+  }
+
+  
+  void httpRequestCompletion () override {
+    if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_REQUEST) {
+      free (httpRequestPostData);
+      if (httpRequest->getState () == REMOTEXY_HTTPREQUEST_OK) {
+#if defined(REMOTEXY__DEBUGLOG)
+        RemoteXYDebugLog.write("Notification request: OK");
+#endif 
         if (heap->notEmpty ()) {
           RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
-          if (head.id == sendMessageId) {
+          if (head.id == httpRequestMessageId) {
             heap->removeFirst ();
           }
         }
+        setState (REMOTEXY_NOTIFICATION_STATE_NO);   
+        return;
+      }
+    }
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Notification received by host");
-#endif      
-        state = REMOTEXY_NOTIFICATION_STATE_NO;
-        unuseHttpRequest ();
-      }
-      else if (httpRequest.getState () == REMOTEXY_HTTPREQUEST_ERROR) {
-        state = REMOTEXY_NOTIFICATION_STATE_WAITRECONNECT;
-        unuseHttpRequest ();
-      } 
-    }
-    else if (state == REMOTEXY_NOTIFICATION_STATE_WAITRECONNECT) {
-      if (millis() - timeOut > REMOTEXY_NOTIFICATION_WAITRECONNECT_TIMEOUT) {
-        state = REMOTEXY_NOTIFICATION_STATE_NO;
-      }
-    }
-  }
+    RemoteXYDebugLog.write("Notification request: ERROR");
+#endif 
+    setState (REMOTEXY_NOTIFICATION_STATE_LATENCY);
+  } 
+#endif  // REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST
   
   
   private:
   void addHeadToHeap (uint8_t messageId, uint8_t track) {
     RemoteXYType_Notification_Head head;
-    guiData->data->getGMTTime (&head.time);
+    if (data->realTime != NULL) {
+      head.time = ((CRemoteXYRealTimeApp*)(data->realTime))->getTime ();
+    }
     head.track = track;
     head.messageId = messageId;
     uint8_t *p = (uint8_t*)&head;
@@ -245,37 +220,36 @@ class RemoteXYType_Notification : public RemoteXYType {
   
 };
 
-class RemoteXYType_Notification_64 : public RemoteXYType_Notification {
+class RemoteXYType_Notification_64 : public CRemoteXYType_Notification {
   public:
-  RemoteXYStorage_Heap_64 heapInstance;    
-  RemoteXYType_Notification_64 () : RemoteXYType_Notification() {
+  CRemoteXYStorage_Heap_64 heapInstance;    
+  RemoteXYType_Notification_64 () : CRemoteXYType_Notification() {
     heap = &heapInstance;
   }
 };
 
-class RemoteXYType_Notification_128 : public RemoteXYType_Notification {
+class RemoteXYType_Notification_128 : public CRemoteXYType_Notification {
   public:
-  RemoteXYStorage_Heap_128 heapInstance;    
-  RemoteXYType_Notification_128 () : RemoteXYType_Notification() {
+  CRemoteXYStorage_Heap_128 heapInstance;    
+  RemoteXYType_Notification_128 () : CRemoteXYType_Notification() {
     heap = &heapInstance;
   }
 };
 
-class RemoteXYType_Notification_256 : public RemoteXYType_Notification {
+class RemoteXYType_Notification_256 : public CRemoteXYType_Notification {
   public:
-  RemoteXYStorage_Heap_256 heapInstance;    
-  RemoteXYType_Notification_256 () : RemoteXYType_Notification() {
+  CRemoteXYStorage_Heap_256 heapInstance;    
+  RemoteXYType_Notification_256 () : CRemoteXYType_Notification() {
     heap = &heapInstance;
   }
 };
 
-class RemoteXYType_Notification_512 : public RemoteXYType_Notification {
+class RemoteXYType_Notification_512 : public CRemoteXYType_Notification {
   public:
-  RemoteXYStorage_Heap_512 heapInstance; 
-  RemoteXYType_Notification_512 () : RemoteXYType_Notification() {
+  CRemoteXYStorage_Heap_512 heapInstance; 
+  RemoteXYType_Notification_512 () : CRemoteXYType_Notification() {
     heap = &heapInstance;
   }
 };
 
-#endif // REMOTEXY_HAS_EEPROM
 #endif // RemoteXYType_Notification_h
