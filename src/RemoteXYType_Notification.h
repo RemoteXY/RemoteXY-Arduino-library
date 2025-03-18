@@ -81,6 +81,8 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
   public: 
   void handler () override {    
 
+    if (data->realTime == NULL) data->realTime = new CRemoteXYRealTimeBoard ();
+
     if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_LATENCY) {
       if (millis () - httpRequestTimeout >= REMOTEXY_NOTIFICATION_LATENCY_TIME) {
         setState (REMOTEXY_NOTIFICATION_STATE_NO);
@@ -101,7 +103,7 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
               RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
               httpRequestMessageId = head.id;
               uint16_t messageLength = head.len;
-              httpRequestPostDataLen = REMOTEXY_BOARDID_LENGTH+1+messageLength+sizeof (RemoteXYStorage_Heap_Head);
+              httpRequestPostDataLen = REMOTEXY_BOARDID_LENGTH+1+messageLength+sizeof (RemoteXYStorage_Heap_Head)+sizeof (RemoteXYTimeStamp);
               httpRequestPostData = (uint8_t*)malloc (httpRequestPostDataLen);
               if (httpRequestPostData == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
@@ -111,16 +113,24 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
                 return;
               }
               uint8_t *p = httpRequestPostData;
+              
+              // lib version
               *p++ = REMOTEXY_LIBRARY_VERSION;
+              
+              // board ID
               rxy_bufCopy (p, boardId, REMOTEXY_BOARDID_LENGTH);
               p+=REMOTEXY_BOARDID_LENGTH;
               
-              uint8_t *ph = (uint8_t*)&head;
-              for (uint16_t i = 0; i < sizeof (RemoteXYStorage_Heap_Head); i++) {
-                *p++ = *ph++;
-              }            
-              p+=sizeof (RemoteXYStorage_Heap_Head);
-                         
+              // board time
+              RemoteXYTimeStamp boardTime = data->realTime->getBoardTime (); 
+              rxy_bufCopy (p, (uint8_t*)&boardTime, sizeof (RemoteXYTimeStamp));
+              p+=sizeof (RemoteXYTimeStamp);
+
+              // head
+              rxy_bufCopy (p, (uint8_t*)&head, sizeof (RemoteXYStorage_Heap_Head));
+              p+=sizeof (RemoteXYStorage_Heap_Head);   
+               
+              // message head and message          
               for (uint16_t i = 0; i < messageLength; i++) {
                 *p++ = heap->getNextByte();
               }                       
@@ -175,7 +185,10 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
   void addHeadToHeap (uint8_t messageId, uint8_t track) {
     RemoteXYType_Notification_Head head;
     if (data->realTime != NULL) {
-      head.time = ((CRemoteXYRealTimeApp*)(data->realTime))->getTime ();
+      head.time = data->realTime->getBoardTime ();
+    }
+    else {
+      head.time.setNull ();
     }
     head.track = track;
     head.messageId = messageId;

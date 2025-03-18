@@ -13,6 +13,11 @@
 #define  REMOTEXY_SECONDS_PER_MINUTE 60
 #define  REMOTEXY_MINUTES_PER_HOUR 60
 
+#define  REMOTEXY_MILLIS_PER_23DAYS (uint32_t)1987200000
+
+//typedef int64_t RemoteXYTimeStamp;
+
+
 class RemoteXYTimeStamp {
   
   //big int variation
@@ -30,18 +35,31 @@ class RemoteXYTimeStamp {
     set (_days, _millis);
   } 
   
-  RemoteXYTimeStamp (int64_t _millis) {
-    setInt64 (_millis);
+  RemoteXYTimeStamp (int32_t ms) {
+    set (0, ms);
+  } 
+  
+  RemoteXYTimeStamp (int ms) {
+    set (0, ms);
+  } 
+  
+  RemoteXYTimeStamp (uint32_t ms) {
+    if (ms >= REMOTEXY_MILLIS_PER_23DAYS) set (23, ms - REMOTEXY_MILLIS_PER_23DAYS); 
+    else set (0, ms);
+  } 
+  
+  RemoteXYTimeStamp (int64_t ms) {
+    setInt64 (ms);
   } 
         
   private:
   void normalize () {  
-    /*
-    if ((millis >= REMOTEXY_MILLIS_PER_DAY) || (millis <= -REMOTEXY_MILLIS_PER_DAY)) {
-      days += millis / REMOTEXY_MILLIS_PER_DAY;
-      millis = millis % REMOTEXY_MILLIS_PER_DAY;      
-    }  
-    */    
+    
+    //if ((millis >= REMOTEXY_MILLIS_PER_DAY) || (millis <= -REMOTEXY_MILLIS_PER_DAY)) {
+    //  days += millis / REMOTEXY_MILLIS_PER_DAY;
+    //  millis = millis % REMOTEXY_MILLIS_PER_DAY;      
+    //}  
+       
     while (millis >= REMOTEXY_MILLIS_PER_DAY) {
       millis -= REMOTEXY_MILLIS_PER_DAY;
       days++;
@@ -68,7 +86,17 @@ class RemoteXYTimeStamp {
   }
   
   public:
-  void add (const int32_t ms) {
+  void add (int32_t ms) {
+    millis += ms;
+    normalize ();
+  }
+  
+  public:
+  void add (uint32_t ms) {
+    if (ms > REMOTEXY_MILLIS_PER_23DAYS) {
+      days += 23;
+      ms -= REMOTEXY_MILLIS_PER_23DAYS;
+    }
     millis += ms;
     normalize ();
   }
@@ -81,12 +109,20 @@ class RemoteXYTimeStamp {
   }
   
   public:
-  void sub (const int32_t ms) {
+  void sub (int32_t ms) {
     millis -= ms;
     normalize ();
   }
 
-  
+  public:
+  void sub (uint32_t ms) {
+    if (ms > REMOTEXY_MILLIS_PER_23DAYS) {
+      days -= 23;
+      ms -= REMOTEXY_MILLIS_PER_23DAYS;
+    }  
+    millis -= ms;
+    normalize ();
+  }  
 
       
   void set (int32_t _days, int32_t _millis) {
@@ -95,21 +131,8 @@ class RemoteXYTimeStamp {
     normalize ();
   } 
   
-  
-  void setDays (int32_t _days) {
-    days = _days;
-    normalize ();
-  }
-  
-  void setMillis (int32_t _millis) {
-    millis = _millis; 
-    normalize ();   
-  }
-  
-  void setSeconds (int16_t sec) {
-    millis = (int32_t)sec * REMOTEXY_MILLIS_PER_SECOND; 
-    normalize ();    
-  }
+ 
+
   
   // timeZone - minutes
   void applyTimeZone (int16_t timeZone) {
@@ -153,11 +176,20 @@ class RemoteXYTimeStamp {
     return *this;
   } 
   
-  RemoteXYTimeStamp operator=(const int32_t ms) {
+  RemoteXYTimeStamp operator=(const int ms) {
+    days = 0;
     millis = ms;
     normalize ();
     return *this;
   } 
+  
+  RemoteXYTimeStamp operator=(const int32_t ms) {
+    days = 0;
+    millis = ms;
+    normalize ();
+    return *this;
+  } 
+  
   
   RemoteXYTimeStamp operator=(const int64_t ms) {
     setInt64 (ms);
@@ -178,7 +210,14 @@ class RemoteXYTimeStamp {
   RemoteXYTimeStamp operator+(const int32_t ms) const {
     RemoteXYTimeStamp ts (days, millis + ms);
     return ts;
-  }
+  }  
+  
+  public:
+  RemoteXYTimeStamp operator+(const uint32_t ms) const {
+    RemoteXYTimeStamp ts (*this);
+    ts.add (ms);
+    return ts;
+  }     
   
   public:
   RemoteXYTimeStamp operator+(const int64_t ms) const {
@@ -199,6 +238,13 @@ class RemoteXYTimeStamp {
   }
   
   public:
+  RemoteXYTimeStamp operator-(const uint32_t ms) const {
+    RemoteXYTimeStamp ts (*this);
+    ts.sub (ms);
+    return ts;
+  }   
+  
+  public:
   RemoteXYTimeStamp operator-(const int64_t ms) const {
     RemoteXYTimeStamp ts (ms);
     return *this - ts;
@@ -214,7 +260,13 @@ class RemoteXYTimeStamp {
   RemoteXYTimeStamp operator+=(const int32_t ms) {
     *this = *this + ms;
     return *this;
-  }  
+  }   
+  
+  public:
+  RemoteXYTimeStamp operator+=(const uint32_t ms) {
+    *this = *this + ms;
+    return *this;
+  }   
   
   public:
   RemoteXYTimeStamp operator+=(const int64_t ms) {
@@ -233,6 +285,12 @@ class RemoteXYTimeStamp {
     *this = *this - ms;
     return *this;
   } 
+  
+  public:
+  RemoteXYTimeStamp operator-=(const uint32_t ms) {
+    *this = *this - ms;
+    return *this;
+  }  
   
   public:
   RemoteXYTimeStamp operator-=(const int64_t ms) {
@@ -296,6 +354,10 @@ class RemoteXYTimeStamp {
     return ((days == ts.days) && (millis == ts.millis)); 
   }   
   
+  bool operator==(const int ms) {
+    return *this == RemoteXYTimeStamp (0, ms); 
+  } 
+  
   bool operator==(const int32_t ms) {
     return *this == RemoteXYTimeStamp (0, ms); 
   }   
@@ -307,6 +369,10 @@ class RemoteXYTimeStamp {
   bool operator!=(const RemoteXYTimeStamp &ts) {
     return ((days != ts.days) || (millis != ts.millis)); 
   }  
+  
+  bool operator!=(const int ms) {
+    return *this != RemoteXYTimeStamp (0, ms); 
+  } 
   
   bool operator!=(const int32_t ms) {
     return *this != RemoteXYTimeStamp (0, ms); 

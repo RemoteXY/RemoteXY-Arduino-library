@@ -44,21 +44,22 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   
   public:
   CRemoteXYWire (CRemoteXYGuiData * _guiData) {
-    guiData = _guiData;
-    stream = NULL;
-    receivePackageListener = NULL;
-    receiveBufferSize = guiData->getReceiveBufferSize ();
-    receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
+    init (_guiData, 1);    
   }
 
   public:
-  CRemoteXYWire (CRemoteXYGuiData * _guiData, uint8_t multiple) {
+  CRemoteXYWire (CRemoteXYGuiData * _guiData, uint8_t receiveBufferMultiple) {
+    init (_guiData, receiveBufferMultiple);    
+  }  
+  
+  private:
+  void init (CRemoteXYGuiData * _guiData, uint8_t receiveBufferMultiple) {
     guiData = _guiData;
     stream = NULL;
     receivePackageListener = NULL;
-    receiveBufferSize = guiData->getReceiveBufferSize () * multiple;
-    receiveBuffer = (uint8_t*)malloc (receiveBufferSize);    
-  }  
+    receiveBufferSize = guiData->getReceiveBufferSize () * receiveBufferMultiple;
+    receiveBuffer = (uint8_t*)malloc (receiveBufferSize);        
+  }
   
   public: 
   void setReceivePackageListener (CRemoteXYReceivePackageListener * listener) {
@@ -159,11 +160,9 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   void sendConfPackage (uint8_t command, uint8_t clientId) {
     uint8_t *p = guiData->conf;
     uint16_t length = guiData->confLength;
-    uint8_t confVersion = guiData->confVersion;
-    startPackage (command, clientId, length);
-    for (uint16_t i = 0; i<length; i++) {
-      if ((confVersion == 0xfe) && (i == 2)) sendBytePackage (REMOTEXY_LIBRARY_VERSION);
-      else sendBytePackage (rxy_readConfByte (p++));
+    startPackage (command, clientId, length); 
+    while (length--) {
+      sendBytePackage (rxy_readConfByte (p++));
     }
     endPackage ();  
   }

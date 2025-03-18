@@ -126,9 +126,6 @@
 #ifndef _REMOTEXY_H_
 #define _REMOTEXY_H_
 
-#define REMOTEXY_LIBRARY_VERSION 1  // internal library version
-
-
 //#define REMOTEXY__DEBUGLOG
 //#define REMOTEXY__DEBUGLOG_SERIAL Serial
 //#define REMOTEXY__DEBUGLOG_SPEED 115200
@@ -151,12 +148,6 @@
 //#include <Arduino.h>
 #include "RemoteXYDebugLog.h"
 
-#if defined(REMOTEXY_MODE__ESP32CORE_BLUETOOTH)
-  #include "BluetoothSerial.h"
-#elif defined(REMOTEXY_MODE__ESP32CORE_BLE)
-  #include "BLEDevice.h"
-
-#endif
 
 // RXY defines
 #define REMOTEXY_PASSWORD_LENGTH_MAX 26

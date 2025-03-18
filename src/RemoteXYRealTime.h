@@ -5,47 +5,53 @@
 #include "RemoteXYWire.h"
 #include "RemoteXYTimeStamp.h"
 
-class CRemoteXYBoardTime {
-  public:
-  RemoteXYTimeStamp time;   
-  uint32_t handlerMillis;
-  
-  public:
-  CRemoteXYBoardTime () {
-    handlerMillis = 0;
-    time.setNull ();  
-  }
-   
-  void handler () {
-    uint32_t t = millis ();
-    time.add (t - handlerMillis);
-    handlerMillis = t;     
-  };  
-};
-
 
 class CRemoteXYRealTime {
   public:
   virtual void handler () = 0;
-  virtual void receivePackage (CRemoteXYPackage * package) = 0;
+  virtual RemoteXYTimeStamp getBoardTime () {return RemoteXYTimeStamp ();}
+  virtual RemoteXYTimeStamp getRealTime () {return RemoteXYTimeStamp ();}
+  virtual void receivePackage (CRemoteXYPackage * package) {};
 };
 
 
-class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
+class CRemoteXYRealTimeBoard : public CRemoteXYRealTime {
   public:
-  CRemoteXYBoardTime * boardTime;
+  RemoteXYTimeStamp boardTime;   
+  uint32_t handlerMillis;
+  
+  public:
+  CRemoteXYRealTimeBoard () {
+    handlerMillis = 0;
+    boardTime.setNull ();  
+  }
+   
+  void handler () override {
+    uint32_t t = millis ();
+    boardTime.add (t - handlerMillis);  
+    handlerMillis = t;     
+  };  
+  
+  RemoteXYTimeStamp getBoardTime () override {
+    return boardTime;
+  }
+  
+};
+
+
+class CRemoteXYRealTimeApp : public CRemoteXYRealTimeBoard {
+  public:
   RemoteXYTimeStamp offsetTime; 
   
   public: 
-  CRemoteXYRealTimeApp (CRemoteXYBoardTime * _boardTime) {
-    boardTime = _boardTime;
+  CRemoteXYRealTimeApp () : CRemoteXYRealTimeBoard () {
     offsetTime.setNull ();
   }
  
-  RemoteXYTimeStamp getTime () {
+  RemoteXYTimeStamp getRealTime () override {
     RemoteXYTimeStamp time (offsetTime);
     if (!time.isNull ()) {
-      time.add (boardTime->time); 
+      time.add (boardTime); 
     }
     return time;
   }
@@ -60,14 +66,14 @@ class CRemoteXYRealTimeApp : public CRemoteXYRealTime {
 
   public:
   void setRealTime (const RemoteXYTimeStamp &time) {
-    RemoteXYTimeStamp offset = time - boardTime->time;
-    if (offsetTime.isNull ()) {
-      offsetTime = offset;
+    if (offsetTime.isNull ()) {  // set offsetTime
+      offsetTime = time;
+      offsetTime.sub (boardTime);
     }
-    else {  // adjust board time
-      boardTime->time += offset - offsetTime; 
-      offsetTime = time - boardTime->time;
-    }
+    else {  // adjust board time, no offsetTime is constant
+      boardTime = time;
+      boardTime.sub (offsetTime);
+    }    
   }
 
   public:

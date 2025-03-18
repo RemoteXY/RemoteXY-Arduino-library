@@ -155,7 +155,6 @@ class CRemoteXY: public CRemoteXYData {
   public:
   void handler () {   
   
-    boardTime.handler ();
     if (realTime != NULL) realTime->handler ();
   
 #if defined(REMOTEXY_HAS_EEPROM)
@@ -183,29 +182,28 @@ class CRemoteXY: public CRemoteXYData {
  
   public:
   void initRealTime () {
-    if (realTime == NULL) realTime = new CRemoteXYRealTimeApp (&boardTime); 
+    if (realTime == NULL) realTime = new CRemoteXYRealTimeApp (); 
   }
   
   public:
   void initRealTimeNet () { 
-    if (realTime == NULL) realTime = new CRemoteXYRealTimeNet (&boardTime, nets);
+    if (realTime == NULL) realTime = new CRemoteXYRealTimeNet (nets);
   }  
   
   
   public:
   RemoteXYTimeStamp getRealTimeStamp (int16_t timeZone) {    
     if (realTime == NULL) return RemoteXYTimeStamp ();
-    RemoteXYTimeStamp time = ((CRemoteXYRealTimeApp*)realTime)->getTime ();
-    time.applyTimeZone (timeZone);
+    RemoteXYTimeStamp time = realTime->getRealTime ();
+    if (!time.isNull ()) {
+      time.applyTimeZone (timeZone);
+    }
     return time;
   }    
   
   public:
-  RemoteXYTime getRealTime (int16_t timeZone) {    
-    if (realTime == NULL) return RemoteXYTimeStamp ();
-    RemoteXYTimeStamp time = ((CRemoteXYRealTimeApp*)realTime)->getTime ();
-    time.applyTimeZone (timeZone);
-    return RemoteXYTime (time);
+  RemoteXYTime getRealTime (int16_t timeZone) {  
+    return RemoteXYTime (getRealTimeStamp (timeZone));  
   }     
   
 

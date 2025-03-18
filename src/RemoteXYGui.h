@@ -18,91 +18,84 @@ class CRemoteXYGui: public CRemoteXYGuiData {
   public:
   CRemoteXYGui (CRemoteXYData * _data, const void * _conf, void * _var, const char * _accessPassword = NULL) {
     data = _data;
-    conf = (uint8_t*)_conf;
+
     inputVar = (uint8_t*)_var;
-    setPassword (_accessPassword);   
     
     threads = NULL;
     connections = NULL;     
     
     complexVarCount = 0;    
+    uint16_t eepromCount = 0;
     
-    uint8_t* p = conf;    
-    confVersion = rxy_readConfByte (p++);
-    
-    if (confVersion==0xfe) { 
-      // new editor version
-      // FE CL CL LV EV IL IL OL OL CVL CVL CVDATA EL EL EDATA CONF
-      confLength = rxy_readConfByte (p++);
-      confLength |= rxy_readConfByte (p++)<<8;
-      uint8_t minLibVersion = rxy_readConfByte (p++); 
-      if (minLibVersion > REMOTEXY_LIBRARY_VERSION) {
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("ERROR. RemoteXY.h library needs to be updated");
-#endif
-      }     
-      editorVersion = rxy_readConfByte (p++); 
+    uint8_t* p = (uint8_t*)_conf;    
+    uint8_t confVersion = rxy_readConfByte (p++);
+           
+    if (confVersion==0xff) {  
+      // medium editor version
+      // FF IL IL OL OL CL CL EV CONF
       inputLength = rxy_readConfByte (p++);
       inputLength |= rxy_readConfByte (p++)<<8;
       outputLength = rxy_readConfByte (p++); 
-      outputLength |= rxy_readConfByte (p++)<<8;     
-      complexVarCount = rxy_readConfByte (p++);
-      complexVarCount |= rxy_readConfByte (p++)<<8; 
-      complexVarConf = p;
-    
-      outputVar = inputVar + inputLength;
-      complexVar = outputVar + outputLength;
-      
-      complexVarIterator.start (this);
-      while (complexVarIterator.next()) {
-        complexVarIterator.var->init(this);
-      }
-      connect_flag = (uint8_t*)complexVarIterator.var;     
-      p = complexVarIterator.conf;
-      
-      uint16_t eepromCount = rxy_readConfByte (p++);
-      eepromCount |= rxy_readConfByte (p++)<<8;
-      while (eepromCount--) {
-        uint16_t v = rxy_readConfByte (p++); 
-        v |= rxy_readConfByte (p++)<<8; 
-        uint16_t s = rxy_readConfByte (p++); 
-        s |= rxy_readConfByte (p++)<<8; 
-#if defined(REMOTEXY_HAS_EEPROM)
-        data->eeprom.addItem (inputVar + v, s, v+(s>>6));
-#endif         
-      }           
-    }
-    else {
-      if (confVersion==0xff) {  
-        // medium editor version
-        // FF IL IL OL OL CL CL EV CONF
-        inputLength = rxy_readConfByte (p++);
-        inputLength |= rxy_readConfByte (p++)<<8;
-        outputLength = rxy_readConfByte (p++); 
-        outputLength |= rxy_readConfByte (p++)<<8; 
-      }
-      else {
-        // old editor version
-        // IL OL CL CL CONF
-        inputLength = confVersion;
-        outputLength = rxy_readConfByte (p++);    
-        confVersion = 0xff;
-      }       
+      outputLength |= rxy_readConfByte (p++)<<8; 
       confLength = rxy_readConfByte (p++);
       confLength |= rxy_readConfByte (p++)<<8;  
       conf = p;
       editorVersion = rxy_readConfByte (p);
-      
-      outputVar = inputVar + inputLength;
-      connect_flag = outputVar + outputLength; 
+      if (editorVersion >= 20) {
+        // FF IL IL OL OL CL CL EV CVL CVL CVDATA EL EL EDATA CONF
+        complexVarCount = rxy_readConfByte (p++);
+        complexVarCount |= rxy_readConfByte (p++)<<8; 
+        complexVarConf = p;       
+        p = initComplexVars ();
+        
+        eepromCount = rxy_readConfByte (p++);
+        eepromCount |= rxy_readConfByte (p++)<<8;
+        p = initEeprom (p, eepromCount);
+      }
     }
+    else {
+      // old editor version
+      // IL OL CL CL CONF
+      inputLength = confVersion;
+      outputLength = rxy_readConfByte (p++);    
+      confLength = rxy_readConfByte (p++);
+      confLength |= rxy_readConfByte (p++)<<8;  
+      conf = p;
+      editorVersion = 0;
+    }     
     
+    outputVar = inputVar + inputLength;
+    connect_flag = outputVar + outputLength; 
     
     rxy_bufClear (inputVar, inputLength+outputLength);    
     *connect_flag = 0;   
-            
-        
+     
+    setPassword (_accessPassword);   
   }
+  
+  
+  uint8_t * initEeprom (uint8_t * p, uint16_t eepromCount) {
+    while (eepromCount--) {
+      uint16_t v, s;
+      v  = rxy_readConfByte (p++); 
+      v |= rxy_readConfByte (p++)<<8; 
+      s = rxy_readConfByte (p++); 
+      s |= rxy_readConfByte (p++)<<8; 
+#if defined(REMOTEXY_HAS_EEPROM)
+      data->eeprom.addItem (inputVar + v, s, v+(s>>6));
+#endif         
+    }  
+  }
+   
+  uint8_t * initComplexVars () {
+    complexVarIterator.start (this);
+    while (complexVarIterator.next()) {
+      complexVarIterator.var->init(this);
+    }
+    connect_flag = (uint8_t*)complexVarIterator.var;     
+    return complexVarIterator.conf;
+  }
+ 
  
   public:  
   void addConnection (CRemoteXYStream * stream) {  
