@@ -40,7 +40,7 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     
     
   void handler () override {
-
+    CRemoteXYRealTimeBoard::handler ();
     if (state == REMOTEXY_REALTIMENET_STATE_LATENCY) {
       if (millis () - timeout >= REMOTEXY_REALTIMENET_LATENCY_TIME) {
         setState (REMOTEXY_REALTIMENET_STATE_NO);
@@ -83,11 +83,8 @@ class CRemoteXYRealTimeNet : public CRemoteXYRealTimeApp, CRemoteXYHttpRequestCo
     if (state == REMOTEXY_REALTIMENET_STATE_REQUEST) {
       if (httpRequest->getState () == REMOTEXY_HTTPREQUEST_OK) {
         if (httpRequest->getContentLength () == 8) {
-#if defined(REMOTEXY__DEBUGLOG)
-          RemoteXYDebugLog.write("RealTime request: OK");
-#endif 
           updateFromBuf (httpRequestAnswerBuffer);
-          answerTime = boardTime;
+          answerTime = boardTime;          
           setState (REMOTEXY_REALTIMENET_STATE_NO);
           return;
         }

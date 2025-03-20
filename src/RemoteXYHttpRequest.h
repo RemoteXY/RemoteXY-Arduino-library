@@ -317,13 +317,17 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   public:
   static CRemoteXYHttpRequest * getHttpRequest (CRemoteXYNet * nets) {
     CRemoteXYNet * net = nets;
-    while (net->configured ()) {
-      if (net->httpRequest == NULL) {
-        net->httpRequest = new CRemoteXYHttpRequest (net);   
-      }
-      if (net->httpRequest != NULL) {
-        net->httpRequest->setUsed ();
-        return net->httpRequest;
+    while (net) {
+      if (net->configured ()) {
+        if (net->httpRequest == NULL) {
+          if (net->hasInternet ()) {
+            net->httpRequest = new CRemoteXYHttpRequest (net); 
+          }  
+        }
+        if (net->httpRequest != NULL) {
+          net->httpRequest->setUsed ();
+          return net->httpRequest;
+        }
       }
       net = net->next;
     }    

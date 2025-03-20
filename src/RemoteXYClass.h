@@ -27,7 +27,9 @@
 #include "RemoteXYRealTime.h"
 #include "RemoteXYRealTimeNet.h"
 
+#include "RemoteXYType_Message.h"
 #include "RemoteXYType_Notification.h"
+#include "RemoteXYType_Print.h"
 
 
 class CRemoteXY: public CRemoteXYData {

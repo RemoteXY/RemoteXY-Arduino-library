@@ -9,9 +9,9 @@
 class CRemoteXYRealTime {
   public:
   virtual void handler () = 0;
-  virtual RemoteXYTimeStamp getBoardTime () {return RemoteXYTimeStamp ();}
-  virtual RemoteXYTimeStamp getRealTime () {return RemoteXYTimeStamp ();}
-  virtual void receivePackage (CRemoteXYPackage * package) {};
+  virtual RemoteXYTimeStamp getBoardTime () = 0;
+  virtual RemoteXYTimeStamp getRealTime () = 0;
+  virtual void receivePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) = 0;
 };
 
 
@@ -36,6 +36,23 @@ class CRemoteXYRealTimeBoard : public CRemoteXYRealTime {
     return boardTime;
   }
   
+  RemoteXYTimeStamp getRealTime () override {
+    return RemoteXYTimeStamp ();
+  }
+  
+  void getBoardTimeBuf (uint8_t * buf) {
+    uint32_t days = boardTime.getDays ();
+    uint32_t millis = boardTime.getMillis ();
+    rxy_bufCopy (buf, (uint8_t*)&days, 4);
+    rxy_bufCopy (buf+4, (uint8_t*)&millis, 4);
+  }
+  
+  void receivePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) override {
+    uint8_t buf[8];
+    getBoardTimeBuf (buf);
+    wire->sendPackage (0x02, package->clientId, buf, 8);    
+  }
+  
 };
 
 
@@ -56,12 +73,11 @@ class CRemoteXYRealTimeApp : public CRemoteXYRealTimeBoard {
     return time;
   }
   
-  void handler () override {}
-
-  void receivePackage (CRemoteXYPackage * package) override {
+  void receivePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) override {
     if (package->length==8) {
       updateFromBuf (package->buffer);
-    }      
+    }  
+    CRemoteXYRealTimeBoard::receivePackage (package, wire);    
   }
 
   public:

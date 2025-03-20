@@ -7,6 +7,7 @@
 //#include "RemoteXYNet.h"
 #include "RemoteXYConnection.h"
 #include "RemoteXYWire.h"
+#include "RemoteXYType.h"
 
 
 #define REMOTEXY_INIT_CRC 0xffff
@@ -25,12 +26,11 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
   CRemoteXYWire * wire;  
   uint8_t clientId; 
   
-  uint8_t *inputVar;  
-  
   uint32_t timeOut;
   uint8_t stopByTimeOut;
   
   uint8_t inputVarNeedSend;
+  uint8_t complexVarNeedSend;
     
   
   public:
@@ -42,51 +42,11 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
   }
   
   private:
-  uint8_t init (CRemoteXYGuiData * _guiData) {
+  void init (CRemoteXYGuiData * _guiData) {
     guiData = _guiData;    
-    inputVar = (uint8_t*)malloc (guiData->inputLength); 
-    if (inputVar == NULL) return 0;
-    copyInputVars ();  
-    return 1;
   }
   
-  public:
-  static CRemoteXYThread * getUnusedThread (CRemoteXYGuiData * guiData) {    
-    CRemoteXYThread * pt = guiData->threads;  
-    uint8_t cnt = 0;          
-    while (pt) {
-      if (!pt->running ()) {
-         return pt;
-      }
-      cnt++;
-      pt = pt->next;
-    }
-    if (cnt < REMOTEXY_MAX_CLIENTS) { 
-      pt = new CRemoteXYThread ();
-      if (pt == NULL) {
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Out of RAM for new app client");
-#endif           
-        return NULL;  
-      }
-      if (pt->init (guiData) == 0) {
-#if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Out of RAM for new app client");
-#endif      
-        return NULL;  
-      }
-      pt->next = guiData->threads;
-      guiData->threads = pt;
-#if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write ("New app client created");
-#endif      
-      return pt; 
-    }
-#if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write ("App client limit exceeded, see definition REMOTEXY_MAX_CLIENTS");
-#endif      
-    return NULL; 
-  }
+
 
   public:
   void begin (CRemoteXYConnection * _conn, CRemoteXYWire * _wire, uint8_t _stopByTimeOut) {
@@ -96,6 +56,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     stopByTimeOut = _stopByTimeOut;
     timeOut = millis ();
     connect_flag = 0;
+    inputVarNeedSend = 0;
+    complexVarNeedSend = 0;
 
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write("App client started");
@@ -147,12 +109,14 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     uint16_t i, length;
     uint8_t *p, *kp;
     uint8_t allowAccess; 
+    uint8_t c;  
+    uint16_t * pi;
     CRemoteXYData * data = guiData->data;
       
     if (wire == NULL) return;  
     if ((package->command != 0x00) && (!connect_flag)) return;
     switch (package->command) {  
-      case 0x00:      
+      case 0x00: // send configuration or denied    
         allowAccess = 0;
         if (package->length==0) { 
           if (guiData->accessPassword == NULL) allowAccess=1;
@@ -178,33 +142,33 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
           wire->sendPackage (0x00, clientId, buf, length);
         }          
         break;   
-      case 0x40:  
-        copyInputVars ();
+      case 0x40: // send input and output vars 
+        inputVarNeedSend = 0;
         wire->sendPackage (0x40, clientId, guiData->inputVar, guiData->inputLength + guiData->outputLength); 
         break;   
-      case 0x80:  
-        checkInputVars ();       
+      case 0x80: // receive input vars 
         if ((package->length == guiData->inputLength) && (inputVarNeedSend==0)) {
-          rxy_bufCopy (guiData->inputVar, inputVar, package->buffer, guiData->inputLength);
+          rxy_bufCopy (guiData->inputVar, guiData->inputVarCopy, package->buffer, guiData->inputLength);
+          CRemoteXYThread::notifyInputVarNeedSend (guiData);  // notify other threads
+          inputVarNeedSend = 0;
         }
         wire->sendEmptyPackage (0x80, clientId);
         break;   
-      case 0xC0: 
-        checkInputVars ();
-        uint8_t c;
-        if (inputVarNeedSend==0) c = 0xC0; 
-        else c = 0xC1; 
+      case 0xC0: // send output vars 
+        c = 0xC0;
+        if (inputVarNeedSend != 0) c |= 0x01; 
+        if (complexVarNeedSend != 0) c |= 0x02; 
         wire->sendPackage (c, clientId, guiData->outputVar, guiData->outputLength);
         break;  
         
 //////////////////////////////////////////////////    
 // NEW COMMANDS v 3.2    
         
-      // get/set board id
-      case 0x01:     
+      
+      case 0x01: // get/set board id    
 #if defined (REMOTEXY_HAS_EEPROM)
-        RemoteXYEeprom * eeprom = &data->eeprom;
-        RemoteXYEepromItem * boardId = data->boardId;       
+        CRemoteXYEeprom * eeprom = &data->eeprom;
+        CRemoteXYEepromItem * boardId = data->boardId;       
         if (boardId != NULL) {
           if (package->length==0) {
             if (boardId != NULL) {
@@ -229,33 +193,115 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         wire->sendEmptyPackage (0x01, clientId);
 #endif        
         break;
-        
-      // set gmt time               
-      case 0x02:
+                            
+      case 0x02: // set utc time / get board time 
         if (data->realTime != NULL) {
-          data->realTime->receivePackage (package);
+          data->realTime->receivePackage (package, wire);
         }
-        wire->sendEmptyPackage (0x02, clientId);
+        else {
+          wire->sendEmptyPackage (0x02, clientId);
+        }
         break;    
-        
-           
+      
+      case 0x10: // send complex var descriptors
+        sendComplexVarDescriptorsPacage ();
+        break;
+                             
+      case 0x12: // query complex variable
+        i = 0;
+        if (package->length >= 2) {
+          pi = (uint16_t*)package->buffer;
+          if (*pi < guiData->complexVarCount) {
+            i = guiData->complexVar[*pi]->receivePackage (package, wire);
+          }
+        }
+        if (i == 0) {
+          wire->sendEmptyPackage (0x12, clientId);
+        }
+        break;   
     }  
     timeOut = millis ();  
   }
   
   private:
-  void copyInputVars () {
-    inputVarNeedSend = 0;
-    rxy_bufCopy (inputVar, guiData->inputVar, guiData->inputLength);
+  void sendComplexVarDescriptorsPacage () {  
+    uint16_t length = 0;
+    uint8_t maxDescriptorLength = 0;
+    uint8_t len;
+    CRemoteXYType * var;
+    for (uint16_t i = 0; i > guiData->complexVarCount; i++) {
+      var = guiData->complexVar[i];
+      len = var->getDescriptorLength ();
+      length += len;
+      if (len > maxDescriptorLength) maxDescriptorLength = len;       
+    }
+    wire->startPackage (0x10, clientId, length);
+    uint8_t buf[maxDescriptorLength];
+    uint8_t * p;
+    for (uint16_t i = 0; i > guiData->complexVarCount; i++) {
+      var = guiData->complexVar[i];
+      len = var->getDescriptorLength ();
+      var->getDescriptor (buf);
+      p = buf;  
+      while (len--) {
+        wire->sendBytePackage (*p++);
+      } 
+    }
+    wire->endPackage ();   
   }
+  
 
-  private:
-  void checkInputVars () {
-    if (inputVarNeedSend) return;
-    if (!rxy_bufCompare (inputVar, guiData->inputVar, guiData->inputLength)) inputVarNeedSend = 1;
+  public:
+  static CRemoteXYThread * getUnusedThread (CRemoteXYGuiData * guiData) {    
+    CRemoteXYThread * pt = guiData->threads;  
+    uint8_t cnt = 0;          
+    while (pt) {
+      if (!pt->running ()) {
+         return pt;
+      }
+      cnt++;
+      pt = pt->next;
+    }
+    if (cnt < REMOTEXY_MAX_CLIENTS) { 
+      pt = new CRemoteXYThread ();
+      if (pt == NULL) {
+#if defined(REMOTEXY__DEBUGLOG)
+        RemoteXYDebugLog.write ("Out of RAM for new app client");
+#endif           
+        return NULL;  
+      }
+      pt->init (guiData);
+      pt->next = guiData->threads;
+      guiData->threads = pt;
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.write ("New app client created");
+#endif      
+      return pt; 
+    }
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.write ("App client limit exceeded, see definition REMOTEXY_MAX_CLIENTS");
+#endif      
+    return NULL; 
   }
-
-
+  
+  
+  public:
+  static void notifyInputVarNeedSend (CRemoteXYGuiData * guiData) {
+    CRemoteXYThread * p = guiData->threads;
+    while (p) {
+      p->inputVarNeedSend = 1;
+      p = p->next;
+    }
+  }
+  
+  public:
+  static void notifyComplexVarNeedSend (CRemoteXYGuiData * guiData) {
+    CRemoteXYThread * p = guiData->threads;
+    while (p) {
+      p->complexVarNeedSend = 1;
+      p = p->next;
+    }
+  }
   
 };
 

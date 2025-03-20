@@ -5,6 +5,7 @@
 #include "RemoteXYStream.h"
 #include "RemoteXYGuiData.h"
 
+#define REMOTEXY_PACKAGE_VERSION 20
 
 #define REMOTEXY_PACKAGE_START_BYTE 0x55
 #define REMOTEXY_PACKAGE_MIN_LENGTH 6
@@ -135,6 +136,13 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   }
   
   public:
+  void sendBytesPackage (uint8_t * buf, uint16_t len) {
+    if (stream) {
+      while (len--) sendByteUpdateCRC (*buf++);
+    }
+  }
+  
+  public:
   void endPackage () {
     if (stream) {
 #if defined(REMOTEXY__DEBUGLOG)
@@ -150,9 +158,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   public:
   void sendPackage (uint8_t command, uint8_t clientId, uint8_t *buf, uint16_t length) {
     startPackage (command, clientId, length);
-    while (length--) {
-      sendBytePackage (*buf++);
-    }
+    sendBytesPackage (buf, length);
     endPackage ();  
   }
   
@@ -161,6 +167,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     uint8_t *p = guiData->conf;
     uint16_t length = guiData->confLength;
     startPackage (command, clientId, length); 
+    //sendBytePackage (REMOTEXY_PACKAGE_VERSION);
     while (length--) {
       sendBytePackage (rxy_readConfByte (p++));
     }

@@ -7,22 +7,29 @@
 
 // INT
 
-char* rxy_intToFixedStr (uint16_t i, char* s, uint8_t len, char lead) {
+char rxy_intToHexChar (uint8_t c) {
+  return c < 10 ? c + '0' : c + 'A' - 10;
+}
+
+char* rxy_intToFixedStr (uint32_t i, char* s, uint8_t len, char lead, uint8_t base = 10) {
   uint8_t m = len;
+  if (base < 2) base = 10;
   while (m--) {
     if (i == 0) s[m] = lead;
     else {
-      s[m] = i%10+'0';
-      i/=10;
+      s[m] = rxy_intToHexChar (i%base);
+      i/=base;
     }
   }
   s[len]=0;
   return s+len;
 }
 
-char* rxy_intToStr (uint16_t i, char* s) {
-  char buf[6];
-  rxy_intToFixedStr (i, buf, 5, 0x20);
+char* rxy_intToStr (uint32_t i, char* s, uint8_t base = 10) {
+  if (base < 2) base = 10;
+  uint8_t bufLen = 32 / (base>>2) + 1;
+  char buf[bufLen];
+  rxy_intToFixedStr (i, buf, bufLen, 0x20, base);
   char *p = buf;
   while (*p) {
     if (*p != 0x20) *s++ = *p;  
@@ -30,13 +37,6 @@ char* rxy_intToStr (uint16_t i, char* s) {
   }
   *s = 0;
   return s;  
-}
-
-
-
-char rxy_intToHexChar (uint8_t h) {
-  if (h<10) return (char)(h+'0');
-  else return (char)(h+'A');
 }
 
 // CHAR

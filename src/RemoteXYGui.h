@@ -4,22 +4,23 @@
 #include "RemoteXYFunc.h" 
 #include "RemoteXYTime.h"  
 #include "RemoteXYData.h"   
-#include "RemoteXYTypeIterator.h"  
 #include "RemoteXYConnection.h"
 #include "RemoteXYStream_Stream.h" 
 #include "RemoteXYConnectionStream.h"
+#include "RemoteXYType.h"   
 
 class CRemoteXYGui: public CRemoteXYGuiData {
 
   public:
   CRemoteXYGui *next;
-  CRemoteXYTypeIterator complexVarIterator; 
 
   public:
   CRemoteXYGui (CRemoteXYData * _data, const void * _conf, void * _var, const char * _accessPassword = NULL) {
+
     data = _data;
 
-    inputVar = (uint8_t*)_var;
+    uint8_t* pv = (uint8_t*)_var;    
+    inputVar = pv;
     
     threads = NULL;
     connections = NULL;     
@@ -32,26 +33,15 @@ class CRemoteXYGui: public CRemoteXYGuiData {
            
     if (confVersion==0xff) {  
       // medium editor version
-      // FF IL IL OL OL CL CL EV CONF
+      // FF IL IL OL OL CL CL EV 
       inputLength = rxy_readConfByte (p++);
       inputLength |= rxy_readConfByte (p++)<<8;
       outputLength = rxy_readConfByte (p++); 
       outputLength |= rxy_readConfByte (p++)<<8; 
       confLength = rxy_readConfByte (p++);
       confLength |= rxy_readConfByte (p++)<<8;  
-      conf = p;
+      conf = p; 
       editorVersion = rxy_readConfByte (p);
-      if (editorVersion >= 20) {
-        // FF IL IL OL OL CL CL EV CVL CVL CVDATA EL EL EDATA CONF
-        complexVarCount = rxy_readConfByte (p++);
-        complexVarCount |= rxy_readConfByte (p++)<<8; 
-        complexVarConf = p;       
-        p = initComplexVars ();
-        
-        eepromCount = rxy_readConfByte (p++);
-        eepromCount |= rxy_readConfByte (p++)<<8;
-        p = initEeprom (p, eepromCount);
-      }
     }
     else {
       // old editor version
@@ -64,36 +54,51 @@ class CRemoteXYGui: public CRemoteXYGuiData {
       editorVersion = 0;
     }     
     
-    outputVar = inputVar + inputLength;
-    connect_flag = outputVar + outputLength; 
-    
+    pv += inputLength;
+    outputVar = pv;
+    pv += outputLength;    
     rxy_bufClear (inputVar, inputLength+outputLength);    
+
+    //complexVar = pv;
+    
+    if (editorVersion >= 20) {
+      // CVL CVL CVDATA EL EL EDATA 
+      complexVarCount = rxy_readConfByte (p++);
+      complexVarCount |= rxy_readConfByte (p++)<<8; 
+      
+      // init complex vars
+      complexVar = (CRemoteXYType**)malloc (sizeof(CRemoteXYType*) * complexVarCount);
+      for (uint16_t i = 0; i < complexVarCount; i++) {
+        complexVar[i] = (CRemoteXYType*)pv;
+        ((CRemoteXYType*)pv)->setGuiData (this);
+        p++;
+        p = ((CRemoteXYType*)pv)->init (p);
+        pv += ((CRemoteXYType*)pv)->sizeOf ();
+      }
+      
+      eepromCount = rxy_readConfByte (p++);
+      eepromCount |= rxy_readConfByte (p++)<<8;
+      
+      // init eeprom
+      uint16_t v, s;
+      for (uint16_t i = 0; i < eepromCount; i++) {      
+        v  = rxy_readConfByte (p++); 
+        v |= rxy_readConfByte (p++)<<8; 
+        s = rxy_readConfByte (p++); 
+        s |= rxy_readConfByte (p++)<<8; 
+#if defined(REMOTEXY_HAS_EEPROM)
+        data->eeprom.addItem (inputVar + v, s, v+(s>>6));
+#endif         
+      }  
+    }
+    
+    connect_flag = pv; 
     *connect_flag = 0;   
+
+    inputVarCopy = (uint8_t*)malloc (inputLength); 
+    rxy_bufCopy (inputVarCopy, inputVar, inputLength);
      
     setPassword (_accessPassword);   
-  }
-  
-  
-  uint8_t * initEeprom (uint8_t * p, uint16_t eepromCount) {
-    while (eepromCount--) {
-      uint16_t v, s;
-      v  = rxy_readConfByte (p++); 
-      v |= rxy_readConfByte (p++)<<8; 
-      s = rxy_readConfByte (p++); 
-      s |= rxy_readConfByte (p++)<<8; 
-#if defined(REMOTEXY_HAS_EEPROM)
-      data->eeprom.addItem (inputVar + v, s, v+(s>>6));
-#endif         
-    }  
-  }
-   
-  uint8_t * initComplexVars () {
-    complexVarIterator.start (this);
-    while (complexVarIterator.next()) {
-      complexVarIterator.var->init(this);
-    }
-    connect_flag = (uint8_t*)complexVarIterator.var;     
-    return complexVarIterator.conf;
   }
  
  
@@ -128,27 +133,27 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     }
     net->next = data->nets;
     data->nets = net;
-    /*
-    if (data->httpRequest == NULL) {
-      if (net->hasInternetAccess ()) data->httpRequest = new CRemoteXYHttpRequest (net); 
-    } 
-    */ 
   }
   
   
   public:
   void handler () {
     
+    if (!rxy_bufCompare (inputVarCopy, inputVar, inputLength)) {
+      rxy_bufCopy (inputVarCopy, inputVar, inputLength);
+      CRemoteXYThread::notifyInputVarNeedSend (this); // notify all threads that user change input vars
+    }
+    
     // threads handler
     
     CRemoteXYThread * pt = threads;
-    uint8_t cnt = 0;
+    uint8_t cntConnectFlag = 0;
     while (pt) {   
       pt->handler ();     
-      cnt += pt->connect_flag;
+      cntConnectFlag += pt->connect_flag;
       pt = pt->next;
     }
-    *connect_flag = cnt;
+    *connect_flag = cntConnectFlag;
 
     
     // connections handler    
@@ -160,10 +165,9 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     }    
       
     // complex variables handler  
-        
-    complexVarIterator.start (this);
-    while (complexVarIterator.next()) {
-      complexVarIterator.var->handler();
+    
+    for (uint16_t i = 0; i < complexVarCount; i++) {
+      complexVar[i]->handler ();
     }
     
   }

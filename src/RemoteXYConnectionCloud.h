@@ -72,19 +72,6 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionNet {
     }
   }  
 
-  /*
-  void handleWire (CRemoteXYWire * wire) override {  
-    if (cloudServer->running () && net->configured ()) wire->handler (); 
-    else stopThreadListener (wire);
-  }
-  */
-  
-  /*
-  void stopThreadListener (CRemoteXYWire * wire) override {
-    wire->stop ();
-  }
-  */
-
   
 };
 

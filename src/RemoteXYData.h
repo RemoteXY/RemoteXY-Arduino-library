@@ -19,8 +19,8 @@ class CRemoteXYData {
 
 #if defined(REMOTEXY_HAS_EEPROM)
   public:
-  RemoteXYEeprom eeprom;
-  RemoteXYEepromItem * boardId; 
+  CRemoteXYEeprom eeprom;
+  CRemoteXYEepromItem * boardId; 
 #endif 
            
                    

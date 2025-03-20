@@ -245,11 +245,10 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
     return new CRemoteXYClient_Ethernet ();
   }
   
-  /*
-  CRemoteXYHttpRequest_Proto * createHttpRequest () override { 
-    return new CRemoteXYHttpRequest (this);
+  uint8_t hasInternet () override {
+    return 1;
   }
-  */
+  
 };
 
 

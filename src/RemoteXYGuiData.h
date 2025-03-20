@@ -6,8 +6,8 @@ class CRemoteXYThread;
 class CRemoteXYStream;
 class CRemoteXYNet;
 class CRemoteXYConnectionNet;
-class RemoteXYTypeIterator;
-class RemoteXYEeprom;
+class CRemoteXYType;
+class CRemoteXYEeprom;
 
 inline uint8_t rxy_readConfByte (uint8_t * p) {
   return pgm_read_byte_near (p);
@@ -28,13 +28,13 @@ class CRemoteXYGuiData {
   uint16_t confLength;
   uint8_t *connect_flag;
 
-  uint8_t *complexVarConf;
-  uint8_t *complexVar;
+  CRemoteXYType **complexVar;  // array of pointer
   uint16_t complexVarCount;
   
   CRemoteXYThread * threads;  
   CRemoteXYConnectionNet * connections;  
   
+  uint8_t *inputVarCopy;  
   
   public:
   uint16_t getReceiveBufferSize () {

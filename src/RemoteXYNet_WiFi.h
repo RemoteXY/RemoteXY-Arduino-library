@@ -279,11 +279,9 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
     return new CRemoteXYClient_WiFi ();
   }
   
-  /*
-  CRemoteXYHttpRequest_Proto * createHttpRequest () override { 
-    return new CRemoteXYHttpRequest (this);
-  }         
-  */
+  uint8_t hasInternet () override {
+    return 1;
+  }
                   
 };
 

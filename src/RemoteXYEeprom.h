@@ -17,9 +17,9 @@
 #define REMOTEXY_BOARDID_EEPROM_KEY 0xff10
 
 
-class RemoteXYEepromItem {
+class CRemoteXYEepromItem {
   public:
-  RemoteXYEepromItem * next;
+  CRemoteXYEepromItem * next;
   uint16_t address; // address in eeprom
   uint8_t * comparedData; 
   uint8_t * data; // copy of data from eeprom
@@ -28,7 +28,7 @@ class RemoteXYEepromItem {
   
   // Automatic change control via handler()
   public:
-  RemoteXYEepromItem (uint8_t * _comparedData, uint16_t _size, uint16_t _key) {
+  CRemoteXYEepromItem (uint8_t * _comparedData, uint16_t _size, uint16_t _key) {
     data = NULL;
     comparedData = _comparedData;
     size = _size;
@@ -37,7 +37,7 @@ class RemoteXYEepromItem {
   
   // Manual control
   public:
-  RemoteXYEepromItem (uint16_t _size, uint16_t _key) {
+  CRemoteXYEepromItem (uint16_t _size, uint16_t _key) {
     data = NULL;
     comparedData = NULL;
     size = _size;
@@ -45,21 +45,21 @@ class RemoteXYEepromItem {
   }
 };
 
-class RemoteXYEeprom {
+class CRemoteXYEeprom {
 
   private:
   uint16_t offset;
   uint16_t size;
   uint8_t * data;
   uint16_t keyAddress;
-  RemoteXYEepromItem * items;
+  CRemoteXYEepromItem * items;
   
   public:
   uint8_t initialized;
   
   
   public:
-  RemoteXYEeprom () {
+  CRemoteXYEeprom () {
     items = NULL;
     offset = REMOTEXY_EEPROM_OFFSET;
     initialized = 0;  
@@ -79,8 +79,8 @@ class RemoteXYEeprom {
   
   // Manual writing using writeItem()
   public: 
-  RemoteXYEepromItem * addItem (uint16_t size, uint16_t key) {
-    RemoteXYEepromItem * item = new RemoteXYEepromItem (size, key);
+  CRemoteXYEepromItem * addItem (uint16_t size, uint16_t key) {
+    CRemoteXYEepromItem * item = new RemoteXYEepromItem (size, key);
     item->next = items;
     items = item;
     return item;
@@ -101,7 +101,7 @@ class RemoteXYEeprom {
   public: 
   uint8_t init (uint8_t callBegin) {
     size = 0;
-    RemoteXYEepromItem * item = items;
+    CRemoteXYEepromItem * item = items;
     while (item) {
       size += item->size;
       item = item->next;
@@ -175,7 +175,7 @@ class RemoteXYEeprom {
   void handler () {
     uint8_t *pd, *pcd;
     uint16_t addr, cnt;
-    RemoteXYEepromItem * item = items;
+    CRemoteXYEepromItem * item = items;
     uint8_t changed = 0;
     while (item) {
       if ((item->comparedData != NULL) && (item->data != NULL)) {
@@ -205,7 +205,7 @@ class RemoteXYEeprom {
   }
   
   public:
-  void writeItem (RemoteXYEepromItem * item) {
+  void writeItem (CRemoteXYEepromItem * item) {
     if (item->data != NULL) {
       uint8_t * pd = item->data;
       uint16_t addr = item->address;
@@ -237,7 +237,7 @@ class RemoteXYEeprom {
     while (sz--) rxy_updateCRC (&crc, *p++);
     
     // second part
-    RemoteXYEepromItem * item = items;
+    CRemoteXYEepromItem * item = items;
     while (item) {
       rxy_updateCRC (&crc, item->key & 0xff);
       rxy_updateCRC (&crc, (item->key >> 8) & 0xff);

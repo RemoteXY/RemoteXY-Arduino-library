@@ -2,9 +2,8 @@
 #define RemoteXYType_Notification_h
 
 #include "RemoteXYData.h"
-#include "RemoteXYType.h"
+#include "RemoteXYTypeUseHeap.h"
 #include "RemoteXYEeprom.h"
-#include "RemoteXYStorege_Heap.h"
 #include "RemoteXYNet.h"
 #include "RemoteXYHttpRequest.h"
 
@@ -21,24 +20,16 @@ const char * REMOTEXY_NOTIFICATION_URL = "/board/notification";
                
 #define REMOTEXY_NOTIFICATION_LATENCY_TIME 60000  
                    
-
+                   
 #pragma pack(push, 1)
 struct RemoteXYType_Notification_Head {
   RemoteXYTimeStamp time;  
-  uint8_t track;
   uint8_t messageId;
 };
 #pragma pack(pop)
 
+class RemoteXYType_Notification : public CRemoteXYTypeUseHeap, CRemoteXYHttpRequestCompletion {
 
-class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCompletion {
-
-  protected:
-  CRemoteXYStorage_Heap * heap;
-
-  private:
-  CRemoteXYData *data;
-  
 #if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
   CRemoteXYHttpRequest * httpRequest; // may be NULL  
   uint8_t httpRequestState;
@@ -48,27 +39,23 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
   uint16_t httpRequestPostDataLen;
   uint16_t httpRequestMessageId;
 #endif  
- 
+
+  public:
+  uint16_t sizeOf () override {
+    return sizeof (RemoteXYType_Notification);
+  }
   
-  
-  public: 
-  CRemoteXYType_Notification () {
+  uint8_t* init (uint8_t *conf) override  {
 #if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
     httpRequest = NULL;
     httpRequestState = REMOTEXY_NOTIFICATION_STATE_NO;
-#endif  
-  }
-  
-  public:
-  void init (CRemoteXYGuiData * _guiData) override  {
-    CRemoteXYType::init (_guiData);
-    data = guiData->data;
-#if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
     if (data->boardId == NULL) {
       data->boardId = data->eeprom.addItem (REMOTEXY_BOARDID_LENGTH, REMOTEXY_BOARDID_EEPROM_KEY);      
     }
 #endif
+    return CRemoteXYTypeUseHeap::init (conf);
   };
+
 
 #if defined(REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST)
 
@@ -80,7 +67,9 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
 
   public: 
   void handler () override {    
-
+    RemoteXYStorageHeap_Head heapHead;
+    CRemoteXYData *data = guiData->data;
+    
     if (data->realTime == NULL) data->realTime = new CRemoteXYRealTimeBoard ();
 
     if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_LATENCY) {
@@ -94,15 +83,14 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
     }
     else {
       if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_NO) {
-        if (heap->notEmpty ()) {
+        if (heap.getFirst (&heapHead)) {
           uint8_t * boardId = data->boardId->data; 
           if (rxy_bufIsEmpty (boardId, REMOTEXY_BOARDID_LENGTH)) {       
             httpRequest = CRemoteXYHttpRequest::getHttpRequest (data->nets);
             if (httpRequest != NULL) {    
                     
-              RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
-              httpRequestMessageId = head.id;
-              uint16_t messageLength = head.len;
+              httpRequestMessageId = heapHead.id;
+              uint16_t messageLength = heapHead.len;
               httpRequestPostDataLen = REMOTEXY_BOARDID_LENGTH+1+messageLength+sizeof (RemoteXYStorage_Heap_Head)+sizeof (RemoteXYTimeStamp);
               httpRequestPostData = (uint8_t*)malloc (httpRequestPostDataLen);
               if (httpRequestPostData == NULL) {
@@ -132,7 +120,7 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
                
               // message head and message          
               for (uint16_t i = 0; i < messageLength; i++) {
-                *p++ = heap->getNextByte();
+                *p++ = heap.getNextByte();
               }                       
             
               setState (REMOTEXY_NOTIFICATION_STATE_REQUEST);
@@ -157,16 +145,16 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
 
   
   void httpRequestCompletion () override {
+    RemoteXYStorageHeap_Head heapHead;
     if (httpRequestState == REMOTEXY_NOTIFICATION_STATE_REQUEST) {
       free (httpRequestPostData);
       if (httpRequest->getState () == REMOTEXY_HTTPREQUEST_OK) {
 #if defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.write("Notification request: OK");
 #endif 
-        if (heap->notEmpty ()) {
-          RemoteXYStorage_Heap_Head head = heap->getFirstHead ();
-          if (head.id == httpRequestMessageId) {
-            heap->removeFirst ();
+        if (heap.getFirst (&heapHead)) {
+          if (heapHead.id == httpRequestMessageId) {
+            heap.removeFirst ();
           }
         }
         setState (REMOTEXY_NOTIFICATION_STATE_NO);   
@@ -181,88 +169,38 @@ class CRemoteXYType_Notification : public CRemoteXYType, CRemoteXYHttpRequestCom
 #endif  // REMOTEXY_NOTIFICATION_USE_SERVER_REQUEST
   
   
-  private:
-  void addHeadToHeap (uint8_t messageId, uint8_t track) {
+  private: 
+  RemoteXYType_Notification_Head getHead (uint8_t messageId) {
     RemoteXYType_Notification_Head head;
+    CRemoteXYData *data = guiData->data;
     if (data->realTime != NULL) {
       head.time = data->realTime->getBoardTime ();
     }
     else {
       head.time.setNull ();
     }
-    head.track = track;
     head.messageId = messageId;
-    uint8_t *p = (uint8_t*)&head;
-    for (uint8_t i = 0; i < sizeof(RemoteXYType_Notification_Head); i++) {
-      heap->putNextByte (*p++);    
-    }
+    return head;
   }
   
+  
   public:
-  uint8_t send (char * message, uint8_t track) {
+  uint8_t send (char * message) {
     uint16_t len = rxy_strLength (message); 
     if (len == 0) return 0;
-    if (heap->allocateNew (len + sizeof(RemoteXYType_Notification_Head))) {
-      addHeadToHeap (0, track);
-      while (len--) {                    
-        heap->putNextByte (*message++);
-      } 
-      return 1;
-    }
-    return 0;
-  }
-  
-  uint8_t send (char * message) {
-    return send (message, 0);
+    RemoteXYType_Notification_Head head = getHead (0);
+    return addToHeap ((uint8_t*)&head, sizeof(RemoteXYType_Notification_Head), (uint8_t*)message, len);
   }
   
   
   public:
-  uint8_t send (uint8_t messageId, uint8_t track) {
-    if (heap->allocateNew (sizeof(RemoteXYType_Notification_Head))) {
-      addHeadToHeap (messageId, track);
-      return 1;
-    }
-    return 0;
-  }  
-  
   uint8_t send (uint8_t messageId) {
-    return send (messageId, 0);
-  }
+    RemoteXYType_Notification_Head head = getHead (messageId);
+    return addToHeap ((uint8_t*)&head, sizeof(RemoteXYType_Notification_Head));
+  }  
+
   
-  
 };
 
-class RemoteXYType_Notification_64 : public CRemoteXYType_Notification {
-  public:
-  CRemoteXYStorage_Heap_64 heapInstance;    
-  RemoteXYType_Notification_64 () : CRemoteXYType_Notification() {
-    heap = &heapInstance;
-  }
-};
-
-class RemoteXYType_Notification_128 : public CRemoteXYType_Notification {
-  public:
-  CRemoteXYStorage_Heap_128 heapInstance;    
-  RemoteXYType_Notification_128 () : CRemoteXYType_Notification() {
-    heap = &heapInstance;
-  }
-};
-
-class RemoteXYType_Notification_256 : public CRemoteXYType_Notification {
-  public:
-  CRemoteXYStorage_Heap_256 heapInstance;    
-  RemoteXYType_Notification_256 () : CRemoteXYType_Notification() {
-    heap = &heapInstance;
-  }
-};
-
-class RemoteXYType_Notification_512 : public CRemoteXYType_Notification {
-  public:
-  CRemoteXYStorage_Heap_512 heapInstance; 
-  RemoteXYType_Notification_512 () : CRemoteXYType_Notification() {
-    heap = &heapInstance;
-  }
-};
 
 #endif // RemoteXYType_Notification_h

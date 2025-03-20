@@ -145,16 +145,6 @@ class CRemoteXYNet_ESP8266 : public CRemoteXYNet_ESP8266_Proto {
     return 1;
   }
   
-  /*
-  CRemoteXYRealTime * createRealTime () override {
-    return new CRemoteXYRealTimeNet (this);
-  };
-   */
-  /*
-  CRemoteXYHttpRequest_Proto * createHttpRequest () override { 
-    return new CRemoteXYHttpRequest (this);
-  }
-  */
 
 };       
 
