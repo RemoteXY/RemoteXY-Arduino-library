@@ -1,7 +1,5 @@
 /*
-   Simple button example for Arduino and external ESP8266 on HardwareSerial
-   You must disconnect ESP8266 from pins when loading the program
-   
+   Simple button example
    
    This source code of graphical user interface 
    has been generated automatically by RemoteXY editor.
@@ -24,12 +22,13 @@
 // RemoteXY select connection mode and include library
 //#define REMOTEXY__DEBUGLOG 
 
+#include <WiFiNINA.h>  
 #include <RemoteXY.h>
 
 
 // RemoteXY configurate  
 #pragma pack(push, 1)
-uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =
+uint8_t RemoteXY_CONF[] =
   { 255,1,0,1,0,27,0,10,13,2,
   1,0,9,9,46,46,6,7,50,50,
   2,31,88,0,65,4,62,16,31,31,
@@ -65,13 +64,9 @@ void setup()
     RemoteXY_CONF_PROGMEM, 
     &RemoteXY, 
     new CRemoteXYConnectionServer (
-      new CRemoteXYNet_ModemESP8266 (
-        new CRemoteXYStream_HardSerial (
-          &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
-          115200
-        ),
+      new CRemoteXYNet_WiFi (
         "myHomeFiFi",       // REMOTEXY_WIFI_SSID
-        "12345678"),        // REMOTEXY_WIFI_PASSWORD
+        "myPass"),          // REMOTEXY_WIFI_PASSWORD
       6377                  // REMOTEXY_SERVER_PORT
     )
   ); 

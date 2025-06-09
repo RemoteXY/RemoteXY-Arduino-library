@@ -31,12 +31,12 @@ class CRemoteXYStream_SoftSerial : public CRemoteXYStream_Stream {
     serial->begin (_serialSpeed);
     setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init software serial ");
+    RemoteXYDebugLog.write(F("Init software serial "));
     RemoteXYDebugLog.writeAdd(_serialSpeed);
-    RemoteXYDebugLog.writeAdd(" baud");
-    RemoteXYDebugLog.write("pin RX=");
+    RemoteXYDebugLog.writeAdd(F(" baud"));
+    RemoteXYDebugLog.write(F("pin RX="));
     RemoteXYDebugLog.writeAdd(_serialRx);
-    RemoteXYDebugLog.writeAdd("; pin TX=");
+    RemoteXYDebugLog.writeAdd(F("; pin TX="));
     RemoteXYDebugLog.writeAdd(_serialTx);
 #endif
   }              

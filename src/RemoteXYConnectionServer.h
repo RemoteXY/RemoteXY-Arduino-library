@@ -20,14 +20,14 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXY
   CRemoteXYConnectionServer (CRemoteXYNet * _net, uint16_t _port = 0) : CRemoteXYConnectionNet (_net) {
     port = _port;
     serverRunning = 0;
-    wires = NULL;  
+    wires = NULL;     
     server = net->createServer (port); 
     if (!server) {
 #if defined(REMOTEXY__DEBUGLOG) 
-      RemoteXYDebugLog.write ("Server was not created");
+      RemoteXYDebugLog.write (F("Server was not created"));
 #endif    
       return;
-    } 
+    }                      
     server->setClientAvailableListener (this); 
   }
   
@@ -37,22 +37,22 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXY
   
   public:  
   void handler () override {
-    if (!server) return;
+    if (server == NULL) return;
     if (net->configured ()) {
       if (serverRunning) {
-        server->handler ();  
+        server->handler (); 
       }
-      else {
+      else {  
         if (server->begin ()) {
-          serverRunning=1;
+          serverRunning=1;          
 #if defined(REMOTEXY__DEBUGLOG)
-          RemoteXYDebugLog.write ("Server opened on port ");
+          RemoteXYDebugLog.write (F("Server opened on port "));
           RemoteXYDebugLog.writeAdd (port);
 #endif                
         }
 #if defined(REMOTEXY__DEBUGLOG)
         else {
-          RemoteXYDebugLog.write ("Server was not started");
+          RemoteXYDebugLog.write (F("Server was not started"));
         }
 #endif                
       }
@@ -62,7 +62,7 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXY
         server->stop ();
         serverRunning =0;
       }
-    }
+    }                 
   }
   
   void clientAvailable (CRemoteXYClient * client) override {  
@@ -81,29 +81,26 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXY
       }
       wire->begin (client);
       thread->begin (this, wire, 1);
-      wire->setReceivePackageListener (thread);   
+      wire->setReceivePackageListener (thread);  
     }
     else {
-      client->stop ();
+      client->stop ();  
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write ("Client reject");
+      RemoteXYDebugLog.write (F("Client reject"));
 #endif  
     }
       
   }
   
-  void handleWire (CRemoteXYWire * wire) override {
-    CRemoteXYClient * client = (CRemoteXYClient*)wire->stream;
-    if (client) {
-      if (client->connected () && serverRunning && net->configured ()) wire->handler (); 
-      else stopThreadListener (wire);
-    }
+  void handleWire (CRemoteXYWire * wire) override {    
+    if (wire->running() && serverRunning && net->configured ()) wire->handler (); 
+    else stopThreadListener (wire);
   }
 
   void stopThreadListener (CRemoteXYWire * wire) override {
     CRemoteXYClient * client = (CRemoteXYClient*)wire->stream;
     if (client) {
-      client->stop ();
+      client->stop ();  
       wire->stop ();
     }
   }

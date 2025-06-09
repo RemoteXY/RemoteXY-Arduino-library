@@ -1,4 +1,4 @@
-Library version: 3.1.14
+Library version: 4.1.1
 
 This code is the library for Arduino IDE. The library is part of the RemoteXY project. 
 RemoteXY allows you to control your device using an Android or iOS smartphone. There are Bluetooth, WiFi, Ethernet, USB OTG or Cloud server can be used for connection.
@@ -59,4 +59,5 @@ History:
    version 3.1.14
      - support ESP32 ver.3.0.x     
      
-     
+   version 4.1.1 (beta)
+     - library update to support new features     

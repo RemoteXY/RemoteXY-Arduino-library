@@ -26,7 +26,6 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
 
   uint8_t sendBuffer[RemoteXYNet_BLEDEVICE__SEND_BUFFER_SIZE];
   uint16_t sendBufferCount;
-  uint16_t sendBytesAvailable;
   
   uint16_t sendCount;
   uint8_t sendBLEBufferOverflow;
@@ -48,9 +47,11 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     receiveBufferStart = 0;
     receiveBufferPos = 0;
     receiveBufferCount = 0;  
+    
+    sendBufferCount = 0;
         
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init ESP32 BLE on chip");
+    RemoteXYDebugLog.write(F("Init ESP32 BLE on chip"));
 #endif
       // Create the BLE Device
     BLEDevice::init(_bleDeviceName);
@@ -83,14 +84,14 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     pServer->getAdvertising()->start();
 
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("BLE started");
+    RemoteXYDebugLog.write(F("BLE started"));
 #endif    
 
   }
                     
   void onConnect(BLEServer* pServer) {
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("BLE client connected");
+    RemoteXYDebugLog.write(F("BLE client connected"));
 #endif
     receiveBufferStart = 0;
     receiveBufferPos = 0;
@@ -99,7 +100,7 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
   
   void onDisconnect(BLEServer* pServer) {
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("BLE client disconnected");
+    RemoteXYDebugLog.write(F("BLE client disconnected"));
 #endif
     receiveBufferCount = 0;
     pServer->getAdvertising ()->start ();
@@ -135,24 +136,22 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     if (s == Status::SUCCESS_NOTIFY) canWrite = 1; 
   }
   */
-  
-  void startWrite (uint16_t len) override {
-    sendBytesAvailable = len;
-    sendBufferCount = 0;
-    sendCount = 0;
-    sendBLEBufferOverflow = 0;
-  }
-  
+    
   
   void write (uint8_t b) override {
+    sendBuffer[sendBufferCount++] = b;
+    if (sendBufferCount == RemoteXYNet_BLEDEVICE__SEND_BUFFER_SIZE) {
+      _flush ();
+    }
+  } 
+  
+  void _flush () {
     // the ESP BLE library have some error
     // it has some sent buffer which can overflow after 600 bytes if sending bytes without delay
     // as a result of the tests, it was found that 5 ms per 20 bytes are needed
     // but if send without delay, it can send up to 600 bytes
   
-    sendBuffer[sendBufferCount++] = b;
-    sendBytesAvailable--;
-    if ((sendBufferCount == RemoteXYNet_BLEDEVICE__SEND_BUFFER_SIZE) || (sendBytesAvailable == 0)) {
+    if (sendBufferCount > 0) {
       pRxTxCharacteristic->setValue((uint8_t *)sendBuffer, sendBufferCount);
       pRxTxCharacteristic->notify();
       sendCount += sendBufferCount;
@@ -165,7 +164,13 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
         delay (RemoteXYNet_BLEDEVICE__SEND_TIME_FOR_ONE_PACKAGE);
       }
     }
-  } 
+  }  
+  
+  void flush () override {
+    _flush ();
+    sendCount = 0;
+    sendBLEBufferOverflow = 0;
+  }  
   
   void handler () override {   
     if (receiveBufferCount>0) {

@@ -5,7 +5,6 @@
 #include "RemoteXYEeprom.h"  
 #include "RemoteXYNet.h"
 
-#include "RemoteXYRealTime.h"
 
 class CRemoteXYNet;
 
@@ -14,7 +13,10 @@ class CRemoteXYData {
   public:
   
   CRemoteXYNet * nets;  
-  CRemoteXYRealTime * realTime;
+  
+  RemoteXYTimeStamp boardTime;   
+  uint32_t handlerMillis;
+
 
 
 #if defined(REMOTEXY_HAS_EEPROM)

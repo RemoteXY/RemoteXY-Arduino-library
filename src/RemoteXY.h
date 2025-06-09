@@ -1,6 +1,6 @@
 /* RemoteXY.h 
    A RemoteXY Library - Remote device control
-   version 3.1.14   
+   version 4.1.1   
    ===========================================================
    For use RemoteXY library visit website http://remotexy.com
    This website will help you use the library for configuring 
@@ -118,13 +118,14 @@
    version 3.1.14
      - support ESP32 ver.3.0.x
      
-   version 3.2.1
+   version 4.1.1 (beta)
      - library update to support new features
                
 */
 
 #ifndef _REMOTEXY_H_
-#define _REMOTEXY_H_
+#define _REMOTEXY_H_   
+
 
 //#define REMOTEXY__DEBUGLOG
 //#define REMOTEXY__DEBUGLOG_SERIAL Serial
@@ -144,22 +145,29 @@
 #endif
  
 
+
 #include <inttypes.h>
 //#include <Arduino.h>
 #include "RemoteXYDebugLog.h"
+
+#ifndef FPSTR
+#define FPSTR(pstr) (const __FlashStringHelper*)(pstr)
+#endif
+#define rxy_pgm_read_byte(x) pgm_read_byte_near(x)
+#define rxy_readConfByte(x) pgm_read_byte_near(x)  // pgm_read_byte_near ???
 
 
 // RXY defines
 #define REMOTEXY_PASSWORD_LENGTH_MAX 26
 #define REMOTEXY_BOARDID_LENGTH 16
-#define REMOTEXY_RECEIVE_BUFFER_MIN_LENGTH 32  // more than PASSWORD_LENGTH
 
-
-#include <RemoteXYFunc.h>   
-#include <RemoteXYEeprom.h> 
+#include "RemoteXYFunc.h"   
+#include "RemoteXYEeprom.h" 
+#include "RemoteXYTimeStamp.h"
+#include "RemoteXYTime.h" 
 
 #include "RemoteXYClass.h"
-
+                        
 #include "RemoteXYStream_Stream.h"           // any stream
 #include "RemoteXYStream_HardSerial.h"
 #include "RemoteXYStream_SoftSerial.h"        // need SoftwareSerial.h or SoftSerial.h      
@@ -171,7 +179,7 @@
 #include "RemoteXYStream_ArduinoBLE.h"        // need ArduinoBLEl.h
 #include "RemoteXYNet_WiFi.h"                // need ESP8266WiFi.h (ESP8266) or WiFi.h (ESP32) or WiFi.h (Arduino shield) 
 #include "RemoteXYNet_Ethernet.h"            // need Ethernet.h 
-#include "RemoteXYNet_ESP8266.h"
+#include "RemoteXYNet_ModemESP8266.h"        // internal AT modem
 
 
 #ifndef REMOTEXY_ACCESS_PASSWORD 
@@ -218,39 +226,39 @@
 
 #elif defined(REMOTEXY_MODE__HARDSERIAL_ESP8266_POINT) || defined(REMOTEXY_MODE__ESP8266_HARDSERIAL_POINT) || defined(REMOTEXY_MODE__ESP8266POINT_HARDSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266Point (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266_Point (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
  
 #elif defined(REMOTEXY_MODE__SOFTSERIAL_ESP8266_POINT) || defined(REMOTEXY_MODE__ESP8266_SOFTSERIAL_POINT) || defined(REMOTEXY_MODE__ESP8266POINT_SOFTSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266Point (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266_Point (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
 
 #elif defined(REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266_POINT) || defined(REMOTEXY_MODE__ESP8266_ALTSOFTSERIAL_POINT)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266Point (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266_Point (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
 
 #elif defined(REMOTEXY_MODE__HARDSERIAL_ESP8266) || defined(REMOTEXY_MODE__ESP8266_HARDSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
   
 #elif defined(REMOTEXY_MODE__SOFTSERIAL_ESP8266) || defined(REMOTEXY_MODE__ESP8266_SOFTSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
 
 #elif defined(REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266) || defined(REMOTEXY_MODE__ESP8266_ALTSOFTSERIAL)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionServer (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_SERVER_PORT), REMOTEXY_ACCESS_PASSWORD) 
   
 #elif defined(REMOTEXY_MODE__HARDSERIAL_ESP8266_CLOUD) || defined(REMOTEXY_MODE__ESP8266_HARDSERIAL_CLOUD)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_HardSerial (&REMOTEXY_SERIAL, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
 
 #elif defined(REMOTEXY_MODE__SOFTSERIAL_ESP8266_CLOUD) || defined(REMOTEXY_MODE__ESP8266_SOFTSERIAL_CLOUD)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_SoftSerial (REMOTEXY_SERIAL_RX, REMOTEXY_SERIAL_TX, REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
 
 #elif defined(REMOTEXY_MODE__ALTSOFTSERIAL_ESP8266_CLOUD) || defined(REMOTEXY_MODE__ESP8266_ALTSOFTSERIAL_CLOUD)
   CRemoteXY *remotexy;   
-  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ESP8266 (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
+  #define RemoteXY_Init() remotexy = new CRemoteXY (RemoteXY_CONF_PROGMEM, &RemoteXY, new CRemoteXYConnectionCloud (new CRemoteXYNet_ModemESP8266 (new CRemoteXYStream_AltSoftSerial (REMOTEXY_SERIAL_SPEED), REMOTEXY_WIFI_SSID, REMOTEXY_WIFI_PASSWORD), REMOTEXY_CLOUD_SERVER, REMOTEXY_CLOUD_PORT, REMOTEXY_CLOUD_TOKEN), REMOTEXY_ACCESS_PASSWORD)      
 
 #elif defined(REMOTEXY_MODE__ETHERNET) || defined(REMOTEXY_MODE__ETHERNET_LIB) || defined(REMOTEXY_MODE__W5100_SPI)
   CRemoteXY *remotexy;   

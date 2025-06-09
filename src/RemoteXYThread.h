@@ -4,15 +4,14 @@
 
 
 #include "RemoteXYGuiData.h"
-//#include "RemoteXYNet.h"
 #include "RemoteXYConnection.h"
 #include "RemoteXYWire.h"
 #include "RemoteXYType.h"
 
 
-#define REMOTEXY_INIT_CRC 0xffff
 #define REMOTEXY_PACKAGE_START_BYTE 0x55
 #define REMOTEXY_THREAD_TIMEOUT 8000
+
 
 
 class CRemoteXYThread : public CRemoteXYReceivePackageListener {
@@ -54,13 +53,13 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     wire = _wire;         
     clientId = 0; 
     stopByTimeOut = _stopByTimeOut;
-    timeOut = millis ();
+    timeOut = guiData->data->handlerMillis;
     connect_flag = 0;
     inputVarNeedSend = 0;
     complexVarNeedSend = 0;
 
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("App client started");
+    RemoteXYDebugLog.write(F("App client started"));
     //RemoteXYDebugLog.writeAvailableMemory ();
 #endif
   }  
@@ -78,7 +77,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       wire = NULL;  // unused
       connect_flag = 0;
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("App client stoped");
+      RemoteXYDebugLog.write(F("App client stoped"));
 #endif 
     }
   }  
@@ -94,8 +93,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     if (wire) {       
       conn->handleWire (wire);
       if (wire->running ()) {  
-        if (millis () - timeOut > REMOTEXY_THREAD_TIMEOUT) {
-          timeOut = millis ();
+        if (guiData->data->handlerMillis - timeOut > REMOTEXY_THREAD_TIMEOUT) {
+          timeOut = guiData->data->handlerMillis;
           connect_flag = 0;
           if (stopByTimeOut) stop (); 
         }     
@@ -109,14 +108,13 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     uint16_t i, length;
     uint8_t *p, *kp;
     uint8_t allowAccess; 
-    uint8_t c;  
-    uint16_t * pi;
+    uint8_t b;  
     CRemoteXYData * data = guiData->data;
       
     if (wire == NULL) return;  
-    if ((package->command != 0x00) && (!connect_flag)) return;
+    if ((package->command != REMOTEXY_PACKAGE_COMMAND_GETCONF) && (!connect_flag)) return;
     switch (package->command) {  
-      case 0x00: // send configuration or denied    
+      case REMOTEXY_PACKAGE_COMMAND_GETCONF: // send configuration or denied    
         allowAccess = 0;
         if (package->length==0) { 
           if (guiData->accessPassword == NULL) allowAccess=1;
@@ -127,55 +125,58 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
             allowAccess = rxy_strCompare ((char*)guiData->accessPassword, (char*)package->buffer);
           }                          
         } 
-        if (allowAccess!=0) {
-          wire->sendConfPackage (0x00, clientId);
+        if (allowAccess) {
+          wire->sendConfPackage (REMOTEXY_PACKAGE_COMMAND_GETCONF, clientId);
           connect_flag = 1;
         }
         else {
-          uint8_t buf[4];
+          uint8_t buf[5];
           p = buf;
           kp = guiData->conf;         
           i=guiData->editorVersion>=5?3:2;
-          length = i+1;
+          length = i+2;
+          *p++ = REMOTEXY_PACKAGE_VERSION;
           while (i--) *p++ = rxy_readConfByte(kp++);
           *p++ = 0xf0;
-          wire->sendPackage (0x00, clientId, buf, length);
+          wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_GETCONF, clientId, buf, length);
         }          
         break;   
-      case 0x40: // send input and output vars 
+      case REMOTEXY_PACKAGE_COMMAND_ALLVAR: // send input and output vars 
+        wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_ALLVAR, clientId, guiData->inputVar, guiData->inputLength + guiData->outputLength); 
         inputVarNeedSend = 0;
-        wire->sendPackage (0x40, clientId, guiData->inputVar, guiData->inputLength + guiData->outputLength); 
         break;   
-      case 0x80: // receive input vars 
+      case REMOTEXY_PACKAGE_COMMAND_INPUTVAR: // receive input vars 
         if ((package->length == guiData->inputLength) && (inputVarNeedSend==0)) {
           rxy_bufCopy (guiData->inputVar, guiData->inputVarCopy, package->buffer, guiData->inputLength);
           CRemoteXYThread::notifyInputVarNeedSend (guiData);  // notify other threads
-          inputVarNeedSend = 0;
+          inputVarNeedSend = 0; // was change in notifyInputVarNeedSend
         }
-        wire->sendEmptyPackage (0x80, clientId);
+        wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_INPUTVAR, clientId);
         break;   
-      case 0xC0: // send output vars 
-        c = 0xC0;
-        if (inputVarNeedSend != 0) c |= 0x01; 
-        if (complexVarNeedSend != 0) c |= 0x02; 
-        wire->sendPackage (c, clientId, guiData->outputVar, guiData->outputLength);
+      case REMOTEXY_PACKAGE_COMMAND_OUTPUTVAR: // send output vars        
+        b = 0;
+        if (inputVarNeedSend != 0) b |= 0x01; 
+        if (complexVarNeedSend != 0) b |= 0x02; 
+        wire->startPackage (REMOTEXY_PACKAGE_COMMAND_OUTPUTVAR, clientId, guiData->outputLength + 1);
+        wire->sendBytePackage (b);
+        wire->sendBytesPackage (guiData->outputVar, guiData->outputLength);
         break;  
         
 //////////////////////////////////////////////////    
 // NEW COMMANDS v 3.2    
         
       
-      case 0x01: // get/set board id    
+      case REMOTEXY_PACKAGE_COMMAND_BOARDID: // get/set board id    
 #if defined (REMOTEXY_HAS_EEPROM)
         CRemoteXYEeprom * eeprom = &data->eeprom;
         CRemoteXYEepromItem * boardId = data->boardId;       
         if (boardId != NULL) {
           if (package->length==0) {
             if (boardId != NULL) {
-              wire->sendPackage (0x01, clientId, boardId->data, REMOTEXY_BOARDID_LENGTH);
+              wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId, boardId->data, REMOTEXY_BOARDID_LENGTH);
             }
             else {      
-              wire->sendEmptyPackage (0x01, clientId);
+              wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
             }
           } 
           else if (package->length==REMOTEXY_BOARDID_LENGTH) {
@@ -183,44 +184,48 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
               rxy_bufCopy (boardId->data, package->buffer, REMOTEXY_BOARDID_LENGTH);
               eeprom->writeItem (boardId);
             }
-            wire->sendEmptyPackage (0x01, clientId);
+            wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
           }
         }
         else {
-          wire->sendEmptyPackage (0x01, clientId);
+          wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
         }
 #else
-        wire->sendEmptyPackage (0x01, clientId);
+        wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
 #endif        
         break;
                             
-      case 0x02: // set utc time / get board time 
-        if (data->realTime != NULL) {
-          data->realTime->receivePackage (package, wire);
-        }
-        else {
-          wire->sendEmptyPackage (0x02, clientId);
-        }
+      case REMOTEXY_PACKAGE_COMMAND_TIME: { // get board time 
+        uint8_t buf[8];        
+        uint32_t* pbuf = (uint32_t*)buf;
+        *pbuf++ = data->boardTime.getDays ();
+        *pbuf = data->boardTime.getMillisSinceStartOfDay ();
+        wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_TIME, clientId, buf, 8); 
         break;    
-      
-      case 0x10: // send complex var descriptors
+      }            
+      case REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC: // send complex var descriptors
         sendComplexVarDescriptorsPacage ();
+        complexVarNeedSend = 0;
         break;
                              
-      case 0x12: // query complex variable
-        i = 0;
+      case REMOTEXY_PACKAGE_COMMAND_COMPLEXDATA: // query complex variable
+        b = 0;
         if (package->length >= 2) {
-          pi = (uint16_t*)package->buffer;
-          if (*pi < guiData->complexVarCount) {
-            i = guiData->complexVar[*pi]->receivePackage (package, wire);
+          i = *((uint16_t*)package->buffer);
+          if (i < guiData->complexVarCount) {
+            b = guiData->complexVar[i]->handlePackage (package, wire);
           }
         }
-        if (i == 0) {
-          wire->sendEmptyPackage (0x12, clientId);
+        if (b == 0) {
+          wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_COMPLEXDATA, clientId);
         }
         break;   
+      case REMOTEXY_PACKAGE_COMMAND_DISCONNECT:
+        wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_DISCONNECT, clientId);
+        stop ();
+        break; 
     }  
-    timeOut = millis ();  
+    timeOut = guiData->data->handlerMillis;  
   }
   
   private:
@@ -228,17 +233,17 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     uint16_t length = 0;
     uint8_t maxDescriptorLength = 0;
     uint8_t len;
-    CRemoteXYType * var;
-    for (uint16_t i = 0; i > guiData->complexVarCount; i++) {
+    CRemoteXYTypeInner * var;
+    for (uint16_t i = 0; i < guiData->complexVarCount; i++) {
       var = guiData->complexVar[i];
       len = var->getDescriptorLength ();
       length += len;
       if (len > maxDescriptorLength) maxDescriptorLength = len;       
     }
-    wire->startPackage (0x10, clientId, length);
+    wire->startPackage (REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC, clientId, length);
     uint8_t buf[maxDescriptorLength];
     uint8_t * p;
-    for (uint16_t i = 0; i > guiData->complexVarCount; i++) {
+    for (uint16_t i = 0; i < guiData->complexVarCount; i++) {
       var = guiData->complexVar[i];
       len = var->getDescriptorLength ();
       var->getDescriptor (buf);
@@ -247,7 +252,6 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         wire->sendBytePackage (*p++);
       } 
     }
-    wire->endPackage ();   
   }
   
 
@@ -266,7 +270,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       pt = new CRemoteXYThread ();
       if (pt == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Out of RAM for new app client");
+        RemoteXYDebugLog.write (F("Out of RAM for new app client"));
 #endif           
         return NULL;  
       }
@@ -274,12 +278,12 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       pt->next = guiData->threads;
       guiData->threads = pt;
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write ("New app client created");
+      RemoteXYDebugLog.write (F("New app client created"));
 #endif      
       return pt; 
     }
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write ("App client limit exceeded, see definition REMOTEXY_MAX_CLIENTS");
+    RemoteXYDebugLog.write (F("App client limit exceeded"));
 #endif      
     return NULL; 
   }

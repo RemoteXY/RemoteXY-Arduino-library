@@ -9,6 +9,20 @@
 
 #define REMOTEXY_PACKAGE_START_BYTE 0x55
 #define REMOTEXY_PACKAGE_MIN_LENGTH 6
+#define REMOTEXY_PACKAGE_SEND_FRAGMENT_SIZE_DEF 1024 
+
+#define REMOTEXY_PACKAGE_COMMAND_GETCONF      0x00
+#define REMOTEXY_PACKAGE_COMMAND_PING         0x10
+#define REMOTEXY_PACKAGE_COMMAND_REGCLOUD     0x11 // for board
+#define REMOTEXY_PACKAGE_COMMAND_TIME         0x20
+#define REMOTEXY_PACKAGE_COMMAND_BOARDID      0x30
+#define REMOTEXY_PACKAGE_COMMAND_ALLVAR       0x40
+#define REMOTEXY_PACKAGE_COMMAND_INPUTVAR     0x80
+#define REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC  0xA0
+#define REMOTEXY_PACKAGE_COMMAND_COMPLEXDATA  0xB0
+#define REMOTEXY_PACKAGE_COMMAND_OUTPUTVAR    0xC0  
+#define REMOTEXY_PACKAGE_COMMAND_DISCONNECT   0xE0  
+
 
 struct CRemoteXYPackage {
   uint8_t command;
@@ -41,7 +55,15 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   uint16_t receiveIndex;
   uint8_t receiveModified;
   volatile uint8_t receiveLock;  // =1 only add to receive buffer
-    
+  
+  uint16_t sendFragmentSize;
+  
+  // for send package
+  uint8_t sendCommand; // &clientId  
+  uint16_t sendLength; // all bytes
+  uint8_t sendFragmentId; 
+  uint8_t sendFragmentLastId; 
+  uint16_t sendFragmentLength;
   
   public:
   CRemoteXYWire (CRemoteXYGuiData * _guiData) {
@@ -59,7 +81,13 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     stream = NULL;
     receivePackageListener = NULL;
     receiveBufferSize = guiData->getReceiveBufferSize () * receiveBufferMultiple;
-    receiveBuffer = (uint8_t*)malloc (receiveBufferSize);        
+    receiveBuffer = (uint8_t*)malloc (receiveBufferSize); 
+    sendFragmentSize = REMOTEXY_PACKAGE_SEND_FRAGMENT_SIZE_DEF;       
+  }
+  
+  public:
+  void setSendFragmentSize (uint16_t _sendFragmentSize) {
+    sendFragmentSize = _sendFragmentSize;
   }
   
   public: 
@@ -90,15 +118,15 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   }
   
   public:
-  uint8_t running () {   
-    if (stream) return 1;
-    else return 0;
+  uint8_t running () {  
+    if (stream) return stream->connected();
+    return 0;
   }
  
   
   public:
   void handler () {
-    if (stream) {
+    if (running ()) {
       stream->handler ();
       receivePackage ();
     }
@@ -109,40 +137,80 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   inline void sendByteUpdateCRC (uint8_t b) {
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.writeOutputHex (b);  
-#endif 
+#endif  
     stream->write (b);
     rxy_updateCRC (&sendCRC, b);   
   } 
 
-  public:
-  void startPackage (uint8_t command, uint8_t clientId, uint16_t length) {
-    if (stream) {
-      length+=6;    
-      rxy_initCRC (&sendCRC);
-      stream->startWrite (length);
-            
+  private:
+  void sendPackageHeader () {
+    
+    sendFragmentLength = sendLength;
+    if (sendFragmentLastId != 0) {
+      if (sendFragmentLength > sendFragmentSize - 8 ) {
+        sendFragmentLength = sendFragmentSize - 8;
+      }
+    }
+    sendLength -= sendFragmentLength;
+    
+    if (stream) {   
+#if defined(REMOTEXY__DEBUGLOG)
+      RemoteXYDebugLog.writeNewString ();
+#endif 
+      rxy_initCRC (&sendCRC); 
+      uint16_t length = sendFragmentLength + 6;
+      uint8_t command = sendCommand;
+      if (sendFragmentLastId != 0) {
+        length += 2;  
+        command |= 0x01;
+      }
+      //stream->startWrite (length);
       sendByteUpdateCRC (REMOTEXY_PACKAGE_START_BYTE);
       sendByteUpdateCRC (length);
       sendByteUpdateCRC (length>>8);
-      sendByteUpdateCRC (command | (clientId << 1));      
-    }
+      sendByteUpdateCRC (command);  
+      if (sendFragmentLastId != 0) {
+        sendByteUpdateCRC (sendFragmentLastId);
+        sendByteUpdateCRC (sendFragmentId);      
+      }
+    }    
+  }
+
+
+  public:
+  void startPackage (uint8_t command, uint8_t clientId, uint16_t length) {
+    sendCommand = command | ((clientId & 0x07) << 1);
+    sendLength = length;      
+    if ((length + 6 <= sendFragmentSize) || ((command & 0xf0) == 0x10)) {
+      sendFragmentLastId = 0;
+    } 
+    else {
+      sendFragmentLastId = length / (sendFragmentSize - 8);
+    }  
+    sendFragmentId = 0;
+    sendPackageHeader ();
+    if (length == 0) endPackage ();
   }
   
   public:
   void sendBytePackage (uint8_t b) {
-    if (stream) {
-      sendByteUpdateCRC (b);
+    if (stream) sendByteUpdateCRC (b);
+    sendFragmentLength--;
+    if (sendFragmentLength == 0) {
+      endPackage ();
+      if (sendFragmentId < sendFragmentLastId) {
+        sendFragmentId++;
+        sendPackageHeader ();
+      }
     }
   }
   
   public:
   void sendBytesPackage (uint8_t * buf, uint16_t len) {
-    if (stream) {
-      while (len--) sendByteUpdateCRC (*buf++);
-    }
+    while (len--) sendBytePackage (*buf++);
   }
   
-  public:
+  private:
   void endPackage () {
     if (stream) {
 #if defined(REMOTEXY__DEBUGLOG)
@@ -151,6 +219,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
 #endif  
       stream->write (sendCRC);
       stream->write (sendCRC>>8); 
+      stream->flush ();
     } 
   }
   
@@ -159,25 +228,22 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   void sendPackage (uint8_t command, uint8_t clientId, uint8_t *buf, uint16_t length) {
     startPackage (command, clientId, length);
     sendBytesPackage (buf, length);
-    endPackage ();  
   }
   
   public:
   void sendConfPackage (uint8_t command, uint8_t clientId) {
     uint8_t *p = guiData->conf;
     uint16_t length = guiData->confLength;
-    startPackage (command, clientId, length); 
-    //sendBytePackage (REMOTEXY_PACKAGE_VERSION);
+    startPackage (command, clientId, length+1); 
+    sendBytePackage (REMOTEXY_PACKAGE_VERSION);
     while (length--) {
       sendBytePackage (rxy_readConfByte (p++));
     }
-    endPackage ();  
   }
    
   public:
   void sendEmptyPackage (uint8_t command, uint8_t clientId) {
     startPackage (command, clientId, 0);
-    endPackage ();  
   }
 
   public:
@@ -189,7 +255,8 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
 #endif   
     if ((receiveIndex==0) && (byte!=REMOTEXY_PACKAGE_START_BYTE)) return; 
     if (receiveIndex >= receiveBufferSize) {
-      if (receiveLock) return;      
+      if (receiveLock) return;  
+      // remove previous package    
       pi = 1;
       while (pi < receiveBufferSize) {
         if (receiveBuffer[pi] == REMOTEXY_PACKAGE_START_BYTE) break;
@@ -206,8 +273,6 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   private:
   void receivePackage () {
     if (receiveModified) {
-      receiveModified = 0;
-      
       uint16_t crc; 
       uint16_t si, i;
       uint16_t packageLength;
@@ -233,14 +298,14 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
               while (si < receiveIndex) receiveBuffer[i++] = receiveBuffer[si++];
               receiveIndex = i;
               receiveLock = 0;
-              si = 0;
-              continue;
+              return;  // do not continue, the other thread should also work
             }
           }
         }
         si++; 
       }
-    }   
+      receiveModified = 0;   
+    }
   }
   
 };

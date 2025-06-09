@@ -112,7 +112,7 @@ class CRemoteXYEeprom {
       if (data == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.init ();
-        RemoteXYDebugLog.write("Out of RAM memory for EEPROM support: ");
+        RemoteXYDebugLog.write(F("Out of RAM memory for EEPROM support: "));
         RemoteXYDebugLog.writeAdd(size);
 #endif 
         return 0;
@@ -133,9 +133,9 @@ class CRemoteXYEeprom {
       if (callBegin) begin (size);
  
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("EEPROM started, size ");
+      RemoteXYDebugLog.write(F("EEPROM started, size "));
       RemoteXYDebugLog.writeAdd(size);
-      RemoteXYDebugLog.writeAdd(" offset ");
+      RemoteXYDebugLog.writeAdd(F(" offset "));
       RemoteXYDebugLog.writeAdd(offset);
 #endif       
       
@@ -270,7 +270,7 @@ class CRemoteXYEeprom {
     EEPROM.commit ();
 #endif    
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("EEPROM written");
+      RemoteXYDebugLog.write(F("EEPROM written"));
 #endif   
   }
   

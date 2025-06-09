@@ -23,14 +23,14 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionNet {
     port = _port;
     cloudHost = _cloudHost;
     cloudToken = _cloudToken;
+    client = _net->newClient ();
   }
   
   public:
   void init (CRemoteXYGuiData * _data) override {
     data = _data;
     cloudServer = new CRemoteXYCloudServer (data, this, cloudToken);
-    client = net->newClient ();
-    timeOut = -REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT;
+    timeOut = millis() - REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT;
   }
   
   void handler () override {
@@ -43,31 +43,37 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionNet {
       else { // not serverRunning
         if (millis() - timeOut > REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT) {
 #if defined(REMOTEXY__DEBUGLOG)
-          RemoteXYDebugLog.write ("Connecting to cloud: ");
+          RemoteXYDebugLog.write (F("Connecting to cloud: "));
           RemoteXYDebugLog.writeAdd (cloudHost);
-          RemoteXYDebugLog.writeAdd (" ");
+          RemoteXYDebugLog.writeAdd (F(" "));
           RemoteXYDebugLog.writeAdd (port);
-          RemoteXYDebugLog.writeAdd (" ..");
-#endif 
+          RemoteXYDebugLog.writeAdd (F(" .."));
+#endif     
           if (client->connect (cloudHost, port)) {
 #if defined(REMOTEXY__DEBUGLOG)
-            RemoteXYDebugLog.write ("Cloud server connected");
+            RemoteXYDebugLog.write (F("Cloud server connected"));
 #endif 
             cloudServer->begin (client);            
           }        
 #if defined(REMOTEXY__DEBUGLOG)
           else {
-            RemoteXYDebugLog.write ("Cloud server not available");
+            RemoteXYDebugLog.write (F("Cloud server not available"));
           }
 #endif     
           timeOut = millis();   
         }
       }
     }
-    else cloudServer->stop ();
-    if (!cloudServer->running ()) {
-      if (client->connected ()) {
-        client->stop ();
+    else {
+      cloudServer->stop ();
+      timeOut = millis() - REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT;
+    }
+    
+    if (!cloudServer->running ()) { 
+      if (client) {  
+        if (client->connected ()) {
+          client->stop ();
+        } 
       }
     }
   }  

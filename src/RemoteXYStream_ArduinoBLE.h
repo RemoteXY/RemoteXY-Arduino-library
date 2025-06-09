@@ -30,7 +30,7 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
     
   uint8_t sendBuffer[RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE];
   uint16_t sendBufferCount;
-  uint16_t sendBytesAvailable;
+
   
   uint8_t receiveBuffer[RemoteXYNet_ARDUINOBLE__RECEIVE_BUFFER_SIZE];
   uint16_t receiveBufferStart;
@@ -41,16 +41,17 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
   public:
   CRemoteXYStream_ArduinoBLE (const char * _bleDeviceName) : CRemoteXYStream () { 
     CRemoteXYStream_ArduinoBLE_instance = this;
+    sendBufferCount = 0;
 
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init Arduino BLE");
+    RemoteXYDebugLog.write(F("Init Arduino BLE"));
 #endif
     connected = 0;
 
     if (!BLE.begin()) {
       failed = 1;
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("Starting BLE module failed");
+      RemoteXYDebugLog.write(F("Starting BLE module failed"));
 #endif    
       return;
     }
@@ -83,31 +84,31 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
 
         
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Arduino BLE started");
+    RemoteXYDebugLog.write(F("Arduino BLE started"));
 #endif  
     failed = 0;
 
   }          
   
     
-  void startWrite (uint16_t len) override {
-    if (failed !=0) return;
-    sendBytesAvailable = len;
-    sendBufferCount = 0;
-  }    
     
   void write (uint8_t b) override {
     if (failed !=0) return;
     sendBuffer[sendBufferCount++] = b;
-    sendBytesAvailable--;
-    if ((sendBufferCount == RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE) || (sendBytesAvailable == 0)) {
+    if (sendBufferCount == RemoteXYNet_ARDUINOBLE__CHARACTERISTIC_SIZE) {
+      flush ();     
+    }
+  }     
+  
+  void flush () override {
+    if (sendBufferCount > 0) {
       if (connected != 0) {
         txCharacteristic->writeValue(sendBuffer, sendBufferCount);
         BLE.poll();     
       }    
-      sendBufferCount = 0;      
-    }
-  }     
+      sendBufferCount = 0; 
+    }       
+  }
 
   void handler () override {       
     if (failed !=0) return;
@@ -118,7 +119,7 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
         receiveBufferPos = 0;
         connected = 1;
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write("BLE client connected");
+        RemoteXYDebugLog.write(F("BLE client connected"));
 #endif          
       }
     }
@@ -126,7 +127,7 @@ class CRemoteXYStream_ArduinoBLE : public CRemoteXYStream {
       if (connected != 0) {
         connected = 0;
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write("BLE client disconnected");
+        RemoteXYDebugLog.write(F("BLE client disconnected"));
 #endif        
       }
     }

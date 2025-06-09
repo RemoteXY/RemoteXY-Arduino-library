@@ -37,13 +37,30 @@ class CRemoteXYStream {
    
   public:     
   virtual void handler () {};   
-  virtual void startWrite (uint16_t size) {UNUSED (size);};
-  virtual void write (uint8_t byte) {UNUSED (byte);};  
-  
-  void writeBuf (uint8_t * buf, uint16_t size) {
+  virtual uint8_t connected () {return 1;};  
+  virtual void write (uint8_t byte) = 0;   
+  virtual void flush () {};  // send all from output buffer
+    
+  void write (uint8_t * buf, uint16_t size) {
     while (size--) write (*buf++);
   }; 
   
+  void write (const char * str) {
+    while (*str) write (*str++);
+  }; 
+  
+  void write (const __FlashStringHelper * fstr) {
+    PGM_P p = reinterpret_cast<PGM_P>(fstr);
+    uint8_t c;
+    while (1) {
+      c = rxy_pgm_read_byte(p++);
+      if (c == 0) break;
+      write (c);
+    }
+  }; 
+  
+  virtual void setBoudRate (uint32_t boudRate) {UNUSED (boudRate);};
+
       
 };
 

@@ -14,52 +14,74 @@
 class CRemoteXYClient_Ethernet : public CRemoteXYClient {
   public:
   EthernetClient client;
+  uint8_t clientConnected;
   
   uint8_t sendBuffer[REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE];
   uint16_t sendBufferCount; 
-  uint16_t sendBytesAvailable;  
+
+  public:
+  CRemoteXYClient_Ethernet () : CRemoteXYClient() {
+    sendBufferCount = 0;
+    clientConnected = 0;
+  }
+  
+  
+  public:
+  void begin (EthernetClient _client) {   
+    client = _client;  
+    sendBufferCount = 0;
+    clientConnected = 1;
+  }
 
   public:
   uint8_t connect (const char *host, uint16_t port) override {
-    return client.connect(host, port);
+    sendBufferCount = 0;
+    clientConnected = client.connect(host, port);
+    return clientConnected;
   }; 
   
   public:
   uint8_t connected () override {
-    return client.connected();
+    if (!client.connected()) clientConnected = 0;   
+    return clientConnected;
   };
 
   public:
   void stop () override {
     client.stop ();
+    clientConnected = 0;
   };
   
   public:
   void handler () override { 
-    while (client.available ()) notifyReadByteListener (client.read ());
+    if (connected ()) {    
+      while (client.available ()) notifyReadByteListener (client.read ());
+    }
   }
          
 
   
   public:
-  void startWrite (uint16_t len) override {
-    sendBytesAvailable = len;
-    sendBufferCount = 0;
-  }  
-  
-  public:
   void write (uint8_t b) override {
-    sendBuffer[sendBufferCount++] = b;
-    sendBytesAvailable--;       
-    if ((sendBufferCount == REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE) || (sendBytesAvailable==0)) {  
-      client.write (sendBuffer, sendBufferCount);
-      sendBufferCount=0;    
-    } 
+    if (clientConnected) {
+      sendBuffer[sendBufferCount++] = b;   
+      if (sendBufferCount == REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE) {  
+        flush (); 
+      } 
+    }
   } 
   
-  
+  void flush () override {
+    if (sendBufferCount > 0) {
+      if (clientConnected) {
+        client.write (sendBuffer, sendBufferCount);
+      }
+      sendBufferCount=0;    
+    }
+  }
+     
 };
-
+    
 #if defined (ESP32)
 class EthernetServerESP32: public EthernetServer {
   public:
@@ -70,17 +92,16 @@ class EthernetServerESP32: public EthernetServer {
 
 class CRemoteXYServer_Ethernet : public CRemoteXYServer {
   private:
+  CRemoteXYNet * net;
   EthernetServer * server;
-  uint8_t soketConnectArr[MAX_SOCK_NUM]; 
 
   public: 
-  CRemoteXYServer_Ethernet (uint16_t _port)  {
+  CRemoteXYServer_Ethernet (CRemoteXYNet * _net, uint16_t _port): CRemoteXYServer (_net)  {
 #if defined (ESP32)
     server = new EthernetServerESP32 (_port); 
 #else
     server = new EthernetServer (_port); 
 #endif
-    for (uint8_t i = 0; i < MAX_SOCK_NUM; i++) soketConnectArr[i] = 0;  
   }
   
   
@@ -90,31 +111,28 @@ class CRemoteXYServer_Ethernet : public CRemoteXYServer {
     return 1;   
   }
   
+  void stop () override {
+  }
+         
 
   void handler () override {  
-    EthernetClient cl; 
-    uint8_t i;
-    for (i = 0; i < MAX_SOCK_NUM; i++) {
-      cl = EthernetClient (i);
-      if (!cl.connected ()) soketConnectArr[i] = 0;
-    }
-    cl = server->available ();
-    if (cl.connected ()) {
-      i = cl.getSocketNumber();
-      if (i<MAX_SOCK_NUM) {
-        if (soketConnectArr[i] == 0) {
-          soketConnectArr[i] = 1;
-          
-          CRemoteXYClient_Ethernet * client = (CRemoteXYClient_Ethernet*)getUnusedClient ();
-          if (client == NULL) {
-            client = new CRemoteXYClient_Ethernet ();
-            addClient (client);
-          }
-          client->client = cl; 
+    EthernetClient cl = server->available (); 
+    if (cl) {
+      if (cl.connected ()) {  
+        
+        CRemoteXYClient_Ethernet * client = (CRemoteXYClient_Ethernet*)clients;
+        while (client) {
+          if ((client->client == (const EthernetClient)cl) && (client->connected())) return;
+          client = (CRemoteXYClient_Ethernet*)client->next;
+        } 
+      
+        if (client == NULL) {
+          client = (CRemoteXYClient_Ethernet*)getUnconnectedClient ();
+          client->begin (cl);   
           notifyClientAvailableListener (client);        
-        }
+        } 
       }
-    }
+    }   
   } 
   
 };
@@ -131,7 +149,7 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
   CRemoteXYNet_Ethernet () : CRemoteXYNet () {   
      
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Ethernet begin ...");
+    RemoteXYDebugLog.write(F("Ethernet begin ..."));
 #endif 
 
     Ethernet.begin(mac, 1000);
@@ -139,14 +157,14 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
     if (Ethernet.hardwareStatus() == EthernetNoHardware) { 
       state = NoHardware;   
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("Ethernet module was not found");    
+      RemoteXYDebugLog.write(F("Ethernet module was not found"));    
 #endif 
     }
     else {
       state = LinkDetecting;         
 #if defined(REMOTEXY__DEBUGLOG)
       if (!linkON ()) { 
-        RemoteXYDebugLog.write("Ethernet link OFF");
+        RemoteXYDebugLog.write(F("Ethernet link OFF"));
       }
 #endif 
     }  
@@ -158,7 +176,7 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
     rxy_strParseMacAddr (macAddress, mac);  
      
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Ethernet begin ...");
+    RemoteXYDebugLog.write(F("Ethernet begin ..."));
 #endif 
 
     Ethernet.begin(mac, 1000);
@@ -166,14 +184,14 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
     if (Ethernet.hardwareStatus() == EthernetNoHardware) { 
       state = NoHardware;   
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("Ethernet module was not found");    
+      RemoteXYDebugLog.write(F("Ethernet module was not found"));    
 #endif 
     }
     else {
       state = LinkDetecting;         
 #if defined(REMOTEXY__DEBUGLOG)
       if (!linkON ()) { 
-        RemoteXYDebugLog.write("Ethernet link OFF");
+        RemoteXYDebugLog.write(F("Ethernet link OFF"));
       }
 #endif 
     }  
@@ -204,8 +222,8 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
     if (linkON ()) {
       if (state == LinkDetecting) {
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Ethernet link ON");
-        RemoteXYDebugLog.write("IP: ");
+        RemoteXYDebugLog.write (F("Ethernet link ON"));
+        RemoteXYDebugLog.write(F("IP: "));
         RemoteXYDebugLog.serial->print(Ethernet.localIP());
 #endif  
         state = Work;
@@ -216,7 +234,7 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
       if (state == Work) {
         state = LinkDetecting;
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write ("Ethernet link OFF");
+        RemoteXYDebugLog.write (F("Ethernet link OFF"));
 #endif  
       }
       else {
@@ -237,18 +255,20 @@ class CRemoteXYNet_Ethernet : public CRemoteXYNet {
   
   public:  
   CRemoteXYServer * createServer (uint16_t _port) override {
-    return new CRemoteXYServer_Ethernet (_port);
+    return new CRemoteXYServer_Ethernet (this, _port);
   }
   
-
-  CRemoteXYClient * newClient () override {
-    return new CRemoteXYClient_Ethernet ();
-  }
   
+  public:  
   uint8_t hasInternet () override {
     return 1;
   }
   
+  public:
+  CRemoteXYClient * newClient () override {
+    return new CRemoteXYClient_Ethernet ();
+  }
+
 };
 
 

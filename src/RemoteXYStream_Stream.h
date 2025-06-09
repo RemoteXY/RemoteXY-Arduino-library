@@ -15,14 +15,14 @@
 
 
 class CRemoteXYStream_Stream : public CRemoteXYStream {
-  protected:
+  public:
   Stream * stream;  
   
   public:
   CRemoteXYStream_Stream (Stream * _stream) : CRemoteXYStream () { 
     stream = _stream;
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init stream");
+    RemoteXYDebugLog.write(F("Init stream"));
 #endif
   } 
   
@@ -46,6 +46,10 @@ class CRemoteXYStream_Stream : public CRemoteXYStream {
     stream->write (byte);
   }
 
+  void flush () override {
+    stream->flush ();
+  }
+  
   
 };
 

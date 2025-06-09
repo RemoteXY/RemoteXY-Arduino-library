@@ -23,12 +23,9 @@
 
 #include "RemoteXYCloudServer.h"
 
-#include "RemoteXYType.h"
-#include "RemoteXYRealTime.h"
-#include "RemoteXYRealTimeNet.h"
-
-#include "RemoteXYType_Message.h"
-#include "RemoteXYType_Notification.h"
+// types
+#include "RemoteXYType_RealTimeApp.h"
+#include "RemoteXYType_RealTimeNet.h"
 #include "RemoteXYType_Print.h"
 
 
@@ -41,11 +38,14 @@ class CRemoteXY: public CRemoteXYData {
   void init () {
     nets = NULL;
     guis = NULL;   
-    realTime = NULL; 
+    
+    handlerMillis = 0;
+    boardTime.setNull ();  
+
     
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.init ();
-    RemoteXYDebugLog.write("RemoteXY started");
+    RemoteXYDebugLog.write(F("RemoteXY started"));
 #endif 
   }
 
@@ -88,7 +88,7 @@ class CRemoteXY: public CRemoteXYData {
     if (gui == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
       RemoteXYDebugLog.init ();
-      RemoteXYDebugLog.write("Out of memory: ");
+      RemoteXYDebugLog.write(F("Out of memory: "));
       RemoteXYDebugLog.writeAdd((uint16_t) sizeof (CRemoteXYGui));
       ::delay(1000);
 #endif 
@@ -157,14 +157,15 @@ class CRemoteXY: public CRemoteXYData {
   public:
   void handler () {   
   
-    if (realTime != NULL) realTime->handler ();
+    uint32_t t = millis ();
+    boardTime.add (t - handlerMillis);  
+    handlerMillis = t;     
   
 #if defined(REMOTEXY_HAS_EEPROM)
     if (initEeprom ()) eeprom.handler ();
 #endif  
     
     // nets handler    
-    
     CRemoteXYNet * net = nets; 
     while (net) {
       net->handler (); 
@@ -176,38 +177,17 @@ class CRemoteXY: public CRemoteXYData {
     while (pg) {
       pg->handler();
       pg = pg->next;
-    }    
+    }  
+    
+      
   }  
   
 
-    
- 
-  public:
-  void initRealTime () {
-    if (realTime == NULL) realTime = new CRemoteXYRealTimeApp (); 
-  }
-  
-  public:
-  void initRealTimeNet () { 
-    if (realTime == NULL) realTime = new CRemoteXYRealTimeNet (nets);
-  }  
-  
-  
-  public:
-  RemoteXYTimeStamp getRealTimeStamp (int16_t timeZone) {    
-    if (realTime == NULL) return RemoteXYTimeStamp ();
-    RemoteXYTimeStamp time = realTime->getRealTime ();
-    if (!time.isNull ()) {
-      time.applyTimeZone (timeZone);
-    }
-    return time;
+  RemoteXYTimeStamp getBoardTime () {
+    return boardTime;
   }    
-  
-  public:
-  RemoteXYTime getRealTime (int16_t timeZone) {  
-    return RemoteXYTime (getRealTimeStamp (timeZone));  
-  }     
-  
+ 
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // API - PUBLIC DOCUMENTED FUNCTIONS
@@ -225,13 +205,13 @@ class CRemoteXY: public CRemoteXYData {
 
   public:
   uint8_t appConnected () {
-    uint8_t connect_flag = 0;
+    uint8_t appConnectFlag = 0;
     CRemoteXYGui * pg = guis;
     while (pg) {
-      if (pg->connect_flag) connect_flag = 1;
+      if (pg->appConnected ()) appConnectFlag = 1;
       pg = pg->next;
     }   
-    return connect_flag;
+    return appConnectFlag;
   }
       
 

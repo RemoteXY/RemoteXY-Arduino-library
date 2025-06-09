@@ -23,9 +23,9 @@ class CRemoteXYStream_USBSerial : public CRemoteXYStream_Stream {
     _serial->begin (_serialSpeed);
     setStream (_serial);
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init USB CDC serial ");
+    RemoteXYDebugLog.write(F("Init USB CDC serial "));
     RemoteXYDebugLog.writeAdd(_serialSpeed);
-    RemoteXYDebugLog.writeAdd(" baud");
+    RemoteXYDebugLog.writeAdd(F(" baud"));
 #endif
   }              
   

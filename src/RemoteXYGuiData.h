@@ -7,11 +7,10 @@ class CRemoteXYStream;
 class CRemoteXYNet;
 class CRemoteXYConnectionNet;
 class CRemoteXYType;
+class CRemoteXYTypeInner;
 class CRemoteXYEeprom;
 
-inline uint8_t rxy_readConfByte (uint8_t * p) {
-  return pgm_read_byte_near (p);
-}
+#define REMOTEXY_RECEIVE_BUFFER_MIN_LENGTH 32  // more than PASSWORD_LENGTH
 
 class CRemoteXYGuiData {
   
@@ -19,6 +18,7 @@ class CRemoteXYGuiData {
   CRemoteXYData *data; 
     
   uint8_t editorVersion;
+  uint8_t confVersion;
   uint8_t *conf;
   uint8_t *inputVar;
   uint8_t *outputVar;
@@ -26,9 +26,10 @@ class CRemoteXYGuiData {
   uint16_t outputLength;
   uint16_t inputLength;
   uint16_t confLength;
-  uint8_t *connect_flag;
+  uint8_t appConnectFlag;
+  uint8_t *connect_flag;   // old version supported
 
-  CRemoteXYType **complexVar;  // array of pointer
+  CRemoteXYTypeInner **complexVar;  // array of pointer
   uint16_t complexVarCount;
   
   CRemoteXYThread * threads;  

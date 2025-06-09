@@ -5,7 +5,8 @@
 
 #include <inttypes.h> 
 #include <stdlib.h>
-#include <Arduino.h>
+//#include <Arduino.h>
+#include "RemoteXYFunc.h"
 
 #ifndef REMOTEXY__DEBUGLOG_SERIAL 
 #define REMOTEXY__DEBUGLOG_SERIAL Serial
@@ -14,10 +15,18 @@
 #define REMOTEXY__DEBUGLOG_SPEED 115200
 #endif
 
+#ifndef REMOTEXY__DEBUGLOG_SERIAL_T 
+#if defined(USBCON)
+#define REMOTEXY__DEBUGLOG_SERIAL_T Serial_
+#else
+#define REMOTEXY__DEBUGLOG_SERIAL_T HardwareSerial
+#endif
+#endif // REMOTEXY__DEBUGLOG_SERIAL_T
+
 
 class CRemoteXYDebugLog {
   public:
-  HardwareSerial * serial;
+  REMOTEXY__DEBUGLOG_SERIAL_T * serial;
   long speed;
   uint8_t inited;
   
@@ -26,7 +35,7 @@ class CRemoteXYDebugLog {
   uint8_t debug_hexcounter;
   
   public:
-  CRemoteXYDebugLog (HardwareSerial * _serial, long _speed) {
+  CRemoteXYDebugLog (REMOTEXY__DEBUGLOG_SERIAL_T * _serial, long _speed) {
     debug_flags=0;
     serial = _serial;
     speed = _speed;
@@ -38,7 +47,7 @@ class CRemoteXYDebugLog {
     if (!inited) {
       serial->begin (speed);
       serial->println ();
-      write ("Debug log started");
+      write (F("Debug log started"));
       inited = 1;
     }
   }
@@ -46,18 +55,29 @@ class CRemoteXYDebugLog {
 
   public:
   void writeTime () {
+    char sds[6];
+    char sdm[4];
     uint32_t d = millis();
-    long ds = d/1000;
-    long dm = d%1000;
-    char s[15];
-    sprintf (s, "[%5ld.%03ld] ",ds, dm);       
+    rxy_intToFixedStr (d/1000, sds, 5, ' ');   
+    rxy_intToFixedStr (d%1000, sdm, 3);  
     serial->println ();    
-    serial->print (s);
+    serial->print (F("["));
+    serial->print (sds);
+    serial->print (F("."));
+    serial->print (sdm);
+    serial->print (F("] "));   
   }
   
   
   public:
   void write (const char *s) {
+    debug_flags = 0;
+    writeTime (); 
+    serial->print(s);
+  }
+  
+  public:
+  void write (const __FlashStringHelper *s) {
     debug_flags = 0;
     writeTime (); 
     serial->print(s);
@@ -68,7 +88,16 @@ class CRemoteXYDebugLog {
     serial->print(s);
   }
 
-
+  public:
+  void writeAdd (const __FlashStringHelper *s) {
+    serial->print(s);
+  }
+  
+  public:
+  void writeAddChar (char c) {
+    serial->write(c);
+  }
+  
   public:
   void writeAdd (uint16_t i) {
     serial->print(i);
@@ -90,59 +119,70 @@ class CRemoteXYDebugLog {
   }
     
   public:
-  void writeInput (const char *s) {
+  void writeInput () {
     if ((debug_flags & 0x01)==0) {
       writeTime ();
-      serial->print("<- ");
+      serial->print(F("<- "));
+      debug_hexcounter=0;
     }
     debug_flags = 0x01;   
+  }
+  
+  public:
+  void writeInput (const char *s) {
+    writeInput ();  
     serial->print(s);
   }
-
+  
   public:
-  void writeOutput (const char *s) {
-    if ((debug_flags & 0x02)==0) {
-      writeTime ();
-      serial->print("-> ");
-    }
-    debug_flags = 0x02;   
+  void writeInput (const __FlashStringHelper *s) {
+    writeInput ();  
     serial->print(s);
   }
 
   public:
   void writeInputHex (uint8_t b) {
-    if ((debug_flags & 0x01)==0) {
-      writeTime ();
-      serial->print("<-");
-      debug_hexcounter=0;
-    }
-    debug_flags = 0x01;   
-    writeHex (b);
-  }
-
-  public:
-  void writeOutputHex (uint8_t b) {
-    if ((debug_flags & 0x02)==0) {
-      writeTime ();
-      serial->print("->");
-      debug_hexcounter=0;
-    }
-    debug_flags = 0x02;
+    writeInput ();  
     writeHex (b);
   }
   
   public:
   void writeInputChar (char s) {
-    if ((debug_flags & 0x01)==0) {
+    writeInput ();  
+    serial->print(s);
+  }  
+  
+  public:
+  void writeOutput () {
+    if ((debug_flags & 0x02)==0) {
       writeTime ();
-      serial->print("<- ");
+      serial->print(F("-> "));
+      debug_hexcounter=0;
     }
-    debug_flags = 0x01;   
+    debug_flags = 0x02;   
+  }
+  
+  public:
+  void writeOutput (const char *s) {
+    writeOutput ();   
+    serial->print(s);
+  }
+  
+  public:
+  void writeOutput (const __FlashStringHelper *s) {
+    writeOutput ();   
     serial->print(s);
   }
 
   public:
-  void writeInputNewString () {
+  void writeOutputHex (uint8_t b) {
+    writeOutput ();  
+    writeHex (b);
+  }
+  
+
+  public:
+  void writeNewString () {
     debug_flags = 0;
   }
   
@@ -151,7 +191,7 @@ class CRemoteXYDebugLog {
     debug_hexcounter++;
     if (debug_hexcounter>16) {
       serial->println();
-      serial->print("              ");
+      serial->print(F("              "));
       debug_hexcounter=1;
     }
     serial->print(' ');
@@ -161,7 +201,7 @@ class CRemoteXYDebugLog {
   
   public:
   void writeAvailableMemory () {
-    write ( "Available memory: " );
+    write (F("Available memory: "));
     writeAdd (availableMemory());
   }
   
@@ -186,8 +226,7 @@ class CRemoteXYDebugLog {
 };
 
 
-CRemoteXYDebugLog RemoteXYDebugLog (& REMOTEXY__DEBUGLOG_SERIAL, REMOTEXY__DEBUGLOG_SPEED);
-
+CRemoteXYDebugLog RemoteXYDebugLog (& REMOTEXY__DEBUGLOG_SERIAL, REMOTEXY__DEBUGLOG_SPEED); 
 
 #endif  //REMOTEXY__DEBUGLOG
 

@@ -18,9 +18,10 @@ class CRemoteXYStorageHeap {
   uint16_t heapSize;
   uint16_t firstIndex;
   uint16_t fillSize; // number of bytes used in the heap    
-  uint16_t index;
+  uint16_t index;  // for iterators
   
   public:
+  uint16_t firstId;
   uint16_t lastId;
   uint16_t count;
   
@@ -29,7 +30,8 @@ class CRemoteXYStorageHeap {
   CRemoteXYStorageHeap () {
     firstIndex = 0;
     fillSize = 0;
-    lastId = 0;  
+    firstId = 0;
+    lastId = 0xffff;  
     heapSize = 0;
     count = 0;
   }
@@ -39,7 +41,7 @@ class CRemoteXYStorageHeap {
     heap = (uint8_t*)malloc (_heapSize);
     if (heap == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("Out of RAM for StorageHeap: ");              
+      RemoteXYDebugLog.write(F("Out of RAM for StorageHeap: "));              
       RemoteXYDebugLog.writeAdd(_heapSize);              
 #endif    
       return 0; 
@@ -51,8 +53,8 @@ class CRemoteXYStorageHeap {
   
   private:
   void addIndex (uint16_t d) {
-    index += d;
-    if (index >= heapSize) index -= heapSize;
+    if (heapSize - d <= index)  index -= (heapSize - d); 
+    else index += d;
   }
   
   private:
@@ -75,19 +77,20 @@ class CRemoteXYStorageHeap {
   
   private:
   void fillHead (RemoteXYStorageHeap_Head * head) {
-    uint8_t * h = (uint8_t*)head;
+    uint8_t * p = (uint8_t*)head;
     for (uint8_t i = 0; i < sizeof (RemoteXYStorageHeap_Head); i++) {
-      *h++ = getNextByte ();
+      *p++ = getNextByte ();
     }
   }
   
   private:
   void saveHead (RemoteXYStorageHeap_Head * head) {
-    uint8_t * h = (uint8_t*)head;
+    uint8_t * p = (uint8_t*)head;
     for (uint8_t i = 0; i < sizeof (RemoteXYStorageHeap_Head); i++) {
-      putNextByte (*h++);
+      putNextByte (*p++);
     }
   }
+  
   
   // if the heap is full, the first message will be deleted
   public:
@@ -101,16 +104,17 @@ class CRemoteXYStorageHeap {
     while (size > heapSize-fillSize) {
       removeFirst ();
     }
+    lastId++;
     RemoteXYStorageHeap_Head head;
     head.len = len;
-    lastId++;
     head.id = lastId;
+    if (count == 0) firstId = lastId;
     
     index = firstIndex;
     addIndex (fillSize);
     saveHead (&head);
 
-    fillSize+=size; 
+    fillSize += size; 
     count++;
     return 1;
   }
@@ -121,43 +125,70 @@ class CRemoteXYStorageHeap {
     RemoteXYStorageHeap_Head head;
     index = firstIndex;
     fillHead (&head);
+    fillSize -= head.len + sizeof (RemoteXYStorageHeap_Head);     
     addIndex (head.len);
     firstIndex = index;
-    fillSize -= head.len + sizeof (RemoteXYStorageHeap_Head); 
     count--;
+    if (count > 0) {
+      fillHead (&head);
+      firstId = head.id;    
+    }
   }  
   
   public:
   uint8_t empty () {
     return count == 0;
   }
+
   
- 
   public:
-  uint8_t getFirst (RemoteXYStorageHeap_Head * head) {
+  uint8_t containsId (uint16_t id) {
     if (count == 0) return 0;
-    index = firstIndex;
-    fillHead (head);
-    return 1;
+    if (firstId > lastId) return (id >= firstId) || (id <= lastId);
+    else return (id >= firstId) && (id <= lastId);
   }
   
   public:
   uint8_t findById (uint16_t id, RemoteXYStorageHeap_Head * head) {
-    if (count == 0) return 0;
-    uint16_t cnt = count;
-    index = firstIndex;    
-    while (cnt--) {
-      fillHead (head);
-      if (head->id == id) return 1;
-      addIndex (head->len);
+    if (containsId (id)) {
+      uint16_t cnt = count;
+      index = firstIndex;  
+      while (cnt--) {
+        fillHead (head);
+        if (head->id == id) return 1;
+        addIndex (head->len);
+      }
     }
     return 0;
   }
   
+  // return length
+  uint16_t takeBytes (uint16_t id) {
+    if (containsId (id)) {
+      uint16_t len = fillSize;
+      uint16_t cnt = count;
+      uint16_t bytesIndex;
+      RemoteXYStorageHeap_Head head;
+      index = firstIndex;  
+      while (cnt--) {
+        bytesIndex = index;
+        fillHead (&head);
+        if (head.id == id) {
+          index = bytesIndex;
+          return len;
+        }
+        len -= (head.len + sizeof (RemoteXYStorageHeap_Head));
+        addIndex (head.len);
+      }      
+    }
+    return 0;
+  }
+  
+  
       
   // add data to end of heap
   public:
-  uint8_t add (uint8_t * data, uint16_t len) {
+  uint8_t add (const uint8_t * data, uint16_t len) {
     if (allocateNew (len)) {
       while (len--) putNextByte (*data++);
       return 1;
@@ -166,7 +197,7 @@ class CRemoteXYStorageHeap {
   }  
   
   public:
-  uint8_t add (uint8_t * data1, uint16_t len1, uint8_t * data2, uint16_t len2) {
+  uint8_t add (const uint8_t * data1, uint16_t len1, const uint8_t * data2, uint16_t len2) {
     if (allocateNew (len1 + len2)) {
       while (len1--) putNextByte (*data1++);
       while (len2--) putNextByte (*data2++);
@@ -176,6 +207,7 @@ class CRemoteXYStorageHeap {
   }         
       
 };
+
 
 
 #endif // RemoteXYStorageHeap_h

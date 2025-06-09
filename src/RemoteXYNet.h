@@ -10,6 +10,34 @@ class CRemoteXYData;
 
 #define UNUSED(x) (void)(x)
 
+class CRemoteXYClient;
+class CRemoteXYServer;
+class CRemoteXYHttpRequest;
+
+
+class CRemoteXYNet { 
+  public:
+  CRemoteXYNet * next;
+  CRemoteXYHttpRequest * httpRequest;
+  
+  public:
+  CRemoteXYNet () {
+    httpRequest = NULL;
+    
+#if defined(REMOTEXY__DEBUGLOG)
+    RemoteXYDebugLog.init ();
+#endif     
+  }
+
+  public:
+  virtual void handler () {}; 
+  virtual uint8_t configured () = 0;                 
+  virtual CRemoteXYServer * createServer (uint16_t _port) = 0 ;  
+  virtual uint8_t hasInternet () {return 0;}
+  virtual CRemoteXYClient * newClient () = 0;
+ 
+};
+
 
 class CRemoteXYClient: public CRemoteXYStream {
   public:
@@ -19,10 +47,15 @@ class CRemoteXYClient: public CRemoteXYStream {
   CRemoteXYClient (): CRemoteXYStream() {}
     
   public: 
-  virtual uint8_t connect (const char *host, uint16_t port) {UNUSED (host); UNUSED (port); return 0;};  
-  virtual void stop () {};  
-  virtual uint8_t connected () {return 1;};  
-  virtual uint8_t equal (CRemoteXYClient * cl) {UNUSED (cl); return 0;} 
+  virtual uint8_t connect (const char *host, uint16_t port) = 0;  
+  virtual void stop () = 0;  
+  
+  uint8_t connect (const __FlashStringHelper *fhost, uint16_t port) {
+    char host[rxy_strLength(fhost)+1];
+    rxy_strCopy (host, fhost);
+    return connect (host, port);
+  };  
+  
 };
 
 class CRemoteXYClientAvailableListener {
@@ -33,13 +66,15 @@ class CRemoteXYClientAvailableListener {
 class CRemoteXYServer {
 
   public:
-  CRemoteXYClient * clients; 
   CRemoteXYClientAvailableListener * clientAvailableListener; 
+  CRemoteXYNet * net;
+  CRemoteXYClient * clients; 
   
   public:      
-  CRemoteXYServer () {
+  CRemoteXYServer (CRemoteXYNet * _net) {
+    net = _net;
     clientAvailableListener = NULL; 
-    clients = NULL; 
+    clients = NULL;
   }
     
   public:
@@ -51,48 +86,32 @@ class CRemoteXYServer {
   void notifyClientAvailableListener (CRemoteXYClient * client) {
     if (clientAvailableListener) clientAvailableListener->clientAvailable (client);
   }     
-  
-  public:
-  CRemoteXYClient * getUnusedClient () {
-    CRemoteXYClient * pc = clients;
-    while (pc) {
-      if (!pc->connected ()) break;
-      pc = pc->next;
-    }   
-    return pc;
-  }
-  
-  public:
-  void addClient (CRemoteXYClient * client) {
-    if (client) {
-      client->next = clients;
-      clients = client;
-    }  
-  }
    
   public:     
-  virtual uint8_t begin () {return 0;} 
+  virtual uint8_t begin () = 0; 
   virtual void handler () {}; 
-  virtual void stop () {}; 
+  virtual void stop () = 0; 
+  
+  public:
+  CRemoteXYClient * getUnconnectedClient () {
+    CRemoteXYClient * p = clients;
+    while (p) {
+      if (p->connected() == 0) break;
+      p = p->next;
+    }      
+    if (!p) {
+      p = net->newClient ();
+      if (p) {
+        p->next = clients;
+        clients = p;
+      }
+    }
+    return p;
+  }  
+  
 
 };
 
-class CRemoteXYHttpRequest;
-
-
-class CRemoteXYNet { 
-  public:
-  CRemoteXYNet * next;
-  CRemoteXYHttpRequest * httpRequest;
-
-  public:
-  virtual void handler () {}; 
-  virtual uint8_t configured () {return 1;};                 
-  virtual CRemoteXYServer * createServer (uint16_t _port) {UNUSED (_port); return NULL;}  
-  virtual CRemoteXYClient * newClient () {return NULL;}
-  virtual uint8_t hasInternet () {return 0;}
- 
-};
 
 
 

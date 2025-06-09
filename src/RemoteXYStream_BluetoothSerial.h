@@ -14,7 +14,7 @@ class CRemoteXYStream_BluetoothSerial : public CRemoteXYStream_Stream {
     serial->begin (_bleDeviceName);
     setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init bluetooth serial: ");
+    RemoteXYDebugLog.write(F("Init bluetooth serial: "));
     RemoteXYDebugLog.writeAdd(_bleDeviceName);
 #endif
   }              

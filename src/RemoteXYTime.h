@@ -3,43 +3,44 @@
 
 #include "RemoteXYTimeStamp.h"
 
-const char * REMOTEXY_TIMEFORMAT_YYYY = "YYYY"; // year, 2024 , can use yyyy
-const char * REMOTEXY_TIMEFORMAT_YY =   "yy";   // year, 24 , can use yy
-const char * REMOTEXY_TIMEFORMAT_MMMM = "MMMM"; // month, January - December
-const char * REMOTEXY_TIMEFORMAT_MMM =  "MMM";  // month, Jan - Dec
-const char * REMOTEXY_TIMEFORMAT_MM =   "MM";   // month, 01 - 12
-const char * REMOTEXY_TIMEFORMAT_dd =   "dd";   // day, 01 - 31
-const char * REMOTEXY_TIMEFORMAT_d =    "d";    // day, 1 - 31
-const char * REMOTEXY_TIMEFORMAT_EEEE = "EEEE"; // day of week, Sunday - Saturday
-const char * REMOTEXY_TIMEFORMAT_EEE =  "EEE";  // day of week, Sun - Sat
-const char * REMOTEXY_TIMEFORMAT_u =    "u";    // day of week, 1 - 7, 1 is Monday
-const char * REMOTEXY_TIMEFORMAT_HH =   "HH";   // hour, 00 - 23
-const char * REMOTEXY_TIMEFORMAT_h =    "h";    // hour, 1 - 12
-const char * REMOTEXY_TIMEFORMAT_mm =   "mm";   // minute, 00 - 59
-const char * REMOTEXY_TIMEFORMAT_ss =   "ss";   // second, 00 - 59
-const char * REMOTEXY_TIMEFORMAT_SSS =  "SSS";  // millisecond, 000 - 999
-const char * REMOTEXY_TIMEFORMAT_aa =   "aa";   // AM or PM
+const char REMOTEXY_TIMEFORMAT_YYYY[] PROGMEM = "YYYY"; // year, 2024 , can use yyyy
+const char REMOTEXY_TIMEFORMAT_YY[] PROGMEM =   "YY";   // year, 24 , can use yy
+const char REMOTEXY_TIMEFORMAT_MMMM[] PROGMEM = "MMMM"; // month, January - December
+const char REMOTEXY_TIMEFORMAT_MMM[] PROGMEM =  "MMM";  // month, Jan - Dec
+const char REMOTEXY_TIMEFORMAT_MM[] PROGMEM =   "MM";   // month, 01 - 12
+const char REMOTEXY_TIMEFORMAT_dd[] PROGMEM =   "dd";   // day, 01 - 31
+const char REMOTEXY_TIMEFORMAT_d[] PROGMEM =    "d";    // day, 1 - 31
+const char REMOTEXY_TIMEFORMAT_EEEE[] PROGMEM = "EEEE"; // day of week, Sunday - Saturday
+const char REMOTEXY_TIMEFORMAT_EEE[] PROGMEM =  "EEE";  // day of week, Sun - Sat
+const char REMOTEXY_TIMEFORMAT_u[] PROGMEM =    "u";    // day of week, 1 - 7, 1 is Monday
+const char REMOTEXY_TIMEFORMAT_HH[] PROGMEM =   "HH";   // hour, 00 - 23
+const char REMOTEXY_TIMEFORMAT_hh[] PROGMEM =   "hh";   // hour, 1 - 24
+const char REMOTEXY_TIMEFORMAT_h[] PROGMEM =    "h";    // hour, 1 - 12
+const char REMOTEXY_TIMEFORMAT_mm[] PROGMEM =   "mm";   // minute, 00 - 59
+const char REMOTEXY_TIMEFORMAT_ss[] PROGMEM =   "ss";   // second, 00 - 59
+const char REMOTEXY_TIMEFORMAT_SSS[] PROGMEM =  "SSS";  // millisecond, 000 - 999
+const char REMOTEXY_TIMEFORMAT_aa[] PROGMEM =   "aa";   // AM or PM
 
-const char * REMOTEXY_TIME_AM =  "AM";  
-const char * REMOTEXY_TIME_PM =  "PM";  
+const char REMOTEXY_TIME_AM[] PROGMEM =  "AM";  
+const char REMOTEXY_TIME_PM[] PROGMEM =  "PM";  
 
 
-const char REMOTEXY_MONTHS_FULLNAME[][10] = {                                                                   
+const char REMOTEXY_MONTHS_FULLNAME[][10] PROGMEM = {                                                                   
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 };
-const char REMOTEXY_MONTHS_SHORTNAME[][4] = {                                                                   
+const char REMOTEXY_MONTHS_SHORTNAME[][4] PROGMEM = {                                                                   
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
-const char REMOTEXY_DAYSOFWEEK_FULLNAME[][10] = {                                                                   
+const char REMOTEXY_DAYSOFWEEK_FULLNAME[][10] PROGMEM = {                                                                   
   "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
 };
-const char REMOTEXY_DAYSOFWEEK_SHORTNAME[][4] = {                                                                   
+const char REMOTEXY_DAYSOFWEEK_SHORTNAME[][4] PROGMEM = {                                                                   
   "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 };
 
-const uint8_t REMOTEXY_DAYSINMONTHS[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+const uint8_t REMOTEXY_DAYSINMONTHS[] PROGMEM = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 #define  REMOTEXY_DAYS_UP_TO_2025 20089
 
@@ -111,7 +112,7 @@ class RemoteXYTime {
   void normalizeDate () {
     if (month == 0) month = 1;
     if (month > 12) month = 12;    
-    uint8_t md = REMOTEXY_DAYSINMONTHS[month-1];
+    uint8_t md = pgm_read_byte (REMOTEXY_DAYSINMONTHS+month-1);
     if (month == 2) md += RemoteXYTime::leapYear (year);
     if (day == 0) day = 1;
     if (day > md) day = md;
@@ -254,7 +255,7 @@ class RemoteXYTime {
   }
   
     
-  int32_t getMillisWithinDay () {
+  int32_t getMillisSinceStartOfDay () {
     int32_t _millis = (int32_t)hour * REMOTEXY_MILLIS_PER_HOUR;
     _millis += (int32_t)minute * REMOTEXY_MILLIS_PER_MINUTE;   
     _millis += (int32_t)second * REMOTEXY_MILLIS_PER_SECOND;   
@@ -290,7 +291,7 @@ class RemoteXYTime {
     
     uint8_t m = 0;
     while (m < month-1) {
-      days += REMOTEXY_DAYSINMONTHS[m];
+      days += pgm_read_byte(REMOTEXY_DAYSINMONTHS+m);
       if (m == 1) days += leap;
       m++;
     }
@@ -300,13 +301,13 @@ class RemoteXYTime {
   
   // since 1 Jan 1970  
   RemoteXYTimeStamp getTimeStamp () {
-    return RemoteXYTimeStamp (getDaysSince1970 (), getMillisWithinDay());
+    return RemoteXYTimeStamp (getDaysSince1970 (), getMillisSinceStartOfDay());
   }
   
   
   // calc from UNIX time 01.01.1970
   void set (RemoteXYTimeStamp ts) {
-    int32_t d = ts.getMillis ();
+    int32_t d = ts.getMillisSinceStartOfDay ();
     millis = d % REMOTEXY_MILLIS_PER_SECOND;
     d = d / REMOTEXY_MILLIS_PER_SECOND;
     second = d % REMOTEXY_SECONDS_PER_MINUTE;
@@ -336,7 +337,7 @@ class RemoteXYTime {
                
     uint8_t m = 0;
     while (m < 12) {
-      dy = REMOTEXY_DAYSINMONTHS[m];
+      dy = pgm_read_byte(REMOTEXY_DAYSINMONTHS+m);
       if (m == 1) dy+= leap;
       if (d < dy) break;
       d -= dy;
@@ -353,79 +354,83 @@ class RemoteXYTime {
 
     while (*tmpl) {
       uint8_t d = 0;
-      if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_YYYY, 1)) {
+      if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_YYYY), 1)) {
         str = rxy_intToFixedStr (year, str, 4, '0');
         d=4;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_YY, 1)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_YY), 1)) {
         str = rxy_intToFixedStr (year, str, 2, '0');
         d=2;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_MMMM, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0)) {
         if ((month>0) && (month<=12)) {
-          str = rxy_strCopy (str, REMOTEXY_MONTHS_FULLNAME[month-1]);
+          str = rxy_strCopy (str, FPSTR(REMOTEXY_MONTHS_FULLNAME[month-1]));
         }
         d=4;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_MMM, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMM), 0)) {
         if ((month>0) && (month<=12)) {
-          str = rxy_strCopy (str, REMOTEXY_MONTHS_SHORTNAME[month-1]);
+          str = rxy_strCopy (str, FPSTR(REMOTEXY_MONTHS_SHORTNAME[month-1]));
         }
         d=3;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_MM, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MM), 0)) {
         str = rxy_intToFixedStr (month, str, 2, '0');
         d=2;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_dd, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_dd), 0)) {
         str = rxy_intToFixedStr (day, str, 2, '0');
         d=2;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_d, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_d), 0)) {
         str = rxy_intToStr (day, str);
         d=1;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_u, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_u), 0)) {
         if (dayOfWeek > 0) str = rxy_intToStr (dayOfWeek, str);
         d=1;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_EEEE, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEEE), 0)) {
         if ((dayOfWeek>0) && (dayOfWeek<=7)) {
-          str = rxy_strCopy (str, REMOTEXY_DAYSOFWEEK_FULLNAME[dayOfWeek-1]);
+          str = rxy_strCopy (str, FPSTR(REMOTEXY_DAYSOFWEEK_FULLNAME[dayOfWeek-1]));
         }
         d=4;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_EEE, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEE), 0)) {
         if ((dayOfWeek>0) && (dayOfWeek<=7)) {
-          str = rxy_strCopy (str, REMOTEXY_DAYSOFWEEK_SHORTNAME[dayOfWeek-1]);
+          str = rxy_strCopy (str, FPSTR(REMOTEXY_DAYSOFWEEK_SHORTNAME[dayOfWeek-1]));
         }
         d=3;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_HH, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_HH), 0)) {
         str = rxy_intToFixedStr (hour, str, 2, '0');
         d=2;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_h, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_hh), 0)) {
+        str = rxy_intToStr (hour, str);
+        d=2;
+      }
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_h), 0)) {
         uint8_t h = hour % 12;
         if (h == 0) h = 12;
         str = rxy_intToStr (h, str);
         d=1;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_mm, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_mm), 0)) {
         str = rxy_intToFixedStr (minute, str, 2, '0');
         d=2;
       }
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_ss, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_ss), 0)) {
         str = rxy_intToFixedStr (second, str, 2, '0');
         d=2;
       }     
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_SSS, 0)) {
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_SSS), 0)) {
         str = rxy_intToFixedStr (millis, str, 3, '0');
         d=3;
       }     
-      else if (rxy_strCompareLeft (tmpl, REMOTEXY_TIMEFORMAT_aa, 0)) {
-        if (hour < 12) str = rxy_strCopy (str, REMOTEXY_TIME_AM); 
-        else str = rxy_strCopy (str, REMOTEXY_TIME_PM);
+      else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_aa), 0)) {
+        if (hour < 12) str = rxy_strCopy (str, FPSTR(REMOTEXY_TIME_AM)); 
+        else str = rxy_strCopy (str, FPSTR(REMOTEXY_TIME_PM));
         d=2;
       }
       else if (*tmpl == 0x27) {  // character escaping
@@ -459,6 +464,34 @@ class RemoteXYTime {
     return str;
   }
   
+  char * format (char * str, const __FlashStringHelper * tmplf) {
+    uint16_t len = rxy_strLength(tmplf) + 1;
+    char tmpl[len];
+    rxy_strCopy (tmpl, tmplf);
+    return format (str, tmpl);
+  }
+  
+  String format (const char * tmpl) {
+    uint16_t len = rxy_strLength(tmpl)+1;
+    len+= 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0);
+    len+= 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEEE), 0);
+    char str[len];
+    format (str, tmpl);
+    return String (str);
+  }
+  
+  String format (const __FlashStringHelper * tmplf) {
+    uint16_t len = rxy_strLength(tmplf) + 1;
+    char tmpl[len];
+    rxy_strCopy (tmpl, tmplf);
+    return format (tmpl);
+  }
+  
+  String format (String tmpl) {
+    return format (tmpl.c_str());
+  }
+  
+      
   // operators
   
   RemoteXYTime operator=(const RemoteXYTime& time) {

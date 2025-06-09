@@ -26,9 +26,9 @@ class CRemoteXYStream_AltSoftSerial : public CRemoteXYStream_Stream {
     serial->begin (_serialSpeed);
     setStream (serial);
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Init alt soft serial ");
+    RemoteXYDebugLog.write(F("Init alt soft serial "));
     RemoteXYDebugLog.writeAdd(_serialSpeed);
-    RemoteXYDebugLog.writeAdd(" baud");
+    RemoteXYDebugLog.writeAdd(F(" baud"));
 #endif
   }              
   

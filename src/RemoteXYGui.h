@@ -29,73 +29,79 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     uint16_t eepromCount = 0;
     
     uint8_t* p = (uint8_t*)_conf;    
-    uint8_t confVersion = rxy_readConfByte (p++);
+    editorVersion = 0;
+    confVersion = rxy_readConfByte (p++);
            
-    if (confVersion==0xff) {  
+    if (confVersion >= 0xfe)   {  
       // medium editor version
-      // FF IL IL OL OL CL CL EV 
+      // FF/FE IL IL OL OL 
       inputLength = rxy_readConfByte (p++);
       inputLength |= rxy_readConfByte (p++)<<8;
       outputLength = rxy_readConfByte (p++); 
       outputLength |= rxy_readConfByte (p++)<<8; 
-      confLength = rxy_readConfByte (p++);
-      confLength |= rxy_readConfByte (p++)<<8;  
-      conf = p; 
-      editorVersion = rxy_readConfByte (p);
     }
     else {
       // old editor version
-      // IL OL CL CL CONF
+      // IL OL 
       inputLength = confVersion;
       outputLength = rxy_readConfByte (p++);    
-      confLength = rxy_readConfByte (p++);
-      confLength |= rxy_readConfByte (p++)<<8;  
-      conf = p;
-      editorVersion = 0;
     }     
     
     pv += inputLength;
     outputVar = pv;
     pv += outputLength;    
-    rxy_bufClear (inputVar, inputLength+outputLength);    
-
-    //complexVar = pv;
-    
-    if (editorVersion >= 20) {
+        
+    if (confVersion == 0xfe) {
       // CVL CVL CVDATA EL EL EDATA 
       complexVarCount = rxy_readConfByte (p++);
       complexVarCount |= rxy_readConfByte (p++)<<8; 
-      
       // init complex vars
-      complexVar = (CRemoteXYType**)malloc (sizeof(CRemoteXYType*) * complexVarCount);
+      complexVar = (CRemoteXYTypeInner**)malloc (sizeof(CRemoteXYTypeInner*) * complexVarCount);
       for (uint16_t i = 0; i < complexVarCount; i++) {
-        complexVar[i] = (CRemoteXYType*)pv;
-        ((CRemoteXYType*)pv)->setGuiData (this);
-        p++;
-        p = ((CRemoteXYType*)pv)->init (p);
-        pv += ((CRemoteXYType*)pv)->sizeOf ();
+        CRemoteXYTypeInner * inner = ((CRemoteXYType*)pv)->inner;
+        complexVar[i] = inner;
+        inner->setGuiData (this);
+        p = inner->init (p);
+        pv += ((CRemoteXYType*)pv)->getTypeSize();
       }
       
       eepromCount = rxy_readConfByte (p++);
       eepromCount |= rxy_readConfByte (p++)<<8;
       
       // init eeprom
-      uint16_t v, s;
+      uint16_t v, s, b;
       for (uint16_t i = 0; i < eepromCount; i++) {      
-        v  = rxy_readConfByte (p++); 
-        v |= rxy_readConfByte (p++)<<8; 
+        v = rxy_readConfByte (p++); 
         s = rxy_readConfByte (p++); 
-        s |= rxy_readConfByte (p++)<<8; 
+        b = rxy_readConfByte (p++); 
+        v |= (b & 0x3f) << 8; 
+        s |= (b & 0xc0) << 2; 
 #if defined(REMOTEXY_HAS_EEPROM)
         data->eeprom.addItem (inputVar + v, s, v+(s>>6));
 #endif         
       }  
+
     }
     
+    //CL CL CONF
+    confLength = rxy_readConfByte (p++);
+    confLength |= rxy_readConfByte (p++)<<8;  
+    conf = p; 
+    
+    if (confVersion >= 0xfe) {
+      // EV
+      editorVersion = rxy_readConfByte (p);
+    }
+    
+    
     connect_flag = pv; 
-    *connect_flag = 0;   
+    appConnectFlag = 0;
+    if (confVersion != 0xfe) {
+      *connect_flag = appConnectFlag;  
+    }
 
     inputVarCopy = (uint8_t*)malloc (inputLength); 
+    rxy_bufClear (inputVar, inputLength+outputLength);    
     rxy_bufCopy (inputVarCopy, inputVar, inputLength);
      
     setPassword (_accessPassword);   
@@ -144,36 +150,37 @@ class CRemoteXYGui: public CRemoteXYGuiData {
       CRemoteXYThread::notifyInputVarNeedSend (this); // notify all threads that user change input vars
     }
     
-    // threads handler
+    // complex variables handler     
+    for (uint16_t i = 0; i < complexVarCount; i++) {
+      complexVar[i]->handler ();
+    }
     
+    // threads handler
     CRemoteXYThread * pt = threads;
-    uint8_t cntConnectFlag = 0;
+    appConnectFlag = 0;
     while (pt) {   
       pt->handler ();     
-      cntConnectFlag += pt->connect_flag;
+      appConnectFlag += pt->connect_flag;
       pt = pt->next;
     }
-    *connect_flag = cntConnectFlag;
-
+    if (confVersion != 0xfe) {
+      *connect_flag = appConnectFlag;
+    }
     
     // connections handler    
-    
     CRemoteXYConnectionNet * connection = connections; 
     while (connection) {
       connection->handler (); 
       connection = connection->next;
     }    
-      
-    // complex variables handler  
-    
-    for (uint16_t i = 0; i < complexVarCount; i++) {
-      complexVar[i]->handler ();
-    }
     
   }
 
 
-
+  public:
+  uint8_t appConnected () {
+    return appConnectFlag;
+  }
   
 };
 

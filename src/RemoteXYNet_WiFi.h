@@ -14,92 +14,97 @@
 
 #if defined (ESP8266) || defined (ESP32) || defined (WiFiS3_h)
 #define REMOREXYNET_WIFI__SEND_BUFFER_SIZE 256
-#else  // arduino shield
+#else  // arduino shield   
 #define REMOREXYNET_WIFI__SEND_BUFFER_SIZE 64
 #endif
 
 #define REMOREXYNET_WIFI__RECONNECT_TIMEOUT 20000  // reconnect in 20 sec
 
-#if defined (WiFiS3_h) 
-  // The server.available () function can return the same client 
-  // even if it has been connected for a long time.
-  // Need to cut off clients who are already working 
-#define REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL
-#endif
+
 
 class CRemoteXYClient_WiFi : public CRemoteXYClient {
   public:
   WiFiClient client;
+  uint8_t clientConnected;
   
   uint8_t sendBuffer[REMOREXYNET_WIFI__SEND_BUFFER_SIZE];
-  uint16_t sendBufferCount; 
-  uint16_t sendBytesAvailable;  
+  uint16_t sendBufferCount;  
+
+  public:
+  CRemoteXYClient_WiFi () : CRemoteXYClient () {
+    sendBufferCount = 0;
+    clientConnected = 0;
+  }
   
-#if defined (REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL) 
-  uint8_t connectedFromServer;
-#endif
+  void beginFromServer (WiFiClient _client) {
+    client = _client;
+    sendBufferCount = 0;
+    clientConnected = 1;
+  }
+  
 
   public:
   uint8_t connect (const char *host, uint16_t port) override {
-    return client.connect(host, port);
+    sendBufferCount = 0;
+    clientConnected = client.connect(host, port);
+    return clientConnected;
   }; 
   
   public:
-  uint8_t connected () override {
-    return client.connected();
+  uint8_t connected () override {   
+    if (!client.connected()) clientConnected = 0;   
+    return clientConnected;
   };
 
   public:
   void stop () override {
     client.stop ();
+    clientConnected = 0;
   };
   
   public:
   void handler () override {   
-    while (client.available ()) notifyReadByteListener (client.read ());
+    if (connected ()) {    
+      while (client.available ()) notifyReadByteListener (client.read ());
+    }
   }
   
   
   public:
-  void startWrite (uint16_t len) override {
-    sendBytesAvailable = len;
-    sendBufferCount = 0;
-  }  
-  
-  public:
   void write (uint8_t b) override {
-    sendBuffer[sendBufferCount++] = b;
-    sendBytesAvailable--;       
-    if ((sendBufferCount == REMOREXYNET_WIFI__SEND_BUFFER_SIZE) || (sendBytesAvailable==0)) {
-      client.write (sendBuffer, sendBufferCount);
-      sendBufferCount=0;
-    } 
+    if (clientConnected) {
+      sendBuffer[sendBufferCount++] = b;      
+      if (sendBufferCount == REMOREXYNET_WIFI__SEND_BUFFER_SIZE) {
+        flush ();
+      } 
+    }
   } 
+  
+  void flush () override {
+    if (sendBufferCount > 0) {
+      if (clientConnected) {
+        client.write (sendBuffer, sendBufferCount);
+      }
+      sendBufferCount=0;
+    }  
+  }
   
 };
 
 class CRemoteXYServer_WiFi : public CRemoteXYServer {
   private:
   WiFiServer * server;
+  CRemoteXYNet * net;
+  
 
   public: 
-  CRemoteXYServer_WiFi (uint16_t _port)  {
+  CRemoteXYServer_WiFi (CRemoteXYNet* _net, uint16_t _port): CRemoteXYServer (_net) {
     server = new WiFiServer (_port); 
   }
   
   
   public:  
   uint8_t begin () override {
-
-#if defined (REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL)
-    CRemoteXYClient_WiFi * client = (CRemoteXYClient_WiFi*)clients;
-    while (client) {
-      client->connectedFromServer = 0;
-      client = (CRemoteXYClient_WiFi*)client->next;
-    }
-#endif // REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL
-
-
     server->begin (); 
     return 1;   
   }
@@ -115,57 +120,49 @@ class CRemoteXYServer_WiFi : public CRemoteXYServer {
   public:
   void handler () override {
     CRemoteXYClient_WiFi * client;
+    
        
 #if defined (ESP8266) || defined (ESP32)  
     if (!server->hasClient()) return; 
 #endif        
       
-#if defined (REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL)
-    client = (CRemoteXYClient_WiFi*)clients;
-    while (client) {
-      if (!client->client.connected ()) {
-        client->connectedFromServer = 0;
-      }
-      client = (CRemoteXYClient_WiFi*)client->next;
-    }
-#endif // REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL
 
-
-#if defined (REMOREXYNET_WIFI__ESP32v3)
+#if defined (REMOREXYNET_WIFI__ESP32v3) || defined (ESP8266)
     WiFiClient cl = server->accept ();
 #else      
     WiFiClient cl = server->available ();
 #endif
 
-    if (cl) {
-    
+    if (cl) {    
       if (cl.connected ()) {
       
+#if defined (WiFiS3_h) 
+// The server.available () function can return the same client 
+// even if it has been connected for a long time.
+// Need to cut off clients who are already working 
+
+        client = (CRemoteXYClient_WiFi*)clients;
+        while (client) {
+          if ((client->client == cl) && (client->connected())) return;
+          client = (CRemoteXYClient_WiFi*)client->next;
+        } 
+        
+#elif defined (WiFiNINA_h)    
+ 
+        client = (CRemoteXYClient_WiFi*)clients;
+        while (client) {
+          if ((client->client.remotePort() == cl.remotePort()) && (client->connected())) return;
+          client = (CRemoteXYClient_WiFi*)client->next;
+        }  
+                
+#endif 
+        
 #if defined (ESP8266) 
         cl.disableKeepAlive ();     // remove memory leak
 #endif // ESP8266
-               
-#if defined (REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL) 
-        client = (CRemoteXYClient_WiFi*)clients;
-        while (client) {
-          if (client->connectedFromServer != 0) {
-            if (client->client == cl) return; // already use it
-          }
-          client = (CRemoteXYClient_WiFi*)client->next;
-        }
-#endif // REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL
 
-        client = (CRemoteXYClient_WiFi*)getUnusedClient ();
-        if (client == NULL) {
-          client = new CRemoteXYClient_WiFi ();
-          addClient (client);
-        }
-        client->client = cl;
-        
-#if defined (REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL) 
-        client->connectedFromServer = 1;
-#endif // REMOREXYNET_WIFI__ADDITIONAL_CLIENT_CONTROL
-
+        client = (CRemoteXYClient_WiFi*)getUnconnectedClient ();
+        client->beginFromServer (cl);    
         notifyClientAvailableListener (client);        
       }
     }
@@ -188,16 +185,15 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
     wifiSsid = (char *)_wifiSsid;
     wifiPassword = (char *)_wifiPassword;
     
-    timeOut = millis ();
+    timeOut = millis ();     
     wifiStatus = WiFi.status();
-    connectToWiFi ();  
+    connectToWiFi ();    
     
   }
   
   
   void handler () override {            
     
-    //if (data->realTime != NULL) data->realTime->setNet (this);
     
 #if defined(REMOTEXY__DEBUGLOG)
     uint8_t prev_wifiStatus = wifiStatus;
@@ -209,8 +205,8 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
       timeOut = millis ();  
 #if defined(REMOTEXY__DEBUGLOG)
       if (prev_wifiStatus != WL_CONNECTED) {
-        RemoteXYDebugLog.write ("WiFi connected");
-        RemoteXYDebugLog.write ("IP: ");
+        RemoteXYDebugLog.write (F("WiFi connected"));
+        RemoteXYDebugLog.write (F("IP: "));
         RemoteXYDebugLog.serial->print (WiFi.localIP());    
       }  
 #endif      
@@ -219,7 +215,7 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
     
 #if defined(REMOTEXY__DEBUGLOG)
       if (prev_wifiStatus == WL_CONNECTED) { 
-        RemoteXYDebugLog.write ("WiFi disconnected");
+        RemoteXYDebugLog.write (F("WiFi disconnected"));
       }
 #endif
 
@@ -240,11 +236,11 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(false);    
     
-#else // NOT ESP
-
+#else // NOT ESP    
+       
     if (wifiStatus == WL_NO_SHIELD) {    
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("WiFi module was not found");    
+      RemoteXYDebugLog.write(F("WiFi module was not found"));    
 #endif 
       return;
     }
@@ -253,9 +249,9 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
     
         
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Сonnecting to WiFi: ");
+    RemoteXYDebugLog.write(F("Сonnecting to WiFi: "));
     RemoteXYDebugLog.writeAdd(wifiSsid);
-    RemoteXYDebugLog.writeAdd(" ...");   
+    RemoteXYDebugLog.writeAdd(F(" ..."));   
 #endif    
 
     WiFi.begin(wifiSsid, wifiPassword);
@@ -271,18 +267,19 @@ class CRemoteXYNet_WiFi : public CRemoteXYNet {
   
   public:  
   CRemoteXYServer * createServer (uint16_t _port) override {
-    return new CRemoteXYServer_WiFi (_port);
+    return new CRemoteXYServer_WiFi (this, _port);
   }
   
 
-  CRemoteXYClient * newClient () override {
-    return new CRemoteXYClient_WiFi ();
-  }
   
   uint8_t hasInternet () override {
     return 1;
   }
-                  
+      
+  public:
+  CRemoteXYClient * newClient () override {
+    return new CRemoteXYClient_WiFi ();
+  }            
 };
 
 
@@ -296,9 +293,9 @@ class CRemoteXYNet_WiFiPoint : public CRemoteXYNet {
 
     
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("Creating WiFi point: ");
+    RemoteXYDebugLog.write(F("Creating WiFi point: "));
     RemoteXYDebugLog.writeAdd(_wifiSsid);
-    RemoteXYDebugLog.writeAdd(" ...");
+    RemoteXYDebugLog.writeAdd(F(" ..."));
 #endif
 
 #if defined (ESP8266) || defined (ESP32) 
@@ -308,8 +305,8 @@ class CRemoteXYNet_WiFiPoint : public CRemoteXYNet {
     WiFi.softAP(_wifiSsid, _wifiPassword);
     state = 1;
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("WiFi point created");
-    RemoteXYDebugLog.write ("IP: ");
+    RemoteXYDebugLog.write(F("WiFi point created"));
+    RemoteXYDebugLog.write (F("IP: "));
     RemoteXYDebugLog.serial->print (WiFi.softAPIP());    
 #endif
 
@@ -322,21 +319,21 @@ class CRemoteXYNet_WiFiPoint : public CRemoteXYNet {
     state = 0;
     if (WiFi.status() == WL_NO_SHIELD) {    
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("WiFi module was not found");    
+      RemoteXYDebugLog.write(F("WiFi module was not found"));    
 #endif 
       return;
     }
     if (WiFi.beginAP (_wifiSsid, _wifiPassword) != WL_AP_LISTENING) {
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.write("WiFi point was not created");    
+      RemoteXYDebugLog.write(F("WiFi point was not created"));    
 #endif 
       return;    
     }
     state = 1;
     
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("WiFi point created");    
-    RemoteXYDebugLog.write ("IP: ");
+    RemoteXYDebugLog.write(F("WiFi point created"));    
+    RemoteXYDebugLog.write (F("IP: "));
     RemoteXYDebugLog.serial->print (WiFi.localIP());  
 #endif  
 
@@ -345,7 +342,7 @@ class CRemoteXYNet_WiFiPoint : public CRemoteXYNet {
 
     state = 0;
 #if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.write("WiFi module does not support AP mode");    
+    RemoteXYDebugLog.write(F("WiFi module does not support AP mode"));    
 #endif 
   
 #endif // ESP
@@ -360,10 +357,10 @@ class CRemoteXYNet_WiFiPoint : public CRemoteXYNet {
     
   public:  
   CRemoteXYServer * createServer (uint16_t _port) override {   
-    return new CRemoteXYServer_WiFi (_port); 
+    return new CRemoteXYServer_WiFi (this, _port); 
   }
   
-
+  public:
   CRemoteXYClient * newClient () override {
     return new CRemoteXYClient_WiFi ();
   }
