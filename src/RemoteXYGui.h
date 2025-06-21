@@ -25,12 +25,14 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     threads = NULL;
     connections = NULL;     
     
+    connect_flag = NULL; 
+    
     complexVarCount = 0;    
     uint16_t eepromCount = 0;
     
     uint8_t* p = (uint8_t*)_conf;    
     editorVersion = 0;
-    confVersion = rxy_readConfByte (p++);
+    uint8_t confVersion = rxy_readConfByte (p++);
            
     if (confVersion >= 0xfe)   {  
       // medium editor version
@@ -94,9 +96,9 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     }
     
     
-    connect_flag = pv; 
     appConnectFlag = 0;
     if (confVersion != 0xfe) {
+      connect_flag = pv; 
       *connect_flag = appConnectFlag;  
     }
 
@@ -163,7 +165,7 @@ class CRemoteXYGui: public CRemoteXYGuiData {
       appConnectFlag += pt->connect_flag;
       pt = pt->next;
     }
-    if (confVersion != 0xfe) {
+    if (connect_flag) {
       *connect_flag = appConnectFlag;
     }
     

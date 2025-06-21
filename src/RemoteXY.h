@@ -285,7 +285,7 @@
 //API
 #define RemoteXY_delay(ms) remotexy->delay (ms)
 #define RemoteXY_appConnected() remotexy->appConnected ()
-
+#define RemoteXY_getBoardTime() remotexy->getBoardTime ()
 
 #endif //_REMOTEXY_H_
 

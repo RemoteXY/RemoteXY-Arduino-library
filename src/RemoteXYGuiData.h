@@ -18,7 +18,6 @@ class CRemoteXYGuiData {
   CRemoteXYData *data; 
     
   uint8_t editorVersion;
-  uint8_t confVersion;
   uint8_t *conf;
   uint8_t *inputVar;
   uint8_t *outputVar;
