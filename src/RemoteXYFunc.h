@@ -3,7 +3,7 @@
 
 #include <inttypes.h> 
 
-
+#define RXY_UINT32STRMAXDIGITS 32
 
 // INT
 
@@ -37,9 +37,8 @@ char* rxy_intToFixedStr (uint32_t i, char* s, uint8_t digits, char lead = '0', u
 
 
 char* rxy_intToStr (uint32_t i, char* s, uint8_t base = 10) {   
-  uint8_t bufLen = rxy_uint32StrDigits (base) + 1;
-  char buf[bufLen];
-  rxy_intToFixedStr (i, buf, bufLen-1, 0x20, base);
+  char buf[RXY_UINT32STRMAXDIGITS+1];
+  rxy_intToFixedStr (i, buf, RXY_UINT32STRMAXDIGITS, 0x20, base);
   char *p = buf;
   while (*p) {
     if (*p != 0x20) *s++ = *p;  

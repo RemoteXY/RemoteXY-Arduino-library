@@ -407,7 +407,7 @@ class RemoteXYTime {
         d=2;
       }
       else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_hh), 0)) {
-        str = rxy_intToStr (hour, str);
+        str = rxy_intToStr (hour+1, str);
         d=2;
       }
       else if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_h), 0)) {

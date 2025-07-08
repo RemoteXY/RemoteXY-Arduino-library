@@ -171,8 +171,7 @@ class RemoteXYType_Print : public CRemoteXYType {
   
   void print(long n, int base = 10) {
     if (base < 2) base = 10;
-    uint8_t bufLen = rxy_uint32StrDigits (base) + 2;
-    char buf[bufLen];
+    char buf[RXY_UINT32STRMAXDIGITS+2];
     char *p = buf;    
     if (n < 0) {
       *p++ = '-';
@@ -184,8 +183,7 @@ class RemoteXYType_Print : public CRemoteXYType {
   
   void print(unsigned long n, int base = 10) {
     if (base < 2) base = 10;
-    uint8_t bufLen = rxy_uint32StrDigits (base) + 1;
-    char buf[bufLen];
+    char buf[RXY_UINT32STRMAXDIGITS+1];
     rxy_intToStr (n, buf, base);
     print (buf);
   }
