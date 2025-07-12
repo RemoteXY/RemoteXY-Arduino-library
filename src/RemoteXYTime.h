@@ -465,26 +465,30 @@ class RemoteXYTime {
   }
   
   char * format (char * str, const __FlashStringHelper * tmplf) {
-    uint16_t len = rxy_strLength(tmplf) + 1;
-    char tmpl[len];
+    char *tmpl = (char*)malloc (rxy_strLength(tmplf) + 1);
     rxy_strCopy (tmpl, tmplf);
-    return format (str, tmpl);
+    char * p = format (str, tmpl);
+    free (tmpl);
+    return p;
   }
   
   String format (const char * tmpl) {
     uint16_t len = rxy_strLength(tmpl)+1;
-    len+= 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0);
-    len+= 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEEE), 0);
-    char str[len];
+    len += 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0);
+    len += 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEEE), 0);
+    char *str = (char*)malloc (len);
     format (str, tmpl);
-    return String (str);
+    String s = String (str);
+    free (str);
+    return s;
   }
   
   String format (const __FlashStringHelper * tmplf) {
-    uint16_t len = rxy_strLength(tmplf) + 1;
-    char tmpl[len];
+    char *tmpl = (char*)malloc (rxy_strLength(tmplf) + 1);
     rxy_strCopy (tmpl, tmplf);
-    return format (tmpl);
+    String s = format (tmpl);
+    free (tmpl);
+    return s;
   }
   
   String format (String tmpl) {

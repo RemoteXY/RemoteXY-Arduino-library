@@ -29,11 +29,11 @@ class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
   uint8_t getDescriptorLength () override {
     return 0;
   }
-
+  
   public:
-  void getDescriptor (uint8_t * buf) override { 
-    return;
-  }  
+  void sendDescriptorBytes (CRemoteXYWire * wire) override {
+  }
+
   
   public:
   uint8_t handlePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) override {

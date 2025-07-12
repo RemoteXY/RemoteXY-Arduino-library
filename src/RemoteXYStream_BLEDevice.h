@@ -48,7 +48,7 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     receiveBufferPos = 0;
     receiveBufferCount = 0;  
     
-    sendBufferCount = 0;
+    sendBufferCount = 0;     
         
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.write(F("Init ESP32 BLE on chip"));
@@ -96,6 +96,8 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
     receiveBufferStart = 0;
     receiveBufferPos = 0;
     receiveBufferCount = 0; 
+    sendCount = 0;
+    sendBLEBufferOverflow = 0;
   };  
   
   void onDisconnect(BLEServer* pServer) {

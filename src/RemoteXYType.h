@@ -22,7 +22,7 @@ class CRemoteXYTypeInner {
   
   virtual uint8_t* init (uint8_t *conf) = 0;
   virtual uint8_t getDescriptorLength () = 0;
-  virtual void getDescriptor (uint8_t * buf) = 0;
+  virtual void sendDescriptorBytes (CRemoteXYWire * wire) = 0;
   virtual uint8_t handlePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) = 0;  
   virtual void handler () {};
 

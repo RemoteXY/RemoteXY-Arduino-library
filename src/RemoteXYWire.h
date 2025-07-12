@@ -206,6 +206,12 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   }
   
   public:
+  void sendWordPackage (uint16_t w) {
+    sendBytePackage (w);
+    sendBytePackage (w >> 8);
+  }
+  
+  public:
   void sendBytesPackage (uint8_t * buf, uint16_t len) {
     while (len--) sendBytePackage (*buf++);
   }

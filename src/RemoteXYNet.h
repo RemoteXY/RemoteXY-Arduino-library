@@ -51,9 +51,11 @@ class CRemoteXYClient: public CRemoteXYStream {
   virtual void stop () = 0;  
   
   uint8_t connect (const __FlashStringHelper *fhost, uint16_t port) {
-    char host[rxy_strLength(fhost)+1];
+    char *host = (char*) malloc (rxy_strLength(fhost)+1);
     rxy_strCopy (host, fhost);
-    return connect (host, port);
+    uint8_t res = connect (host, port);
+    free (host);
+    return res;
   };  
   
 };

@@ -4,7 +4,7 @@
 #include "RemoteXYFunc.h"
 #include "RemoteXYType_Heap.h"
 
-#define REMOTEXY_TYPE_PRINT_BUFFER_LENGTH 24 // 32 - 4 -4
+#define REMOTEXY_TYPE_PRINT_BUFFER_SIZE 24 // 32 - 4 -4
 
 
 #pragma pack(push, 1)
@@ -19,7 +19,7 @@ struct RemoteXYType_Print_Color {
                   
 class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
   
-  uint8_t bffer[REMOTEXY_TYPE_PRINT_BUFFER_LENGTH];
+  uint8_t bffer[REMOTEXY_TYPE_PRINT_BUFFER_SIZE];
   uint8_t bufferLength;
   RemoteXYType_Print_Color color;
   
@@ -47,7 +47,7 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
   
   public:
   void write (uint8_t b) {
-    if (bufferLength >= REMOTEXY_TYPE_PRINT_BUFFER_LENGTH) {
+    if (bufferLength >= REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
       addBufferToHeap ();
     }
     bffer[bufferLength++] = b;   
@@ -57,10 +57,10 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
   void write (const uint8_t *buf, uint16_t size) {
     // can't break bytes into different packets, you can break a UTF symbol
     if (size > 0) {
-      if (bufferLength + size > REMOTEXY_TYPE_PRINT_BUFFER_LENGTH) {
+      if (bufferLength + size > REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
         if (bufferLength > 0) addBufferToHeap ();
       }
-      if (size > REMOTEXY_TYPE_PRINT_BUFFER_LENGTH) {
+      if (size > REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
         addToHeap_Color (buf, size);
       }
       else {        
@@ -171,7 +171,7 @@ class RemoteXYType_Print : public CRemoteXYType {
   
   void print(long n, int base = 10) {
     if (base < 2) base = 10;
-    char buf[RXY_UINT32STRMAXDIGITS+2];
+    char buf[8 * sizeof (uint32_t) + 2];
     char *p = buf;    
     if (n < 0) {
       *p++ = '-';
@@ -183,17 +183,15 @@ class RemoteXYType_Print : public CRemoteXYType {
   
   void print(unsigned long n, int base = 10) {
     if (base < 2) base = 10;
-    char buf[RXY_UINT32STRMAXDIGITS+1];
+    char buf[8 * sizeof (uint32_t) + 1];
     rxy_intToStr (n, buf, base);
     print (buf);
   }
   
   void print(double number, int digits = 2) {
-    uint8_t bufLen = 13+digits; 
-    char buf[bufLen];
-    char *p = buf;
+
     if (number < 0) {
-      *p++ = '-';
+      write ('-');
       number = -number;
     }
     double rounding = 0.5;
@@ -201,17 +199,17 @@ class RemoteXYType_Print : public CRemoteXYType {
     number += rounding;
     unsigned long int_part = (unsigned long)number;
     double remainder = number - (double)int_part;
-    p=rxy_intToStr (int_part, p);
+    
+    print (int_part);
     if (digits > 0) {
-      *p++ = '.'; 
+      write ('.'); 
     }    
     while (digits-- > 0) {
       remainder *= 10.0;
-      unsigned int toPrint = (unsigned int)(remainder);
-      *p++ = toPrint + '0';
+      uint8_t toPrint = (uint8_t)(remainder);
+      write (toPrint + '0');
       remainder -= toPrint; 
-    } 
-    print (buf);    
+    }    
   }
   
   //void print(const Printable& x);

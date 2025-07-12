@@ -231,26 +231,15 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
   private:
   void sendComplexVarDescriptorsPacage () {  
     uint16_t length = 0;
-    uint8_t maxDescriptorLength = 0;
-    uint8_t len;
     CRemoteXYTypeInner * var;
     for (uint16_t i = 0; i < guiData->complexVarCount; i++) {
       var = guiData->complexVar[i];
-      len = var->getDescriptorLength ();
-      length += len;
-      if (len > maxDescriptorLength) maxDescriptorLength = len;       
+      length += var->getDescriptorLength ();
     }
     wire->startPackage (REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC, clientId, length);
-    uint8_t buf[maxDescriptorLength];
-    uint8_t * p;
     for (uint16_t i = 0; i < guiData->complexVarCount; i++) {
       var = guiData->complexVar[i];
-      len = var->getDescriptorLength ();
-      var->getDescriptor (buf);
-      p = buf;  
-      while (len--) {
-        wire->sendBytePackage (*p++);
-      } 
+      var->sendDescriptorBytes (wire);
     }
   }
   

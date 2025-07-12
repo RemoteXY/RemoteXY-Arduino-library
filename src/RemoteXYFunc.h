@@ -3,23 +3,12 @@
 
 #include <inttypes.h> 
 
-#define RXY_UINT32STRMAXDIGITS 32
-
 // INT
 
 char rxy_intToHexChar (uint8_t c) {
   return c < 10 ? c + '0' : c + 'A' - 10;
 }
 
-uint8_t rxy_uint32StrDigits (uint8_t base) {
-  uint8_t d = 0;
-  while (base) {
-    d++;
-    base = base >> 1;
-  }
-  if (d == 0) d = 1;
-  return 32 / d;
-}
 
 char* rxy_intToFixedStr (uint32_t i, char* s, uint8_t digits, char lead = '0', uint8_t base = 10) {
   uint8_t m = digits;
@@ -37,8 +26,8 @@ char* rxy_intToFixedStr (uint32_t i, char* s, uint8_t digits, char lead = '0', u
 
 
 char* rxy_intToStr (uint32_t i, char* s, uint8_t base = 10) {   
-  char buf[RXY_UINT32STRMAXDIGITS+1];
-  rxy_intToFixedStr (i, buf, RXY_UINT32STRMAXDIGITS, 0x20, base);
+  char buf[8 * sizeof (uint32_t) + 1];
+  rxy_intToFixedStr (i, buf, 8 * sizeof (uint32_t), 0x20, base);
   char *p = buf;
   while (*p) {
     if (*p != 0x20) *s++ = *p;  

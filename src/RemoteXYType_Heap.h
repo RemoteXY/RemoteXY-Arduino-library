@@ -50,12 +50,13 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
   uint8_t getDescriptorLength () override {
     return sizeof (CRemoteXYTypeInner_Heap_Descriptor);
   }
-
+  
   public:
-  void getDescriptor (uint8_t * buf) override { 
-    CRemoteXYTypeInner_Heap_Descriptor * desc = (CRemoteXYTypeInner_Heap_Descriptor*)buf;
-    desc->count = heap.count;
-    desc->lastId = heap.lastId;
+  void sendDescriptorBytes (CRemoteXYWire * wire) override {
+    CRemoteXYTypeInner_Heap_Descriptor desc;
+    desc.count = heap.count; 
+    desc.lastId = heap.lastId; 
+    wire->sendBytesPackage ((uint8_t*)(&desc), sizeof (CRemoteXYTypeInner_Heap_Descriptor));
   }
   
   public:
