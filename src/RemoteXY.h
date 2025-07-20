@@ -1,15 +1,14 @@
-/* RemoteXY.h 
-   A RemoteXY Library - Remote device control
-   version 4.1.1   
-   ===========================================================
-   For use RemoteXY library visit website http://remotexy.com
-   This website will help you use the library for configuring 
-   a remote control from a smartphone or tablet.
+/* 
+   RemoteXY Library   
+   version 4.1.1 
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+   Copyright (c) 2014-2025 Evgenii Shemanuev
+   Licensed under the MIT License. See LICENSE file in the project root for 
+   full license information.
+   
+   To use the RemoteXY library, visit http://remotexy.com.
+   Use the GUI editor to get the source code to control your device using a 
+   mobile application.
         
    Supported modes: 
    All boards:

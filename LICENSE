@@ -20,11 +20,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-------------------------
-
-This license applies solely to the RemoteXY library. Any third-party libraries
+Note: This license applies solely to the RemoteXY library. Any third-party libraries
 included or required by the Software are subject to their respective licenses.
 
-The MIT License applies only to the RemoteXY library. The RemoteXY mobile
+Note: The MIT License applies only to the RemoteXY library. The RemoteXY mobile
 application and cloud server are subject to separate terms, available
 at https://remotexy.com .

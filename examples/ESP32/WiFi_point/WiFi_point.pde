@@ -1,18 +1,12 @@
 /*
-   Simple button example
+   RemoteXY example for ESP32 using WiFi as access point
    
-   This source code of graphical user interface 
-   has been generated automatically by RemoteXY editor.
-   To compile this code using RemoteXY library 3.1.1 or later version 
-   download by link http://remotexy.com/en/library/
-   To connect using RemoteXY mobile app by link http://remotexy.com/en/download/                   
-     - for ANDROID 4.5.1 or later version;
-     - for iOS 1.4.1 or later version;
+   To connect, use the RemoteXY mobile 
+   application at http://remotexy.com/en/download/               
     
-   This source code is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.    
+   Copyright (c) 2014-2025 Evgenii Shemanuev
+   Licensed under the MIT License. See LICENSE file in the project root for 
+   full license information.   
 */
 
 //////////////////////////////////////////////
