@@ -196,11 +196,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         break;
                             
       case REMOTEXY_PACKAGE_COMMAND_TIME: { // get board time 
-        uint8_t buf[8];        
-        uint32_t* pbuf = (uint32_t*)buf;
-        *pbuf++ = data->boardTime.getDays ();
-        *pbuf = data->boardTime.getMillisSinceStartOfDay ();
-        wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_TIME, clientId, buf, 8); 
+        int64_t t = data->boardTime;        
+        wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_TIME, clientId, (uint8_t*)&t, 8); 
         break;    
       }            
       case REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC: // send complex var descriptors

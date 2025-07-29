@@ -103,7 +103,6 @@
 
 #include "RemoteXYFunc.h"   
 #include "RemoteXYEeprom.h" 
-#include "RemoteXYTimeStamp.h"
 #include "RemoteXYTime.h" 
 
 #include "RemoteXYClass.h"
@@ -225,6 +224,7 @@
 //API
 #define RemoteXY_delay(ms) remotexy->delay (ms)
 #define RemoteXY_appConnected() remotexy->appConnected ()
+#define RemoteXY_netConfigured() remotexy->netConfigured ()
 #define RemoteXY_getBoardTime() remotexy->getBoardTime ()
 
 #endif //_REMOTEXY_H_

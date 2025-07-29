@@ -22,14 +22,14 @@ class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CR
   uint8_t httpRequestAnswerBuffer[8];
   uint8_t state;
   uint32_t timeout;
-  RemoteXYTimeStamp answerTime;
+  int64_t answerTime;
 
   public:
   uint8_t* init (uint8_t *conf) override  {
     httpRequest = NULL;
     state = REMOTEXY_REALTIMENET_STATE_LATENCY;
     timeout = 0;
-    answerTime.setNull ();
+    answerTime = 0;
     return conf;
   };
          
@@ -51,9 +51,8 @@ class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CR
     }
     else {
       if (state == REMOTEXY_REALTIMENET_STATE_NO) {
-        RemoteXYTimeStamp dt = guiData->data->boardTime;
-        dt.sub (answerTime);
-        if ((answerTime.isNull()) || (dt.getMillis() >= REMOTEXY_REALTIMENET_SINCHRONIZE_MILLIS)) {
+        int32_t dt = (int32_t)(guiData->data->boardTime - answerTime);
+        if ((answerTime == 0) || (dt >= REMOTEXY_REALTIMENET_SINCHRONIZE_MILLIS)) {
 
           // real time needs to be updated
           httpRequest = CRemoteXYHttpRequest::getHttpRequest (guiData->data->nets);

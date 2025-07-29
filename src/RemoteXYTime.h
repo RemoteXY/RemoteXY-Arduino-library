@@ -1,7 +1,15 @@
 #ifndef RemoteXYTime_h
 #define RemoteXYTime_h 
 
-#include "RemoteXYTimeStamp.h"
+#define  REMOTEXY_MILLIS_PER_DAY 86400000
+#define  REMOTEXY_MILLIS_PER_HOUR 3600000
+#define  REMOTEXY_MILLIS_PER_MINUTE 60000
+#define  REMOTEXY_MILLIS_PER_SECOND 1000
+#define  REMOTEXY_SECONDS_PER_DAY 86400
+#define  REMOTEXY_MINUTES_PER_DAY 1440
+#define  REMOTEXY_HOURS_PER_DAY 24
+#define  REMOTEXY_SECONDS_PER_MINUTE 60                
+#define  REMOTEXY_MINUTES_PER_HOUR 60
 
 const char REMOTEXY_TIMEFORMAT_YYYY[] PROGMEM = "YYYY"; // year, 2024 , can use yyyy
 const char REMOTEXY_TIMEFORMAT_YY[] PROGMEM =   "YY";   // year, 24 , can use yy
@@ -58,7 +66,7 @@ class RemoteXYTime {
   
   RemoteXYTime () {}
 
-  RemoteXYTime (RemoteXYTimeStamp ts) { 
+  RemoteXYTime (int64_t ts) { 
     set (ts);
   }
 
@@ -197,9 +205,9 @@ class RemoteXYTime {
     
   
   // day functions
-  void addDays (int16_t days) {
-    RemoteXYTimeStamp ts = getTimeStamp ();
-    ts.add (RemoteXYTimeStamp (days, 0));
+  void addDays (int32_t days) {
+    int64_t ts = getTimeStamp ();
+    ts += (int64_t)days * (int64_t)REMOTEXY_MILLIS_PER_DAY;
     set (ts);
   }
 
@@ -224,36 +232,33 @@ class RemoteXYTime {
   
   // time functions
   void addHours (int32_t hours) {
-    RemoteXYTimeStamp ts = getTimeStamp ();
-    int32_t days = hours / REMOTEXY_HOURS_PER_DAY;
-    hours = hours % REMOTEXY_HOURS_PER_DAY;
-    ts.add (RemoteXYTimeStamp (days, hours * REMOTEXY_MILLIS_PER_HOUR));
+    int64_t ts = getTimeStamp ();
+    ts += (int64_t)hours * (int64_t)REMOTEXY_MILLIS_PER_HOUR;
     set (ts);  
   }
 
   void addMinutes (int32_t minutes) {
-    RemoteXYTimeStamp ts = getTimeStamp ();
-    int32_t days = minutes / REMOTEXY_MINUTES_PER_DAY;
-    minutes = minutes % REMOTEXY_MINUTES_PER_DAY;
-    ts.add (RemoteXYTimeStamp (days, minutes * REMOTEXY_MILLIS_PER_MINUTE));
+    int64_t ts = getTimeStamp ();
+    ts += (int64_t)minutes * (int64_t)REMOTEXY_MILLIS_PER_MINUTE;
     set (ts);  
   }
  
   void addSeconds (int32_t seconds) {
-    RemoteXYTimeStamp ts = getTimeStamp ();
-    int32_t days = seconds / REMOTEXY_SECONDS_PER_DAY;
-    seconds = seconds % REMOTEXY_SECONDS_PER_DAY;
-    ts.add (RemoteXYTimeStamp (days, seconds * REMOTEXY_MILLIS_PER_SECOND));
+    int64_t ts = getTimeStamp ();
+    ts += (int64_t)seconds * (int64_t)REMOTEXY_MILLIS_PER_SECOND;
     set (ts);  
   }
   
-  // time functions
+
   void addMillis (int32_t _millis) {
-    RemoteXYTimeStamp ts = getTimeStamp ();
-    ts.add (RemoteXYTimeStamp (0, _millis));
+    int64_t ts = getTimeStamp ();
+    ts += (int64_t)_millis;
     set (ts);  
   }
   
+  void applyTimeZone  (int16_t timeZoneMinutes) {
+    addMinutes (timeZoneMinutes);
+  }
     
   int32_t getMillisSinceStartOfDay () {
     int32_t _millis = (int32_t)hour * REMOTEXY_MILLIS_PER_HOUR;
@@ -300,29 +305,34 @@ class RemoteXYTime {
   }
   
   // since 1 Jan 1970  
-  RemoteXYTimeStamp getTimeStamp () {
-    return RemoteXYTimeStamp (getDaysSince1970 (), getMillisSinceStartOfDay());
+  int64_t getTimeStamp () {
+    int64_t timeStamp = getDaysSince1970 ();
+    timeStamp *= REMOTEXY_MILLIS_PER_DAY;
+    timeStamp += getMillisSinceStartOfDay();
+    return timeStamp;
   }
   
   
   // calc from UNIX time 01.01.1970
-  void set (RemoteXYTimeStamp ts) {
-    int32_t d = ts.getMillisSinceStartOfDay ();
-    millis = d % REMOTEXY_MILLIS_PER_SECOND;
-    d = d / REMOTEXY_MILLIS_PER_SECOND;
-    second = d % REMOTEXY_SECONDS_PER_MINUTE;
-    d = d / REMOTEXY_SECONDS_PER_MINUTE;
-    minute = d % REMOTEXY_MINUTES_PER_HOUR;
-    d = d / REMOTEXY_MINUTES_PER_HOUR;
-    hour = d % REMOTEXY_HOURS_PER_DAY;
+  void set (const int64_t &ts) {
+  
+    int32_t td = ts / REMOTEXY_MILLIS_PER_DAY;
+    int32_t tm = ts % REMOTEXY_MILLIS_PER_DAY;
     
-    d = ts.getDays ();
-    dayOfWeek = ((d+3) % 7) + 1;
+    millis = tm % REMOTEXY_MILLIS_PER_SECOND;
+    tm = tm / REMOTEXY_MILLIS_PER_SECOND;
+    second = tm % REMOTEXY_SECONDS_PER_MINUTE;
+    tm = tm / REMOTEXY_SECONDS_PER_MINUTE;
+    minute = tm % REMOTEXY_MINUTES_PER_HOUR;
+    tm = tm / REMOTEXY_MINUTES_PER_HOUR;
+    hour = tm % REMOTEXY_HOURS_PER_DAY;
+    
+    dayOfWeek = ((td+3) % 7) + 1;
     uint8_t leap;
     uint16_t y;
-    if (d >= REMOTEXY_DAYS_UP_TO_2025) {
+    if (td >= REMOTEXY_DAYS_UP_TO_2025) {
       y = 2025;
-      d -= REMOTEXY_DAYS_UP_TO_2025;
+      td -= REMOTEXY_DAYS_UP_TO_2025;
     }
     else y = 1970;
     uint16_t dy;
@@ -330,8 +340,8 @@ class RemoteXYTime {
     while (true) {
       leap = RemoteXYTime::leapYear (y);
       dy = 365 + leap;
-      if (d < dy) break;
-      d -= dy;
+      if (td < dy) break;
+      td -= dy;
       y++;
     }  
                
@@ -339,12 +349,12 @@ class RemoteXYTime {
     while (m < 12) {
       dy = pgm_read_byte(REMOTEXY_DAYSINMONTHS+m);
       if (m == 1) dy+= leap;
-      if (d < dy) break;
-      d -= dy;
+      if (td < dy) break;
+      td -= dy;
       m++;
     }
     
-    day = d + 1;
+    day = td + 1;
     month = m + 1;
     year = y;
   }

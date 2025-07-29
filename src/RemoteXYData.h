@@ -14,7 +14,7 @@ class CRemoteXYData {
   
   CRemoteXYNet * nets;  
   
-  RemoteXYTimeStamp boardTime;   
+  int64_t boardTime;   
   uint32_t handlerMillis;
 
 

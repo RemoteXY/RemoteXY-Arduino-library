@@ -40,7 +40,7 @@ class CRemoteXY: public CRemoteXYData {
     guis = NULL;   
     
     handlerMillis = 0;
-    boardTime.setNull ();  
+    boardTime = 0;
 
     
 #if defined(REMOTEXY__DEBUGLOG)
@@ -158,7 +158,7 @@ class CRemoteXY: public CRemoteXYData {
   void handler () {   
   
     uint32_t t = millis ();
-    boardTime.add (t - handlerMillis);  
+    boardTime += (t - handlerMillis);  
     handlerMillis = t;     
   
 #if defined(REMOTEXY_HAS_EEPROM)
@@ -183,7 +183,7 @@ class CRemoteXY: public CRemoteXYData {
   }  
   
 
-  RemoteXYTimeStamp getBoardTime () {
+  int64_t getBoardTime () {
     return boardTime;
   }    
  
@@ -205,15 +205,23 @@ class CRemoteXY: public CRemoteXYData {
 
   public:
   uint8_t appConnected () {
-    uint8_t appConnectFlag = 0;
     CRemoteXYGui * pg = guis;
     while (pg) {
-      if (pg->appConnected ()) appConnectFlag = 1;
+      if (pg->appConnected ()) return 1;
       pg = pg->next;
     }   
-    return appConnectFlag;
+    return 0;
   }
       
+  public:
+  uint8_t netConfigured () {
+    CRemoteXYNet * net = nets; 
+    while (net) {
+      if (net->configured ()) return 1;
+      net = net->next;
+    } 
+    return 0;
+  }
 
   
 };

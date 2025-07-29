@@ -4,22 +4,16 @@
 #include "RemoteXYType.h"
 #include "RemoteXYTime.h"
 
-#pragma pack(push, 1)
-struct RemoteXYType_RealTime_Buffer {
-  int32_t days;
-  int32_t millis;
-};
-#pragma pack(pop)
 
 class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
   public:
-  RemoteXYTimeStamp utcOffsetTime;    // utc offset
-  RemoteXYTimeStamp appOffsetTime;    // phone offset
+  int64_t utcOffsetTime;    // utc offset
+  int64_t appOffsetTime;    // phone offset
   
   public:
   uint8_t* init (uint8_t *conf) override  {    
-    utcOffsetTime.setNull ();
-    appOffsetTime.setNull ();
+    utcOffsetTime = 0;
+    appOffsetTime = 0;
     return conf;
   };  
   
@@ -49,50 +43,52 @@ class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
   }
   
   protected:
-  void setUtcTime (const RemoteXYTimeStamp &time) {
-    if (utcOffsetTime.isNull ()) {  // set offsetTime
+  void setUtcTime (const int64_t &time) {
+    if (utcOffsetTime == 0) {  // set offsetTime
       utcOffsetTime = time;
-      utcOffsetTime.sub (guiData->data->boardTime);
+      utcOffsetTime -= guiData->data->boardTime;
     }
     else {  // adjust board time, utcOffsetTime is constant   
       guiData->data->boardTime = time;
-      guiData->data->boardTime.sub (utcOffsetTime);
+      guiData->data->boardTime -= utcOffsetTime;
     }    
   }  
   
   protected:
-  void setAppTime (const RemoteXYTimeStamp &time) {
+  void setAppTime (const int64_t &time) {
     appOffsetTime = time;
-    appOffsetTime.sub (guiData->data->boardTime);
+    appOffsetTime -= guiData->data->boardTime;
   }  
     
   
   protected:
   void updateUtcTimeFromBuf (uint8_t * buf) {
-    RemoteXYType_RealTime_Buffer * rtbuf = (RemoteXYType_RealTime_Buffer*)buf;
-    RemoteXYTimeStamp time (rtbuf->days, rtbuf->millis);
-    setUtcTime (time);    
+    int64_t * ptime = (int64_t*) buf;
+    setUtcTime (*ptime);    
     
 #if defined(REMOTEXY__DEBUGLOG)
+    int32_t td = *ptime / REMOTEXY_MILLIS_PER_DAY;
+    int32_t tm = *ptime % REMOTEXY_MILLIS_PER_DAY;
     RemoteXYDebugLog.write(F("UTC time updated: "));
-    RemoteXYDebugLog.writeAdd(time.getDays());
+    RemoteXYDebugLog.writeAdd(td);
     RemoteXYDebugLog.writeAdd(F(" days "));
-    RemoteXYDebugLog.writeAdd(time.getMillisSinceStartOfDay());
+    RemoteXYDebugLog.writeAdd(tm);
     RemoteXYDebugLog.writeAdd(F(" millis"));
 #endif 
   }  
   
   protected:
   void updateAppTimeFromBuf (uint8_t * buf) {
-    RemoteXYType_RealTime_Buffer * rtbuf = (RemoteXYType_RealTime_Buffer*)buf;
-    RemoteXYTimeStamp time (rtbuf->days, rtbuf->millis);
-    setAppTime (time);    
+    int64_t * ptime = (int64_t*) buf;
+    setAppTime (*ptime);    
     
 #if defined(REMOTEXY__DEBUGLOG)
+    int32_t td = *ptime / REMOTEXY_MILLIS_PER_DAY;
+    int32_t tm = *ptime % REMOTEXY_MILLIS_PER_DAY;
     RemoteXYDebugLog.write(F("App time updated: "));
-    RemoteXYDebugLog.writeAdd(time.getDays());
+    RemoteXYDebugLog.writeAdd(td);
     RemoteXYDebugLog.writeAdd(F(" days "));
-    RemoteXYDebugLog.writeAdd(time.getMillisSinceStartOfDay());
+    RemoteXYDebugLog.writeAdd(tm);
     RemoteXYDebugLog.writeAdd(F(" millis"));
 #endif 
   }  
@@ -111,28 +107,28 @@ class RemoteXYType_RealTimeApp : public CRemoteXYType {
   }  
     
   public:
-  RemoteXYTimeStamp getUtcTimeStamp () {
-    RemoteXYTimeStamp time (RemoteXYType_RealTimeApp_inner->utcOffsetTime);
-    if (!time.isNull ()) {
-      time.add (RemoteXYType_RealTimeApp_inner->guiData->data->boardTime); 
+  int64_t getUtcTimeStamp () {
+    int64_t time = RemoteXYType_RealTimeApp_inner->utcOffsetTime;
+    if (time != 0) {
+      time += RemoteXYType_RealTimeApp_inner->guiData->data->boardTime; 
     }
     return time;
   }
   
   public:
-  RemoteXYTimeStamp getAppTimeStamp () {
-    RemoteXYTimeStamp time (RemoteXYType_RealTimeApp_inner->appOffsetTime);
-    if (!time.isNull ()) {
-      time.add (RemoteXYType_RealTimeApp_inner->guiData->data->boardTime); 
+  int64_t getAppTimeStamp () {
+    int64_t time = RemoteXYType_RealTimeApp_inner->appOffsetTime;
+    if (time != 0) {
+      time += RemoteXYType_RealTimeApp_inner->guiData->data->boardTime; 
     }
     return time;
   }
   
   public:
-  RemoteXYTimeStamp getTimeStamp (int16_t timeZone) {
-    RemoteXYTimeStamp time = getUtcTimeStamp ();
-    if (!time.isNull ()) {
-      time.applyTimeZone (timeZone); 
+  int64_t getTimeStamp (int16_t timeZoneMinutes) {
+    int64_t time = getUtcTimeStamp ();
+    if (time != 0) {
+      time += (uint32_t)timeZoneMinutes * (uint32_t)60000; 
     }
     return time;
   }
@@ -148,8 +144,8 @@ class RemoteXYType_RealTimeApp : public CRemoteXYType {
   }  
   
   public:
-  RemoteXYTime getTime (int16_t timeZone) {  
-    return RemoteXYTime (getTimeStamp (timeZone));  
+  RemoteXYTime getTime (int16_t timeZoneMinutes) {  
+    return RemoteXYTime (getTimeStamp (timeZoneMinutes));  
   }   
   
 };
