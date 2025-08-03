@@ -1,7 +1,7 @@
 #ifndef RemoteXYStream_Stream_h
 #define RemoteXYStream_Stream_h
 
-#include <Stream.h>
+//#include <Stream.h>
 
 // This class allows you to connect 
 // any communication method that is inherited from the stream class (stream.h)

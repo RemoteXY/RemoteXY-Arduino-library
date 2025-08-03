@@ -31,13 +31,15 @@ class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
   
   public:
   uint8_t handlePackage (CRemoteXYPackage * package, CRemoteXYWire * wire) override {
-    uint16_t i = 2;
-    uint8_t * buf;
-    while (i+9 <= package->length) {
-      buf = &package->buffer[i+1];
-      if (package->buffer[i] == 1) updateUtcTimeFromBuf (buf); 
-      else if (package->buffer[i] == 2) updateAppTimeFromBuf (buf);
-      i+=9; 
+    uint8_t cm;   
+    uint16_t cnt = package->length - 2;
+    uint8_t * buf = package->buffer + 2;
+    while (cnt >= 9) {
+      cm = *buf++;      
+      if (cm == 1) updateUtcTimeFromBuf (buf); 
+      else if (cm == 2) updateAppTimeFromBuf (buf);
+      cnt -= 9; 
+      buf += 8;
     }
     return 0; // will send empty package
   }
@@ -62,35 +64,35 @@ class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
     
   
   protected:
-  void updateUtcTimeFromBuf (uint8_t * buf) {
-    int64_t * ptime = (int64_t*) buf;
-    setUtcTime (*ptime);    
+  void updateUtcTimeFromBuf (uint8_t * buf) {     
+    int64_t t = rxy_int64FromBuf (buf);
+    setUtcTime (t);    
     
 #if defined(REMOTEXY__DEBUGLOG)
-    int32_t td = *ptime / REMOTEXY_MILLIS_PER_DAY;
-    int32_t tm = *ptime % REMOTEXY_MILLIS_PER_DAY;
+    int32_t td = t / REMOTEXY_MILLIS_PER_DAY;
+    int32_t tm = t % REMOTEXY_MILLIS_PER_DAY;
     RemoteXYDebugLog.write(F("UTC time updated: "));
     RemoteXYDebugLog.writeAdd(td);
     RemoteXYDebugLog.writeAdd(F(" days "));
     RemoteXYDebugLog.writeAdd(tm);
     RemoteXYDebugLog.writeAdd(F(" millis"));
-#endif 
+#endif           
   }  
   
   protected:
-  void updateAppTimeFromBuf (uint8_t * buf) {
-    int64_t * ptime = (int64_t*) buf;
-    setAppTime (*ptime);    
-    
+  void updateAppTimeFromBuf (uint8_t * buf) {  
+    int64_t t = rxy_int64FromBuf (buf);
+    setAppTime (t);    
+             
 #if defined(REMOTEXY__DEBUGLOG)
-    int32_t td = *ptime / REMOTEXY_MILLIS_PER_DAY;
-    int32_t tm = *ptime % REMOTEXY_MILLIS_PER_DAY;
+    int32_t td = t / REMOTEXY_MILLIS_PER_DAY;
+    int32_t tm = t % REMOTEXY_MILLIS_PER_DAY;
     RemoteXYDebugLog.write(F("App time updated: "));
     RemoteXYDebugLog.writeAdd(td);
     RemoteXYDebugLog.writeAdd(F(" days "));
     RemoteXYDebugLog.writeAdd(tm);
     RemoteXYDebugLog.writeAdd(F(" millis"));
-#endif 
+#endif      
   }  
   
   

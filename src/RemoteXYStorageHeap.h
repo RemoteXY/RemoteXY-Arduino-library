@@ -205,6 +205,12 @@ class CRemoteXYStorageHeap {
     }
     return 0;
   }         
+     
+  public:
+  uint16_t getSize () {  
+    return heapSize;
+  }
+      
       
 };
 

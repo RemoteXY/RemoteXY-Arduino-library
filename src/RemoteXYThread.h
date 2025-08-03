@@ -147,7 +147,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         break;   
       case REMOTEXY_PACKAGE_COMMAND_INPUTVAR: // receive input vars 
         if ((package->length == guiData->inputLength) && (inputVarNeedSend==0)) {
-          rxy_bufCopy (guiData->inputVar, guiData->inputVarCopy, package->buffer, guiData->inputLength);
+          rxy_bufCopy (guiData->inputVar, package->buffer, guiData->inputLength);
+          rxy_bufCopy (guiData->inputVarCopy, package->buffer, guiData->inputLength);
           CRemoteXYThread::notifyInputVarNeedSend (guiData);  // notify other threads
           inputVarNeedSend = 0; // was change in notifyInputVarNeedSend
         }
@@ -163,7 +164,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         break;  
         
 //////////////////////////////////////////////////    
-// NEW COMMANDS v 3.2    
+// NEW COMMANDS v 4.1   
         
       
       case REMOTEXY_PACKAGE_COMMAND_BOARDID: // get/set board id    

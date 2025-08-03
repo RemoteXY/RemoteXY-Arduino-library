@@ -24,10 +24,36 @@ char* rxy_intToFixedStr (uint32_t i, char* s, uint8_t digits, char lead = '0', u
   return s+digits;
 }
 
-
+char* rxy_uint64ToFixedStr (uint64_t i, char* s, uint8_t digits, char lead = '0', uint8_t base = 10) {
+  uint8_t m = digits;
+  if (base < 2) base = 10;
+  while (m--) {
+    if (i == 0) s[m] = (m == digits-1) ? '0' : lead;
+    else {
+      s[m] = rxy_intToHexChar (i%base);
+      i/=base;
+    }
+  }
+  s[digits]=0;
+  return s+digits;
+}
+   
+          
 char* rxy_intToStr (uint32_t i, char* s, uint8_t base = 10) {   
   char buf[8 * sizeof (uint32_t) + 1];
   rxy_intToFixedStr (i, buf, 8 * sizeof (uint32_t), 0x20, base);
+  char *p = buf;
+  while (*p) {
+    if (*p != 0x20) *s++ = *p;  
+    p++;
+  }
+  *s = 0;
+  return s;  
+}
+
+char* rxy_uint64ToStr (uint32_t i, char* s, uint8_t base = 10) {   
+  char buf[8 * sizeof (uint64_t) + 1];
+  rxy_uint64ToFixedStr (i, buf, 8 * sizeof (uint64_t), 0x20, base);
   char *p = buf;
   while (*p) {
     if (*p != 0x20) *s++ = *p;  
@@ -54,22 +80,21 @@ char rxy_toLowerCase (char c) {
 
 // BUFFERS
 
+
 // from -> to
-void rxy_bufCopy (uint8_t *to, uint8_t *from, uint16_t len) {
-  while (len--) *to++ = *from++;
-}
 
-void rxy_bufCopy (uint8_t *to1, uint8_t *to2, uint8_t *from, uint16_t len) {
-  while (len--) {
-    *to1++ = *to2++ = *from++; 
-  }
+inline void rxy_bufCopy (uint8_t *to, uint8_t *from, uint16_t len) {
+  memcpy (to, from, len);
+  //while (len--) *to++ = *from++;
 }
+       
 
-uint8_t rxy_bufCompare (uint8_t *p1, uint8_t *p2, uint16_t len) {
-  while (len--) {
-    if (*p1++ != *p2++) return 0;
-  }
-  return 1;
+inline uint8_t rxy_bufCompare (uint8_t *p1, uint8_t *p2, uint16_t len) {
+  return memcmp (p1, p2, len) == 0 ? 1 : 0; 
+  //while (len--) {
+  //  if (*p1++ != *p2++) return 0;
+  //}
+  //return 1;   
 }
 
 uint8_t rxy_bufIsEmpty (uint8_t *p, uint16_t len) {
@@ -79,17 +104,18 @@ uint8_t rxy_bufIsEmpty (uint8_t *p, uint16_t len) {
   return 1;
 }
 
-void rxy_bufClear (uint8_t *p, uint16_t len) {
-  while (len--) *p++ = 0;
+inline void rxy_bufClear (uint8_t *p, uint16_t len) {
+  memset (p, 0, len);
+  //while (len--) *p++ = 0;
 }    
 
-int32_t rxy_int32FromBuf (uint8_t *p) {
-  int32_t v;
-  rxy_bufCopy ((uint8_t*)&v, p, 4);
+// safely get from buffer
+
+int64_t rxy_int64FromBuf (uint8_t *p) {
+  int64_t v;
+  rxy_bufCopy ((uint8_t*)&v, p, 8);
   return v;
 }
-
-
 
 
 // STRINGS

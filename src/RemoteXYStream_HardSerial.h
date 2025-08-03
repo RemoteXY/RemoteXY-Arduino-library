@@ -1,6 +1,8 @@
 #ifndef RemoteXYStream_HardSerial_h
 #define RemoteXYStream_HardSerial_h
 
+#if defined (ARDUINO)
+
 #include "RemoteXYStream_Stream.h"
 
 
@@ -19,5 +21,6 @@ class CRemoteXYStream_HardSerial : public CRemoteXYStream_Stream {
   
 };
 
+#endif // ARDUINO
 
-#endif //RemoteXYStream_HardSerial_h
+#endif // RemoteXYStream_HardSerial_h

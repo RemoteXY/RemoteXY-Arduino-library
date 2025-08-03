@@ -85,14 +85,10 @@
 #endif
  
 
-
 #include <inttypes.h>
-//#include <Arduino.h>
-#include "RemoteXYDebugLog.h"
+#include <stdlib.h> 
+#include <string.h>
 
-#ifndef FPSTR
-#define FPSTR(pstr) (const __FlashStringHelper*)(pstr)
-#endif
 #define rxy_pgm_read_byte(x) pgm_read_byte_near(x)
 #define rxy_readConfByte(x) pgm_read_byte_near(x)  // pgm_read_byte_near ???
 
@@ -101,7 +97,16 @@
 #define REMOTEXY_PASSWORD_LENGTH_MAX 26
 #define REMOTEXY_BOARDID_LENGTH 16
 
-#include "RemoteXYFunc.h"   
+
+#include "ArduinoCompat/ArduinoCompat.h"
+
+
+#ifndef FPSTR
+#define FPSTR(pstr) (const __FlashStringHelper*)(pstr)
+#endif
+
+#include "RemoteXYFunc.h"  
+#include "RemoteXYDebugLog.h" 
 #include "RemoteXYEeprom.h" 
 #include "RemoteXYTime.h" 
 

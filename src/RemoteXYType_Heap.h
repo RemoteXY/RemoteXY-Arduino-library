@@ -18,6 +18,7 @@ struct CRemoteXYTypeInner_Heap_PackageHead {
 };
 #pragma pack(pop)
 
+// VIRTUAL
 class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
   protected:
   CRemoteXYStorageHeap heap;
@@ -27,6 +28,7 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
     uint16_t len;
     len = rxy_readConfByte (conf++);
     len |= rxy_readConfByte (conf++)<<8;  
+    if (len < 2) len = 2; // min 32 bytes
     heap.init (len << 4);    
     return conf;
   };
@@ -80,7 +82,6 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
   
 
 };
-
 
 
 #endif // RemoteXYType_Heap_h

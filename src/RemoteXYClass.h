@@ -4,7 +4,7 @@
 #include <inttypes.h> 
 //#include <stdlib.h>
 //#include <Arduino.h>
-#include <Stream.h>
+//#include <Stream.h>
 
 #include "RemoteXYDebugLog.h"
 #include "RemoteXYGui.h"

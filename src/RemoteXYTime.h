@@ -482,6 +482,9 @@ class RemoteXYTime {
     return p;
   }
   
+  
+#if defined (ARDUINO)
+
   String format (const char * tmpl) {
     uint16_t len = rxy_strLength(tmpl)+1;
     len += 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0);
@@ -505,6 +508,7 @@ class RemoteXYTime {
     return format (tmpl.c_str());
   }
   
+#endif // ARDUINO
       
   // operators
   

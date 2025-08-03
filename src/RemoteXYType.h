@@ -30,6 +30,7 @@ class CRemoteXYTypeInner {
 };
 
 
+
 // These structures and classes participate in data 
 // exchange or can be included in the RemoteXY structure. 
 // They may not be address aligned on a 64-bit processor.
@@ -45,6 +46,8 @@ class CRemoteXYType {
   }
     
 };
+
+
 
 #pragma pack(pop)
 

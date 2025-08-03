@@ -2,9 +2,8 @@
 #define RemoteXYType_Print_h
 
 #include "RemoteXYFunc.h"
-#include "RemoteXYType_Heap.h"
+#include "RemoteXYType_HeapPrintable.h"
 
-#define REMOTEXY_TYPE_PRINT_BUFFER_SIZE 24 // 32 - 4 -4
 
 
 #pragma pack(push, 1)
@@ -17,65 +16,32 @@ struct RemoteXYType_Print_Color {
 };
 #pragma pack(pop)
                   
-class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
+class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_HeapPrintable {
   
-  uint8_t bffer[REMOTEXY_TYPE_PRINT_BUFFER_SIZE];
-  uint8_t bufferLength;
   RemoteXYType_Print_Color color;
   
+  
   public:
-  uint8_t* init (uint8_t *conf) override  {
-    bufferLength = 0;           
+  uint8_t* init (uint8_t *conf) override  {         
     color.mask = 0;  
     color.r = color.g = color.b = 0;      
-    return CRemoteXYTypeInner_Heap::init (conf);
+    return CRemoteXYTypeInner_HeapPrintable::init (conf);
   };
 
-              
-  private:
-  void addToHeap_Color (const uint8_t * buf, uint16_t len) {
-    if (color.mask == 0) addToHeap ((uint8_t*)&color, 1, bffer, bufferLength); 
-    else addToHeap ((uint8_t*)&color, sizeof (RemoteXYType_Print_Color), bffer, bufferLength);     
-  }   
+            
                   
-  private:   
-  void addBufferToHeap () {
-    addToHeap_Color (bffer, bufferLength);
-    bufferLength = 0;  
+  public:   
+  void addBufferToHeap () override {
+    uint16_t cs = 1;
+    if (color.mask != 0) cs = sizeof (RemoteXYType_Print_Color);
+    if (addToHeap ((uint8_t*)&color, cs, printBffer, printBufferLength)) {    
+      printBufferLength = 0;  
+    }
   }
    
   
-  public:
-  void write (uint8_t b) {
-    if (bufferLength >= REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
-      addBufferToHeap ();
-    }
-    bffer[bufferLength++] = b;   
-  } 
-  
-
-  void write (const uint8_t *buf, uint16_t size) {
-    // can't break bytes into different packets, you can break a UTF symbol
-    if (size > 0) {
-      if (bufferLength + size > REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
-        if (bufferLength > 0) addBufferToHeap ();
-      }
-      if (size > REMOTEXY_TYPE_PRINT_BUFFER_SIZE) {
-        addToHeap_Color (buf, size);
-      }
-      else {        
-        while (size--) bffer[bufferLength++] = *buf++; 
-      }
-    }    
-  }
-    
-  
-  void handler () override {      
-    if (bufferLength > 0) addBufferToHeap ();
-  };      
-  
   void setColor (uint8_t r, uint8_t g, uint8_t b) {
-    handler ();
+    send ();
     color.r = r;
     color.g = g;
     color.b = b; 
@@ -83,7 +49,7 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
   }     
          
   void setColor (uint32_t _color) {
-    handler ();
+    send ();
     color.r = _color >> 16;
     color.g = _color >> 8;
     color.b = _color; 
@@ -91,15 +57,20 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_Heap {
   }  
   
   void setDefaultColor () {
-    handler ();
+    send ();
     color.mask = 0;
   }  
+  
+  void handler () override {      
+    send ();
+  };   
    
 };
               
-#define RemoteXYType_Print_inner ((CRemoteXYTypeInner_Print*)inner) 
+#define RemoteXYType_Print_inner ((CRemoteXYTypeInner_Print*)inner)
+ 
 #pragma pack(push, 1) 
-class RemoteXYType_Print : public CRemoteXYType {
+class RemoteXYType_Print : public CRemoteXYType_HeapPrintable {
 
   public:
   RemoteXYType_Print () {
@@ -117,158 +88,9 @@ class RemoteXYType_Print : public CRemoteXYType {
   void setDefaultColor () {
     RemoteXYType_Print_inner->setDefaultColor (); 
   }      
-  
-  void write (uint8_t b) {
-    RemoteXYType_Print_inner->write (b); 
-  }
-           
-  void write (const uint8_t *buf, uint16_t size) {
-    RemoteXYType_Print_inner->write (buf, size);   
-  }        
-  
-   
-  // Print  
-    
-  void print() {
-  }
+             
+};  
       
-  void print (const __FlashStringHelper * str) {
-    PGM_P p = reinterpret_cast<PGM_P>(str);
-    uint8_t c;
-    while (1) {
-      c = pgm_read_byte(p++);
-      if (c == 0) break;
-      write(c);     
-    }
-  }
-  
-       
-  void print(const char * str) {
-    if (str != NULL) {
-      write ((const uint8_t*)str, rxy_strLength (str));
-    }
-  }
-  
-  void print(String str) {
-    print (str.c_str());
-  }
-  
-  void print(char c) {
-    write (c);
-  }
-  
-  void print(unsigned char b, int base = 10) {
-    return print((unsigned long) b, base);
-  }
-  
-  void print(int n, int base = 10) {
-    return print((long) n, base); 
-  }
-  
-  void print(unsigned int n, int base = 10) {
-    return print((unsigned long) n, base);
-  }
-  
-  void print(long n, int base = 10) {
-    if (base < 2) base = 10;
-    char buf[8 * sizeof (uint32_t) + 2];
-    char *p = buf;    
-    if (n < 0) {
-      *p++ = '-';
-      n = -n;
-    }
-    rxy_intToStr (n, p, base);
-    print (buf);
-  }
-  
-  void print(unsigned long n, int base = 10) {
-    if (base < 2) base = 10;
-    char buf[8 * sizeof (uint32_t) + 1];
-    rxy_intToStr (n, buf, base);
-    print (buf);
-  }
-  
-  void print(double number, int digits = 2) {
-
-    if (number < 0) {
-      write ('-');
-      number = -number;
-    }
-    double rounding = 0.5;
-    for (uint8_t i=0; i<digits; ++i) rounding /= 10.0;    
-    number += rounding;
-    unsigned long int_part = (unsigned long)number;
-    double remainder = number - (double)int_part;
-    
-    print (int_part);
-    if (digits > 0) {
-      write ('.'); 
-    }    
-    while (digits-- > 0) {
-      remainder *= 10.0;
-      uint8_t toPrint = (uint8_t)(remainder);
-      write (toPrint + '0');
-      remainder -= toPrint; 
-    }    
-  }
-  
-  //void print(const Printable& x);
-  
-  void println (const __FlashStringHelper * str) {
-    print (str);
-    println ();
-  }
-
-  void println(const char * str) {
-    print (str);
-    println ();
-  }
-  
-  void println(String str) {
-    print (str.c_str());    
-    println ();
-  }
-  
-  void println(char c) {
-    write (c);
-    println ();
-  }
-  
-  void println(unsigned char b , int base = 10) {
-    return println((unsigned long) b, base);
-  }
-  
-  void println(int n, int base = 10) {
-    return println((long) n, base); 
-  }
-  
-  void println(unsigned int n, int base = 10) {
-    return println((unsigned long) n, base); 
-  }
-  
-  void println(long n, int base = 10) {
-    print (n, base);
-    println (); 
-  }
-  
-  void println(unsigned long n, int base = 10) {
-    print (n, base);
-    println (); 
-  }
-  
-  void println(double number, int digits = 2) {
-    print (number, digits);
-    println ();   
-  }
-  
-  //void println(const Printable&);
-  
-  void println(void) {
-    write (0x0d);
-    write (0x0a);
-  }      
-
-};        
 #pragma pack(pop)
 
 #endif // RemoteXYType_Print_h
