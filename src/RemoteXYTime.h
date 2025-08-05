@@ -87,10 +87,7 @@ class RemoteXYTime {
     minute = _minute;
     second = _second;
     millis = _millis;
-    if (hour >= REMOTEXY_HOURS_PER_DAY) hour = REMOTEXY_HOURS_PER_DAY - 1;
-    if (minute >= REMOTEXY_MINUTES_PER_HOUR) minute = REMOTEXY_MINUTES_PER_HOUR - 1;
-    if (second >= REMOTEXY_SECONDS_PER_MINUTE) second = REMOTEXY_SECONDS_PER_MINUTE - 1;
-    if (millis >= REMOTEXY_MILLIS_PER_SECOND) millis = REMOTEXY_MILLIS_PER_SECOND - 1;
+    normalizeTime ();
     normalizeDate ();
   }
 
@@ -106,6 +103,17 @@ class RemoteXYTime {
       else return 1;
     }
     return 0;  
+  }
+  
+  void normalizeTime () {
+    if (hour < 0) hour = 0;
+    if (hour >= REMOTEXY_HOURS_PER_DAY) hour = REMOTEXY_HOURS_PER_DAY - 1;
+    if (minute < 0) minute = 0;
+    if (minute >= REMOTEXY_MINUTES_PER_HOUR) minute = REMOTEXY_MINUTES_PER_HOUR - 1;
+    if (second < 0) second = 0;
+    if (second >= REMOTEXY_SECONDS_PER_MINUTE) second = REMOTEXY_SECONDS_PER_MINUTE - 1;
+    if (millis < 0) millis = 0;
+    if (millis >= REMOTEXY_MILLIS_PER_SECOND) millis = REMOTEXY_MILLIS_PER_SECOND - 1;  
   }
   
   // check day and set day of week
@@ -258,6 +266,7 @@ class RemoteXYTime {
   
   void setHour (int8_t _hour) {
     hour = _hour;
+    normalizeTime ();
   }
   
   void setToHourStart () {
@@ -280,6 +289,7 @@ class RemoteXYTime {
   
   void setMinute (int8_t _minute) {
     minute = _minute;
+    normalizeTime ();
   }
  
   void addSeconds (int32_t seconds) {
@@ -290,6 +300,7 @@ class RemoteXYTime {
   
   void setSecond (int8_t _second) {
     second = _second;
+    normalizeTime ();
   }
   
   void addMillis (int32_t _millis) {
@@ -304,6 +315,7 @@ class RemoteXYTime {
   
   void setMillis (int16_t _millis) {
     millis = _millis;
+    normalizeTime ();
   }
   
   
