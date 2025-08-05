@@ -98,7 +98,7 @@ class RemoteXYTime {
     set (t.year, t.month, t.day, t.hour, t.minute, t.second, t.millis);
   }
   
-  static uint16_t leapYear (uint16_t _year) {
+  static uint8_t leapYear (uint16_t _year) {
     if ((_year & 3) == 0) {
       if ((_year % 100) == 0) {
         if ((_year % 400) == 0) return 1;
@@ -245,7 +245,7 @@ class RemoteXYTime {
   }
      
   uint8_t equalDate (RemoteXYTime date) {
-    return compareDate (date) == 0;
+    return compareDate (date) == 0 ? 1 : 0;
   }
 
   
@@ -323,7 +323,7 @@ class RemoteXYTime {
     if (year < 1970) return 0;
     uint8_t leap = 0;
     int32_t days = 0;
-    uint16_t y = 1970;
+    int16_t y = 1970;
     
     if (year >= 1970) {
       if (year >= REMOTEXY_DAYS_UP_TO_2025) {
@@ -345,7 +345,7 @@ class RemoteXYTime {
       }      
     }
     
-    uint8_t m = 0;
+    int8_t m = 0;
     while (m < month-1) {
       days += pgm_read_byte(REMOTEXY_DAYSINMONTHS+m);
       if (m == 1) days += leap;
@@ -396,7 +396,7 @@ class RemoteXYTime {
       y++;
     }  
                
-    uint8_t m = 0;
+    int8_t m = 0;
     while (m < 12) {
       dy = pgm_read_byte(REMOTEXY_DAYSINMONTHS+m);
       if (m == 1) dy+= leap;
@@ -412,9 +412,9 @@ class RemoteXYTime {
     
   
   char * format (char * str, const char * tmpl) {
-
+    uint8_t d;
     while (*tmpl) {
-      uint8_t d = 0;
+      d = 0;
       if (rxy_strCompareLeft (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_YYYY), 1)) {
         str = rxy_intToFixedStr (year, str, 4, '0');
         d=4;
@@ -596,12 +596,12 @@ class RemoteXYTime {
   }  
   
   RemoteXYTime operator++() {
-    addMillis (1);
+    addMillis ((int64_t)1);
     return *this;
   } 
   
   RemoteXYTime operator--() {
-    addMillis (-1);
+    addMillis ((int64_t)-1);
     return *this;
   } 
 
