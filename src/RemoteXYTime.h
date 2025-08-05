@@ -64,7 +64,9 @@ class RemoteXYTime {
   int16_t year;
   int8_t dayOfWeek;  // if 0 then dayOfWeek is undefuned
   
-  RemoteXYTime () {}
+  RemoteXYTime () {
+    set (1970, 1, 1);
+  }
 
   RemoteXYTime (int64_t ts) { 
     set (ts);
@@ -79,21 +81,32 @@ class RemoteXYTime {
   }
   
     
-  void set (int16_t _year, int8_t _month = 1, int8_t _day = 1, int8_t _hour = 0, int8_t _minute = 0, int8_t _second = 0, int16_t _millis = 0) {
+  void set (int16_t _year, int8_t _month, int8_t _day, int8_t _hour = 0, int8_t _minute = 0, int8_t _second = 0, int16_t _millis = 0) {
+    setDate (_year, _month, _day);
+    setTime (_hour, _minute, _second, _millis);
+  }
+  
+  void set (const RemoteXYTime &t) {
+    set (t.year, t.month, t.day, t.hour, t.minute, t.second, t.millis);
+  }
+  
+  void setDate (int16_t _year, int8_t _month = 1, int8_t _day = 1) {
     year = _year;
     month = _month;
     day = _day;
+    normalizeDate ();
+  }
+  
+  void setTime (int8_t _hour, int8_t _minute = 0, int8_t _second = 0, int16_t _millis = 0) {
     hour = _hour;
     minute = _minute;
     second = _second;
     millis = _millis;
     normalizeTime ();
-    normalizeDate ();
   }
 
-  void set (const RemoteXYTime &t) {
-    set (t.year, t.month, t.day, t.hour, t.minute, t.second, t.millis);
-  }
+
+  
   
   static uint8_t leapYear (uint16_t _year) {
     if ((_year & 3) == 0) {
@@ -235,9 +248,9 @@ class RemoteXYTime {
     int64_t ts = getTimeStamp ();
     ts += (int64_t)days * (int64_t)REMOTEXY_MILLIS_PER_DAY;
     set (ts);
-  }
+  }    
   
-  void setToDayOfMonth (int8_t _day) {
+  void setDay (int8_t _day) {
     day = _day;
     normalizeDate ();
   }
@@ -262,7 +275,7 @@ class RemoteXYTime {
     int64_t ts = getTimeStamp ();
     ts += (int64_t)hours * (int64_t)REMOTEXY_MILLIS_PER_HOUR;
     set (ts);  
-  }
+  }                   
   
   void setHour (int8_t _hour) {
     hour = _hour;
@@ -305,7 +318,7 @@ class RemoteXYTime {
   
   void addMillis (int32_t _millis) {
     addMillis ((int64_t)_millis);
-  }
+  } 
   
   void addMillis (int64_t _millis) {
     int64_t ts = getTimeStamp ();
@@ -321,6 +334,13 @@ class RemoteXYTime {
   
   void applyTimeZone  (int16_t timeZoneMinutes) {
     addMinutes (timeZoneMinutes);
+  }
+  
+  uint8_t isEmpty () {
+    if ((year == 1970) && (month == 1) && (day == 1) && (hour == 0) && (minute == 0) && (second == 0) && (millis == 0)) {
+      return 1;
+    }
+    return 0;
   }
     
   int32_t getMillisSinceStartOfDay () {
@@ -621,27 +641,50 @@ class RemoteXYTime {
     return compare (time) > 0;
   }
   
+  bool operator<(const int64_t& ts) {
+    return getTimeStamp () < ts;
+  }
+  
   bool operator<=(const RemoteXYTime& time) {
     return compare (time) >= 0;
+  }
+  
+  bool operator<=(const int64_t& ts) {
+    return getTimeStamp () <= ts;
   }
         
   bool operator>(const RemoteXYTime& time) {
     return compare (time) < 0;
   }
   
+  bool operator>(const int64_t& ts) {
+    return getTimeStamp () > ts;
+  }
+  
   bool operator>=(const RemoteXYTime& time) {
     return compare (time) <= 0;
   }
+  
+  bool operator>=(const int64_t& ts) {
+    return getTimeStamp () >= ts;
+  }  
 
   bool operator==(const RemoteXYTime& time) {
     return compare (time) == 0; 
+  }  
+  
+  bool operator==(const int64_t& ts) {
+    return getTimeStamp () == ts;
   }   
   
   bool operator!=(const RemoteXYTime& time) {
     return compare (time) != 0; 
   }   
  
-
+  bool operator!=(const int64_t& ts) {
+    return getTimeStamp () != ts;
+  } 
+  
 };
 
 
