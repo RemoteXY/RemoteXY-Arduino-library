@@ -55,35 +55,31 @@ const uint8_t REMOTEXY_DAYSINMONTHS[] PROGMEM = {31, 28, 31, 30, 31, 30, 31, 31,
 
 class RemoteXYTime {
   public:
-  uint16_t millis;
-  uint8_t second;
-  uint8_t minute;
-  uint8_t hour;
-  uint8_t day;
-  uint8_t month;
-  uint16_t year;
-  uint8_t dayOfWeek;  // if 0 then dayOfWeek is undefuned
+  int16_t millis;
+  int8_t second;
+  int8_t minute;
+  int8_t hour;
+  int8_t day;
+  int8_t month;
+  int16_t year;
+  int8_t dayOfWeek;  // if 0 then dayOfWeek is undefuned
   
   RemoteXYTime () {}
 
   RemoteXYTime (int64_t ts) { 
     set (ts);
   }
+  
+  RemoteXYTime (const RemoteXYTime &ts) { 
+    set (ts);
+  }
 
-  RemoteXYTime (uint16_t _year, uint8_t _month, uint8_t _day, uint8_t _hour, uint8_t _minute, uint8_t _second, uint16_t _millis) {
+  RemoteXYTime (int16_t _year, int8_t _month = 1, int8_t _day = 1, int8_t _hour = 0, int8_t _minute = 0, int8_t _second = 0, int16_t _millis = 0) {
     set (_year, _month, _day, _hour, _minute, _second, _millis);
   }
   
-  RemoteXYTime (uint16_t _year, uint8_t _month, uint8_t _day, uint8_t _hour, uint8_t _minute, uint8_t _second) {
-    set (_year, _month, _day, _hour, _minute, _second);
-  }
-  
-  RemoteXYTime (uint16_t _year, uint8_t _month, uint8_t _day) {
-    set (_year, _month, _day);
-  }
-  
     
-  void set (uint16_t _year, uint8_t _month, uint8_t _day, uint8_t _hour, uint8_t _minute, uint8_t _second, uint16_t _millis) {
+  void set (int16_t _year, int8_t _month = 1, int8_t _day = 1, int8_t _hour = 0, int8_t _minute = 0, int8_t _second = 0, int16_t _millis = 0) {
     year = _year;
     month = _month;
     day = _day;
@@ -97,13 +93,9 @@ class RemoteXYTime {
     if (millis >= REMOTEXY_MILLIS_PER_SECOND) millis = REMOTEXY_MILLIS_PER_SECOND - 1;
     normalizeDate ();
   }
-  
-  void set (uint16_t _year, uint8_t _month, uint8_t _day, uint8_t _hour, uint8_t _minute, uint8_t _second) {
-    set (_year, _month, _day, _hour, _minute, _second, 0);
-  }
 
-  void set (uint16_t _year, uint8_t _month, uint8_t _day) {
-    set (_year, _month, _day, 0, 0, 0, 0);
+  void set (const RemoteXYTime &t) {
+    set (t.year, t.month, t.day, t.hour, t.minute, t.second, t.millis);
   }
   
   static uint16_t leapYear (uint16_t _year) {
@@ -118,11 +110,11 @@ class RemoteXYTime {
   
   // check day and set day of week
   void normalizeDate () {
-    if (month == 0) month = 1;
+    if (month <= 0) month = 1;
     if (month > 12) month = 12;    
     uint8_t md = pgm_read_byte (REMOTEXY_DAYSINMONTHS+month-1);
     if (month == 2) md += RemoteXYTime::leapYear (year);
-    if (day == 0) day = 1;
+    if (day <= 0) day = 1;
     if (day > md) day = md;
     dayOfWeek = ((getDaysSince1970 ()+3) % 7) + 1; 
   }
@@ -160,9 +152,28 @@ class RemoteXYTime {
  
   // year functions
   
-  void addYear (int16_t years) {
-    years += year;
+  void addYears (int16_t years) {
+    year += years;
     normalizeDate ();
+  }
+  
+  void setYear (int16_t _year) {
+    year = _year;
+    normalizeDate ();
+  }
+  
+  void setToYearStart () {
+    day = 1;
+    month = 1;
+    normalizeDate ();
+    setToDayStart ();
+  }
+  
+  void setToYearEnd () {
+    day = 31;
+    month = 12;
+    normalizeDate ();
+    setToDayEnd ();
   }
  
   // month function
@@ -180,26 +191,33 @@ class RemoteXYTime {
     normalizeDate ();
   }
   
-  void startOfMonth () {
-    day = 1;
+  void setMonth (int16_t _month) {
+    month = _month;
     normalizeDate ();
-    setStartOfDay ();
   }
   
-  void endOfMonth () {
+  void setToMonthStart () {
+    day = 1;
+    normalizeDate ();
+    setToDayStart ();
+  }
+  
+  void setToMonthEnd () {
     day = 31;
     normalizeDate ();
-    setEndOfDay ();
+    setToDayEnd ();
   }
   
   // week functions
-  void addWeeks (int16_t week) {
-    addDays (week * 7);
+  void addWeeks (int16_t weeks) {
+    addDays (weeks * 7);
   }
   
   // go to day of week
   void setDayOfWeek (int8_t _dayOfWeek) {
     normalizeDate ();
+    if (_dayOfWeek <= 0) _dayOfWeek = 1;
+    if (_dayOfWeek > 7) _dayOfWeek = 7;
     if (_dayOfWeek != dayOfWeek) addDays (_dayOfWeek - dayOfWeek);
   }
     
@@ -210,19 +228,20 @@ class RemoteXYTime {
     ts += (int64_t)days * (int64_t)REMOTEXY_MILLIS_PER_DAY;
     set (ts);
   }
-
-  void setStartOfDay () {
-    hour = 0;
-    minute = 0;
-    second = 0;
-    millis = 0;
+  
+  void setToDayOfMonth (int8_t _day) {
+    day = _day;
+    normalizeDate ();
   }
 
-  void setEndOfDay () {
+  void setToDayStart () {
+    hour = 0;
+    setToHourStart ();
+  }
+
+  void setToDayEnd () {
     hour = REMOTEXY_HOURS_PER_DAY - 1;
-    minute = REMOTEXY_MINUTES_PER_HOUR - 1;
-    second = REMOTEXY_SECONDS_PER_MINUTE - 1;
-    millis = REMOTEXY_MILLIS_PER_SECOND - 1;
+    setToHourEnd ();
   }
      
   uint8_t equalDate (RemoteXYTime date) {
@@ -236,11 +255,31 @@ class RemoteXYTime {
     ts += (int64_t)hours * (int64_t)REMOTEXY_MILLIS_PER_HOUR;
     set (ts);  
   }
+  
+  void setHour (int8_t _hour) {
+    hour = _hour;
+  }
+  
+  void setToHourStart () {
+    minute = 0;
+    second = 0;
+    millis = 0;
+  }  
+  
+  void setToHourEnd () {
+    minute = REMOTEXY_MINUTES_PER_HOUR - 1;
+    second = REMOTEXY_SECONDS_PER_MINUTE - 1;
+    millis = REMOTEXY_MILLIS_PER_SECOND - 1;
+  }    
 
   void addMinutes (int32_t minutes) {
     int64_t ts = getTimeStamp ();
     ts += (int64_t)minutes * (int64_t)REMOTEXY_MILLIS_PER_MINUTE;
     set (ts);  
+  }
+  
+  void setMinute (int8_t _minute) {
+    minute = _minute;
   }
  
   void addSeconds (int32_t seconds) {
@@ -249,12 +288,24 @@ class RemoteXYTime {
     set (ts);  
   }
   
-
+  void setSecond (int8_t _second) {
+    second = _second;
+  }
+  
   void addMillis (int32_t _millis) {
+    addMillis ((int64_t)_millis);
+  }
+  
+  void addMillis (int64_t _millis) {
     int64_t ts = getTimeStamp ();
-    ts += (int64_t)_millis;
+    ts += _millis;
     set (ts);  
   }
+  
+  void setMillis (int16_t _millis) {
+    millis = _millis;
+  }
+  
   
   void applyTimeZone  (int16_t timeZoneMinutes) {
     addMinutes (timeZoneMinutes);
@@ -513,35 +564,33 @@ class RemoteXYTime {
   // operators
   
   RemoteXYTime operator=(const RemoteXYTime& time) {
-    year = time.year;
-    month = time.month;
-    day = time.day;
-    hour = time.hour;
-    minute = time.minute;
-    second = time.second;
-    millis = time.millis;
-    dayOfWeek = time.dayOfWeek;
+    set (time);
     return *this;
   } 
   
-  RemoteXYTime operator+(const int32_t _millis) const {
+  RemoteXYTime operator=(const int64_t& ts) {
+    set (ts);
+    return *this;
+  } 
+  
+  RemoteXYTime operator+(const int64_t _millis) const {
     RemoteXYTime time = *this;
     time.addMillis (_millis);
     return time;
   }
 
-  RemoteXYTime operator-(const int32_t _millis) const {
+  RemoteXYTime operator-(const int64_t _millis) const {
     RemoteXYTime time = *this;
     time.addMillis (-_millis);
     return time;
   }
   
-  RemoteXYTime operator+=(const int32_t _millis) {
+  RemoteXYTime operator+=(const int64_t _millis) {
     addMillis (_millis);
     return *this;
   }  
   
-  RemoteXYTime operator-=(const int32_t _millis) {
+  RemoteXYTime operator-=(const int64_t _millis) {
     addMillis (-_millis);
     return *this;
   }  
@@ -552,7 +601,7 @@ class RemoteXYTime {
   } 
   
   RemoteXYTime operator--() {
-    addMillis (1);
+    addMillis (-1);
     return *this;
   } 
 
