@@ -1,7 +1,7 @@
 #ifndef RemoteXYType_RealTimeNet_h
 #define RemoteXYType_RealTimeNet_h
 
-#include "RemoteXYType_RealTimeApp.h"
+#include "RemoteXYType_RealTime.h"
 #include "RemoteXYHttpRequest.h"
 
 #define REMOTEXY_REALTIMENET_STATE_NO 0
@@ -15,7 +15,7 @@
 const char REMOTEXY_REALTIME_URL[] PROGMEM = "/realtime";
 
 
-class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CRemoteXYHttpRequestCompletion {
+class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTime, CRemoteXYHttpRequestListener {
 
   public:
   CRemoteXYHttpRequest * httpRequest; // may be NULL   
@@ -58,7 +58,7 @@ class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CR
           httpRequest = CRemoteXYHttpRequest::getHttpRequest (guiData->data->nets);
           if (httpRequest != NULL) {
             setState (REMOTEXY_REALTIMENET_STATE_REQUEST);
-            httpRequest->setCompletion (this);
+            httpRequest->setListener (this);
             httpRequest->setAnswerBuffer (httpRequestAnswerBuffer, 8);
             httpRequest->setRequest (
                 FPSTR(REMOTEXY_HTTPREQUEST_HOST_REMOTEXY), 
@@ -76,9 +76,9 @@ class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CR
     }
   }
   
-  void httpRequestCompletion (uint8_t result, uint16_t code) override {
+  void httpRequestCompletion (uint8_t result) override {
     if (state == REMOTEXY_REALTIMENET_STATE_REQUEST) {
-      if (result) {
+      if (result && (httpRequest!=NULL)) {
         if (httpRequest->getContentLength () == 8) {
           updateUtcTimeFromBuf (httpRequestAnswerBuffer);
           answerTime = guiData->data->boardTime;          
@@ -94,12 +94,12 @@ class CRemoteXYTypeInner_RealTimeNet : public CRemoteXYTypeInner_RealTimeApp, CR
     timeout = millis ();
   }
 
- 
+  
 
 };
 
 #pragma pack(push, 1) 
-class RemoteXYType_RealTimeNet : public RemoteXYType_RealTimeApp {
+class RemoteXYType_RealTimeNet : public RemoteXYType_RealTime {
 
   public:
   RemoteXYType_RealTimeNet () {

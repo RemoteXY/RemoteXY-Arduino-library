@@ -10,7 +10,11 @@ class CRemoteXYType;
 class CRemoteXYTypeInner;
 class CRemoteXYEeprom;
 
-#define REMOTEXY_RECEIVE_BUFFER_MIN_LENGTH 32  // more than PASSWORD_LENGTH
+// receive buffer len
+// > PASSWORD_LENGTH 
+// > REMOTEXY_AES_KEY_SIZE+1 
+// > REMOTEXY_BOARDID_LENGTH+1 
+#define REMOTEXY_RECEIVE_BUFFER_MIN_LENGTH 33 
 
 class CRemoteXYGuiData {
   

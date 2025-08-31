@@ -3,6 +3,8 @@
 
 //#define REMOTEXY_HTTPREQUEST_USE_HTTP_1_1
 
+
+
 #define REMOTEXY_HTTPREQUEST_HEADERS_COUNT 5
 #define REMOTEXY_HTTPREQUEST_READ_STR_SIZE 30
 #define REMOTEXY_HTTPREQUEST_TIMEOUT 10000 
@@ -33,20 +35,18 @@ const char REMOTEXY_HTTPREQUEST_STR_CONTENT_LENGTH[] PROGMEM = "Content-Length:"
 const char REMOTEXY_HTTPREQUEST_STR_REQUIRED_HEADERS[] PROGMEM = "Connection: close\r\nUser-Agent: remotexy.h\r\n";
 
 
-#pragma pack(push, 1)
-class CRemoteXYHttpRequestCompletion {
+class CRemoteXYHttpRequestListener {
   public:
-  virtual void httpRequestCompletion (uint8_t result, uint16_t code) = 0;
+  virtual void httpRequestCompletion (uint8_t result) = 0;
+  virtual uint8_t httpRequestSendPostData (CRemoteXYClient * client) {UNUSED (client); return 1;};
 };
-  
-  
 
 class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   public:
   CRemoteXYNet * net;
   
   private:
-  CRemoteXYHttpRequestCompletion * completion; 
+  CRemoteXYHttpRequestListener * listener; 
   CRemoteXYClient * client;
   uint8_t state;
 
@@ -54,7 +54,6 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   uint16_t port;
   const __FlashStringHelper * method;
   const __FlashStringHelper * url;
-  uint8_t * postData;
   uint16_t postDataLength;
   
   const __FlashStringHelper * headers[REMOTEXY_HTTPREQUEST_HEADERS_COUNT];
@@ -80,21 +79,22 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   CRemoteXYHttpRequest (CRemoteXYNet * _net) {
     net = _net;
     client = _net->newClient();
-    completion = NULL;
+    listener = NULL;
     state = REMOTEXY_HTTPREQUEST_UNUSED;
     answerBufLength = 0;
     headersCount = 0;
+    
   }
   
   public:
-  void setCompletion (CRemoteXYHttpRequestCompletion * _completion) {
-    completion = _completion;
+  void setListener (CRemoteXYHttpRequestListener * _listener) {
+    listener = _listener;
   }  
   
   public:
-  void notifyCompletion (uint8_t _state, uint16_t code) {
+  void notifyCompletion (uint8_t _state) {
     state = _state;
-    if (completion) completion->httpRequestCompletion (state == REMOTEXY_HTTPREQUEST_OK, code);
+    if (listener) listener->httpRequestCompletion (state == REMOTEXY_HTTPREQUEST_OK);
     state = REMOTEXY_HTTPREQUEST_UNUSED;
   }  
   
@@ -111,6 +111,10 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   uint16_t getContentLength () {
     return answerContentLength;
   }
+  
+  uint16_t getAnswerCode () {
+    return answerCode;
+  }
  
   void setRequest (const __FlashStringHelper * _host, uint16_t _port, const __FlashStringHelper * _url, const __FlashStringHelper * _method) {
     host = _host;
@@ -121,8 +125,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     postDataLength = 0;
   }
     
-  void setPostData (const uint8_t * data, uint16_t length) {
-    postData = (uint8_t *)data;
+  void setPostDataLength (uint16_t length) { 
     postDataLength = length;   
   }         
 
@@ -153,11 +156,11 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
       return;      
     }
 
-    notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR, 0);
+    notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR);
   }
   
   private:
-  void sendHeader () {
+  void sendHttp () {
     char buf[6];
     
     client->write (method);
@@ -182,16 +185,19 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     }    
     
     client->write (FPSTR(REMOTEXY_HTTPREQUEST_STR_NEXTLINE)); 
+    
+    if (postDataLength > 0) {
+      if (listener) {
+        if (listener->httpRequestSendPostData (client) == 0) {
+          notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR);
+        }
+      }
+    }
+    
     client->flush ();   
   }
  
-  private: 
-  void sendPostData () {
-    if (postDataLength > 0) { 
-      client->write (postData, postDataLength);
-      client->flush ();
-    } 
-  }  
+   
   
   public:
   void handler () {
@@ -200,8 +206,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     
     if (state == REMOTEXY_HTTPREQUEST_CONNECTING) {
       if (client->connected ()) {
-        sendHeader ();
-        sendPostData ();
+        sendHttp ();
         state = REMOTEXY_HTTPREQUEST_READHEADERS;
       }   
     }    
@@ -210,10 +215,10 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
       if (client->connected () == 0) {
         if (answerChunkLength != 0) answerCode = 0;         
         if ((answerCode >= 200) && (answerCode <= 299)) {
-          notifyCompletion (REMOTEXY_HTTPREQUEST_OK, answerCode);
+          notifyCompletion (REMOTEXY_HTTPREQUEST_OK);
         }
         else {
-          notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR, 0);
+          notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR);
         }
         return;
       }
@@ -221,7 +226,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
 
     // check timout
     if (millis () - timeOut >  REMOTEXY_HTTPREQUEST_TIMEOUT) {
-      notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR, 0);
+      notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR);
     }
         
   }
@@ -254,7 +259,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
                   }
                   else { // not supported
                     client->stop ();
-                    notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR, 0);                
+                    notifyCompletion (REMOTEXY_HTTPREQUEST_ERROR);                
                   }                
                 } 
               }               
@@ -353,9 +358,8 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     }    
     return NULL; 
   }  
-
   
 };
-#pragma pack(pop)
+
   
 #endif //RemoteXYType_HttpRequest_h

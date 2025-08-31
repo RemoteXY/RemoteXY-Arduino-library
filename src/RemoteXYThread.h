@@ -167,42 +167,21 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
 // NEW COMMANDS v 4.1   
         
       
-      case REMOTEXY_PACKAGE_COMMAND_BOARDID: // get/set board id    
-#if defined (REMOTEXY_HAS_EEPROM)
-        CRemoteXYEeprom * eeprom = &data->eeprom;
-        CRemoteXYEepromItem * boardId = data->boardId;       
-        if (boardId != NULL) {
-          if (package->length==0) {
-            if (boardId != NULL) {
-              wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId, boardId->data, REMOTEXY_BOARDID_LENGTH);
-            }
-            else {      
-              wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
-            }
-          } 
-          else if (package->length==REMOTEXY_BOARDID_LENGTH) {
-            if (boardId->data != NULL) {
-              rxy_bufCopy (boardId->data, package->buffer, REMOTEXY_BOARDID_LENGTH);
-              eeprom->writeItem (boardId);
-            }
-            wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
-          }
-        }
-        else {
-          wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
-        }
+      case REMOTEXY_PACKAGE_COMMAND_BOARD:  // get/set board id    
+#if defined (REMOTEXY_HAS_EEPROM)   
+        handleEepromItem (package); 
 #else
-        wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARDID, clientId);
+        wire->sendEmptyPackage (REMOTEXY_PACKAGE_COMMAND_BOARD, clientId);
 #endif        
-        break;
-                            
+        break;               
+                           
       case REMOTEXY_PACKAGE_COMMAND_TIME: { // get board time 
         int64_t t = data->boardTime;        
         wire->sendPackage (REMOTEXY_PACKAGE_COMMAND_TIME, clientId, (uint8_t*)&t, 8); 
         break;    
       }            
       case REMOTEXY_PACKAGE_COMMAND_COMPLEXDESC: // send complex var descriptors
-        sendComplexVarDescriptorsPacage ();
+        sendComplexVarDescriptorsPackage ();
         complexVarNeedSend = 0;
         break;
                              
@@ -227,7 +206,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
   }
   
   private:
-  void sendComplexVarDescriptorsPacage () {  
+  void sendComplexVarDescriptorsPackage () {  
     uint16_t length = 0;
     CRemoteXYTypeInner * var;
     for (uint16_t i = 0; i < guiData->complexVarCount; i++) {
@@ -241,6 +220,54 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     }
   }
   
+  
+#if defined (REMOTEXY_HAS_EEPROM) 
+  
+  private:
+  void handleEepromItem (CRemoteXYPackage * package) {
+    if (package->length > 0) {
+      CRemoteXYEeprom * eeprom = &guiData->data->eeprom;      
+      CRemoteXYEepromItem * item = NULL;
+      uint8_t canUpdate = 0;
+      uint8_t canSend = 0;
+      uint8_t com = package->buffer[0];
+      if (com == (REMOTEXY_EEPROM_KEY_BOARDID & 0xff)) {
+        item = eeprom->getBoardIdItem ();
+        canSend = 1;
+      }
+      else if (com == (REMOTEXY_EEPROM_KEY_AESKEY & 0xff)) {
+        item = eeprom->getAesKeyItem ();
+        canUpdate = 1;
+      }      
+      if ((item != NULL) && (item->data != NULL)) {
+        if (package->length==1) { 
+          // this is a data request
+          if (canSend != 0) {
+            wire->startPackage (package->command, clientId, item->size + 1);
+            wire->sendBytePackage (com);
+            wire->sendBytesPackage (item->data, item->size);          
+          }
+          else {
+            wire->startPackage (package->command, clientId, 2);
+            wire->sendBytePackage (com);
+            wire->sendBytePackage (item->isEmpty () ? 0 : 1);
+          }
+          return;
+        }
+        else if (package->length == item->size + 1) {
+          if (item->isEmpty () || (canUpdate != 0)) {
+            rxy_bufCopy (item->data, package->buffer+1, item->size);
+            eeprom->writeItem (item);
+            wire->sendPackage (package->command, clientId, (uint8_t*)&com, 1);
+            return;
+          }
+        }
+      }
+    }
+    wire->sendEmptyPackage (package->command, clientId);
+  }   
+  
+#endif  
 
   public:
   static CRemoteXYThread * getUnusedThread (CRemoteXYGuiData * guiData) {    

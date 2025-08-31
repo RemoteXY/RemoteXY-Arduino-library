@@ -1,5 +1,5 @@
-#ifndef RemoteXYType_Print_h
-#define RemoteXYType_Print_h
+#ifndef RemoteXYType_Terminal_h
+#define RemoteXYType_Terminal_h
 
 #include "RemoteXYFunc.h"
 #include "RemoteXYType_HeapPrintable.h"
@@ -8,7 +8,7 @@
 
 #pragma pack(push, 1)
 
-struct RemoteXYType_Print_Color {
+struct RemoteXYType_Terminal_Color {
   uint8_t mask; // 0 if default color 
   uint8_t r;  
   uint8_t g;  
@@ -16,9 +16,9 @@ struct RemoteXYType_Print_Color {
 };
 #pragma pack(pop)
                   
-class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_HeapPrintable {
+class CRemoteXYTypeInner_Terminal : public CRemoteXYTypeInner_HeapPrintable {
   
-  RemoteXYType_Print_Color color;
+  RemoteXYType_Terminal_Color color;
   
   
   public:
@@ -31,12 +31,10 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_HeapPrintable {
             
                   
   public:   
-  void addBufferToHeap () override {
+  uint8_t addBufferToHeap (uint8_t *buf, uint16_t len) override {
     uint16_t cs = 1;
-    if (color.mask != 0) cs = sizeof (RemoteXYType_Print_Color);
-    if (addToHeap ((uint8_t*)&color, cs, printBffer, printBufferLength)) {    
-      printBufferLength = 0;  
-    }
+    if (color.mask != 0) cs = sizeof (RemoteXYType_Terminal_Color);
+    return addToHeap ((uint8_t*)&color, cs, buf, len);
   }
    
   
@@ -67,30 +65,30 @@ class CRemoteXYTypeInner_Print : public CRemoteXYTypeInner_HeapPrintable {
    
 };
               
-#define RemoteXYType_Print_inner ((CRemoteXYTypeInner_Print*)inner)
+#define RemoteXYType_Terminal_inner ((CRemoteXYTypeInner_Terminal*)inner)
  
 #pragma pack(push, 1) 
-class RemoteXYType_Print : public CRemoteXYType_HeapPrintable {
+class RemoteXYType_Terminal : public CRemoteXYType_HeapPrintable {
 
   public:
-  RemoteXYType_Print () {
-    inner = new CRemoteXYTypeInner_Print ();
+  RemoteXYType_Terminal () {
+    inner = new CRemoteXYTypeInner_Terminal ();
   } 
   
   void setColor (uint8_t r, uint8_t g, uint8_t b) {
-    RemoteXYType_Print_inner->setColor (r, g, b); 
+    RemoteXYType_Terminal_inner->setColor (r, g, b); 
   }     
          
   void setColor (uint32_t _color) {
-    RemoteXYType_Print_inner->setColor (_color); 
+    RemoteXYType_Terminal_inner->setColor (_color); 
   }  
   
   void setDefaultColor () {
-    RemoteXYType_Print_inner->setDefaultColor (); 
+    RemoteXYType_Terminal_inner->setDefaultColor (); 
   }      
              
 };  
       
 #pragma pack(pop)
 
-#endif // RemoteXYType_Print_h
+#endif // RemoteXYType_Terminal_h

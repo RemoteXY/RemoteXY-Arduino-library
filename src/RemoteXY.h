@@ -1,6 +1,6 @@
 /* 
    RemoteXY Library   
-   version 4.1.3 
+   version 4.1.4 
    
    Copyright (c) 2014-2025 Evgenii Shemanuev
    Licensed under the MIT License. See LICENSE file in the project root for 
@@ -80,7 +80,7 @@
 // if use then need define EEPROM.h library
 
 //#define REMOTEXY_USE_EEPROM
-#if (defined REMOTEXY_USE_EEPROM) && (defined EEPROM_h)
+#if defined (REMOTEXY_USE_EEPROM) && defined (EEPROM_h)
 #define REMOTEXY_HAS_EEPROM
 #endif
  

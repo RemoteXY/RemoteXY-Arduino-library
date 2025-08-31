@@ -24,9 +24,11 @@
 #include "RemoteXYCloudServer.h"
 
 // types
-#include "RemoteXYType_RealTimeApp.h"
+#include "RemoteXYType_RealTime.h"
 #include "RemoteXYType_RealTimeNet.h"
-#include "RemoteXYType_Print.h"
+#include "RemoteXYType_Terminal.h"
+#include "RemoteXYType_Notification.h"
+#include "RemoteXYType_NotificationNet.h"
 
 
 class CRemoteXY: public CRemoteXYData {
@@ -41,7 +43,6 @@ class CRemoteXY: public CRemoteXYData {
     
     handlerMillis = 0;
     boardTime = 0;
-
     
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.init ();

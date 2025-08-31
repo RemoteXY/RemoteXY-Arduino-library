@@ -6,6 +6,7 @@
 #include "RemoteXYNet.h"
 
 
+
 class CRemoteXYNet;
 
 class CRemoteXYData {
@@ -22,7 +23,7 @@ class CRemoteXYData {
 #if defined(REMOTEXY_HAS_EEPROM)
   public:
   CRemoteXYEeprom eeprom;
-  CRemoteXYEepromItem * boardId; 
+    
 #endif 
            
                    

@@ -1,11 +1,11 @@
-#ifndef RemoteXYType_RealTimeApp_h
-#define RemoteXYType_RealTimeApp_h
+#ifndef RemoteXYType_RealTime_h
+#define RemoteXYType_RealTime_h
 
 #include "RemoteXYType.h"
 #include "RemoteXYTime.h"
 
 
-class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
+class CRemoteXYTypeInner_RealTime : public CRemoteXYTypeInner {
   public:
   int64_t utcOffsetTime;    // utc offset
   int64_t appOffsetTime;    // phone offset
@@ -99,29 +99,29 @@ class CRemoteXYTypeInner_RealTimeApp : public CRemoteXYTypeInner {
 };
 
 
-#define RemoteXYType_RealTimeApp_inner ((CRemoteXYTypeInner_RealTimeApp*)inner)
+#define RemoteXYType_RealTime_inner ((CRemoteXYTypeInner_RealTime*)inner)
 #pragma pack(push, 1) 
-class RemoteXYType_RealTimeApp : public CRemoteXYType {
+class RemoteXYType_RealTime : public CRemoteXYType {
   
   public:
-  RemoteXYType_RealTimeApp () {
-    inner = new CRemoteXYTypeInner_RealTimeApp ();
+  RemoteXYType_RealTime () {
+    inner = new CRemoteXYTypeInner_RealTime ();
   }  
     
   public:
   int64_t getUtcTimeStamp () {
-    int64_t time = RemoteXYType_RealTimeApp_inner->utcOffsetTime;
+    int64_t time = RemoteXYType_RealTime_inner->utcOffsetTime;
     if (time != 0) {
-      time += RemoteXYType_RealTimeApp_inner->guiData->data->boardTime; 
+      time += RemoteXYType_RealTime_inner->guiData->data->boardTime; 
     }
     return time;
   }
   
   public:
   int64_t getAppTimeStamp () {
-    int64_t time = RemoteXYType_RealTimeApp_inner->appOffsetTime;
+    int64_t time = RemoteXYType_RealTime_inner->appOffsetTime;
     if (time != 0) {
-      time += RemoteXYType_RealTimeApp_inner->guiData->data->boardTime; 
+      time += RemoteXYType_RealTime_inner->guiData->data->boardTime; 
     }
     return time;
   }
@@ -155,4 +155,4 @@ class RemoteXYType_RealTimeApp : public CRemoteXYType {
               
 
 
-#endif // RemoteXYType_RealTimeApp_h
+#endif // RemoteXYType_RealTime_h

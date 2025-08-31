@@ -72,7 +72,9 @@ class CRemoteXYTypeInner_HeapPrintable: public CRemoteXYTypeInner_Heap, public P
   
   void send () {
     if (printBufferLength > 0) {
-      addBufferToHeap ();
+      if (addBufferToHeap (printBffer, printBufferLength)) {
+        printBufferLength = 0;
+      }
     }
   }
   
@@ -80,7 +82,7 @@ class CRemoteXYTypeInner_HeapPrintable: public CRemoteXYTypeInner_Heap, public P
     printBufferLength = 0;
   }
   
-  virtual void addBufferToHeap () = 0;
+  virtual uint8_t addBufferToHeap (uint8_t *buf, uint16_t len) = 0;
   
 };
 
