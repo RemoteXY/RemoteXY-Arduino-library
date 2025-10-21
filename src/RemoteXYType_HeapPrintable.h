@@ -77,9 +77,11 @@ class CRemoteXYTypeInner_HeapPrintable: public CRemoteXYTypeInner_Heap, public P
       }
     }
   }
+       
   
   void clear () {
     printBufferLength = 0;
+    clearHeap ();
   }
   
   virtual uint8_t addBufferToHeap (uint8_t *buf, uint16_t len) = 0;
@@ -91,6 +93,26 @@ class CRemoteXYTypeInner_HeapPrintable: public CRemoteXYTypeInner_Heap, public P
 #pragma pack(push, 1) 
 class CRemoteXYType_HeapPrintable: public CRemoteXYType {
   
+  public:
+  void clear () {
+    CRemoteXYTypeInner_HeapPrintable_inner->clear (); 
+  }
+  
+  void send () {
+    CRemoteXYTypeInner_HeapPrintable_inner->send ();
+  }
+  
+  void send (const char *str) {
+    CRemoteXYTypeInner_HeapPrintable_inner->addBufferToHeap ((uint8_t*)str, rxy_strLength(str));
+  }
+  
+  void send (const __FlashStringHelper * fstr) {
+    char *str = (char*)malloc (rxy_strLength(fstr) + 1);
+    rxy_strCopy (str, fstr);
+    send (str);
+    free (str);
+  }
+    
   // Print
   public:
   size_t write (uint8_t b) { 
@@ -214,6 +236,10 @@ class CRemoteXYType_HeapPrintable: public CRemoteXYType {
   size_t println(const String &str) {
     return CRemoteXYTypeInner_HeapPrintable_inner->println (str);
   }  
+  
+  void send (const String &str) {
+    send (str.c_str());
+  }
   
 #endif // ARDUINO
 

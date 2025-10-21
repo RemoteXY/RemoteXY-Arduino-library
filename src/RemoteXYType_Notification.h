@@ -2,8 +2,7 @@
 #define RemoteXYType_Notification_h
 
 #include "RemoteXYData.h"
-#include "RemoteXYType_Heap.h"
-#include "RemoteXYEeprom.h"
+#include "RemoteXYType_HeapPrintable.h"
                    
 
 #pragma pack(push, 1)
@@ -16,10 +15,7 @@ class CRemoteXYTypeInner_Notification : public CRemoteXYTypeInner_HeapPrintable 
 
   public:
   uint8_t* init (uint8_t *conf) override  {
-#if defined(REMOTEXY_HAS_EEPROM)
-    guiData->data->eeprom.createBoardIdItem ();
-#endif // REMOTEXY_HAS_EEPROM
-    return CRemoteXYTypeInner_Heap::init (conf);
+    return CRemoteXYTypeInner_HeapPrintable::init (conf);
   }; 
   
   
@@ -33,8 +29,12 @@ class CRemoteXYTypeInner_Notification : public CRemoteXYTypeInner_HeapPrintable 
     head.time = guiData->data->boardTime;
     return addToHeap ((uint8_t*)&head, sizeof(RemoteXYType_Notification_Head), buf, len);
   }  
+  
+
    
 };
+
+#define CRemoteXYTypeInner_Notification_inner ((CRemoteXYTypeInner_Notification*)inner)
 
 #pragma pack(push, 1) 
 class RemoteXYType_Notification : public CRemoteXYType_HeapPrintable {

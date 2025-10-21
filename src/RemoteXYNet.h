@@ -13,16 +13,19 @@ class CRemoteXYData;
 class CRemoteXYClient;
 class CRemoteXYServer;
 class CRemoteXYHttpRequest;
+class CRemoteXYServerRequest;
 
 
 class CRemoteXYNet { 
   public:
   CRemoteXYNet * next;
   CRemoteXYHttpRequest * httpRequest;
+  CRemoteXYServerRequest * serverRequest;
   
   public:
   CRemoteXYNet () {
     httpRequest = NULL;
+    serverRequest = NULL;
     
 #if defined(REMOTEXY__DEBUGLOG)
     RemoteXYDebugLog.init ();

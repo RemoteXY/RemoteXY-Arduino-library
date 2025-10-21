@@ -45,7 +45,12 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
     uint8_t res = heap.add (data1, len1, data2, len2);
     if (res) CRemoteXYThread::notifyComplexVarNeedSend (guiData);
     return res;  
-  }
+  }   
+  
+  public:
+  void clearHeap () {
+    heap.removeAll ();
+  }    
   
 
   public:
@@ -58,7 +63,7 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
     CRemoteXYTypeInner_Heap_Descriptor desc;
     desc.count = heap.count; 
     desc.lastId = heap.lastId; 
-    wire->sendBytesPackage ((uint8_t*)(&desc), sizeof (CRemoteXYTypeInner_Heap_Descriptor));
+    wire->write ((uint8_t*)(&desc), sizeof (CRemoteXYTypeInner_Heap_Descriptor));
   }
   
   public:
@@ -73,14 +78,15 @@ class CRemoteXYTypeInner_Heap : public CRemoteXYTypeInner {
       bytesLen = heap.takeBytes (firstId);
     }
     wire->startPackage (REMOTEXY_PACKAGE_COMMAND_COMPLEXDATA, package->clientId, bytesLen+2); 
-    wire->sendBytesPackage (package->buffer, 2);  // num
+    wire->write ((uint8_t*)&packageHead->num, 2);  // num
     while (bytesLen--) {
-      wire->sendBytePackage (heap.getNextByte ());
+      wire->write (heap.getNextByte ());
     } 
     return 1;
-  }
+  }     
   
-
+      
+  
 };
 
 

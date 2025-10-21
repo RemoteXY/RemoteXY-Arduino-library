@@ -1,6 +1,6 @@
 /* 
    RemoteXY Library   
-   version 4.1.4 
+   version 4.1.5 
    
    Copyright (c) 2014-2025 Evgenii Shemanuev
    Licensed under the MIT License. See LICENSE file in the project root for 

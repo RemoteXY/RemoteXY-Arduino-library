@@ -18,22 +18,28 @@ class CRemoteXYStorageHeap {
   uint16_t heapSize;
   uint16_t firstIndex;
   uint16_t fillSize; // number of bytes used in the heap    
-  uint16_t index;  // for iterators
   
   public:
   uint16_t firstId;
   uint16_t lastId;
   uint16_t count;
   
+  uint16_t index;  // for iterators
+  
   
   public:
   CRemoteXYStorageHeap () {
+    firstId = 0;
+    heapSize = 0;
+    removeAll ();
+  }
+  
+  public:
+  void removeAll () {
     firstIndex = 0;
     fillSize = 0;
-    firstId = 0;
-    lastId = 0xffff;  
-    heapSize = 0;
-    count = 0;
+    firstId = lastId + 1;
+    count = 0;    
   }
   
   public:
@@ -210,6 +216,8 @@ class CRemoteXYStorageHeap {
   uint16_t getSize () {  
     return heapSize;
   }
+  
+
       
       
 };

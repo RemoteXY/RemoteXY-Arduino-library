@@ -11,6 +11,11 @@
 
 #define REMOREXYNET_ETHERNET__SEND_BUFFER_SIZE 32
 
+#if defined (ESP32) && ESP_ARDUINO_VERSION_MAJOR <= 2
+#define REMOTEXYNET_ETHERNET__ESP32v2
+#endif
+
+
 class CRemoteXYClient_Ethernet : public CRemoteXYClient {
   public:
   EthernetClient client;
@@ -82,13 +87,7 @@ class CRemoteXYClient_Ethernet : public CRemoteXYClient {
      
 };
     
-#if defined (ESP32)
-class EthernetServerESP32: public EthernetServer {
-  public:
-  EthernetServerESP32 (uint16_t port) : EthernetServer (port) {}
-  void begin(uint16_t port=0) {}
-};
-#endif
+     
 
 class CRemoteXYServer_Ethernet : public CRemoteXYServer {
   private:
@@ -97,17 +96,15 @@ class CRemoteXYServer_Ethernet : public CRemoteXYServer {
 
   public: 
   CRemoteXYServer_Ethernet (CRemoteXYNet * _net, uint16_t _port): CRemoteXYServer (_net)  {
-#if defined (ESP32)
-    server = new EthernetServerESP32 (_port); 
-#else
     server = new EthernetServer (_port); 
-#endif
   }
   
   
   public:  
   uint8_t begin () override {
+#ifndef REMOTEXYNET_ETHERNET__ESP32v2
     server->begin (); 
+#endif
     return 1;   
   }
   

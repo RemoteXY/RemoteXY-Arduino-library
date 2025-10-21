@@ -64,8 +64,8 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   char readStrBuf[REMOTEXY_HTTPREQUEST_READ_STR_SIZE];
   uint16_t readStrBufLength;  
   
-  uint8_t * answerBuf;
-  uint16_t answerBufSize;
+  uint8_t * receiveBuf;
+  uint16_t receiveBufSize;
   
   uint8_t answerChunked;
   uint16_t answerChunkLength;
@@ -73,7 +73,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
   public:
   uint16_t answerCode; // 200 is OK
   uint16_t answerContentLength;  // real content length
-  uint16_t answerBufLength;      // content length that fits into the buffer
+  uint16_t receiveBufLength;      // content length that fits into the buffer
     
   public:
   CRemoteXYHttpRequest (CRemoteXYNet * _net) {
@@ -81,7 +81,7 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     client = _net->newClient();
     listener = NULL;
     state = REMOTEXY_HTTPREQUEST_UNUSED;
-    answerBufLength = 0;
+    receiveBufLength = 0;
     headersCount = 0;
     
   }
@@ -135,13 +135,13 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     }
   }
   
-  void setAnswerBuffer (uint8_t * buf, uint16_t size) {
-    answerBuf = buf;
-    answerBufSize = size;
+  void setReceiveBuffer (uint8_t * buf, uint16_t size) {
+    receiveBuf = buf;
+    receiveBufSize = size;
   }  
  
   void send () {
-    answerBufLength = 0;
+    receiveBufLength = 0;
     readStrBufLength = 0;
     answerCode = 0;
     readStrBuf[0] = 0;
@@ -290,8 +290,8 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
       
       if ((answerChunkLength > 0) || (answerChunked == 0)) {
         answerContentLength++;
-        if (answerBufLength < answerBufSize) {
-          answerBuf[answerBufLength++] = byte;
+        if (receiveBufLength < receiveBufSize) {
+          receiveBuf[receiveBufLength++] = byte;
         }
         if (answerChunkLength > 0) {
           answerChunkLength--;
@@ -330,8 +330,8 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
     
     else if (state == REMOTEXY_HTTPREQUEST_READBODY) {      
       answerContentLength++;
-      if (answerBufLength < answerBufSize) {
-        answerBuf[answerBufLength++] = byte;
+      if (receiveBufLength < receiveBufSize) {
+        receiveBuf[receiveBufLength++] = byte;
       }
     }
 
@@ -350,8 +350,10 @@ class CRemoteXYHttpRequest: public CRemoteXYReadByteListener {
           }  
         }
         if (net->httpRequest != NULL) {
-          net->httpRequest->setUsed ();
-          return net->httpRequest;
+          if (net->httpRequest->isUnused ()) {
+            net->httpRequest->setUsed ();
+            return net->httpRequest;
+          }
         }
       }
       net = net->next;

@@ -159,8 +159,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         if (inputVarNeedSend != 0) b |= 0x01; 
         if (complexVarNeedSend != 0) b |= 0x02; 
         wire->startPackage (REMOTEXY_PACKAGE_COMMAND_OUTPUTVAR, clientId, guiData->outputLength + 1);
-        wire->sendBytePackage (b);
-        wire->sendBytesPackage (guiData->outputVar, guiData->outputLength);
+        wire->write (b);
+        wire->write (guiData->outputVar, guiData->outputLength);
         break;  
         
 //////////////////////////////////////////////////    
@@ -234,6 +234,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       if (com == (REMOTEXY_EEPROM_KEY_BOARDID & 0xff)) {
         item = eeprom->getBoardIdItem ();
         canSend = 1;
+        canUpdate = 1;
       }
       else if (com == (REMOTEXY_EEPROM_KEY_AESKEY & 0xff)) {
         item = eeprom->getAesKeyItem ();
@@ -244,13 +245,13 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
           // this is a data request
           if (canSend != 0) {
             wire->startPackage (package->command, clientId, item->size + 1);
-            wire->sendBytePackage (com);
-            wire->sendBytesPackage (item->data, item->size);          
+            wire->write (com);
+            wire->write (item->data, item->size);          
           }
           else {
             wire->startPackage (package->command, clientId, 2);
-            wire->sendBytePackage (com);
-            wire->sendBytePackage (item->isEmpty () ? 0 : 1);
+            wire->write (com);
+            wire->write (item->isEmpty () ? 0 : 1);
           }
           return;
         }

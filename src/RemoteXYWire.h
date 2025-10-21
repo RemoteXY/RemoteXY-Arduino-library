@@ -36,8 +36,7 @@ class CRemoteXYReceivePackageListener {
   virtual void receivePackage (CRemoteXYPackage * package) = 0;
 };
 
-
-class CRemoteXYWire : public CRemoteXYReadByteListener {
+class CRemoteXYWire : public CRemoteXYOutput, public CRemoteXYReadByteListener {
 
   public:
   CRemoteXYGuiData * guiData;  
@@ -192,9 +191,10 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     if (length == 0) endPackage ();
   }
   
+    
   public:
-  void sendBytePackage (uint8_t b) {
-    if (stream) sendByteUpdateCRC (b);
+  void write (uint8_t byte) override {
+    if (stream) sendByteUpdateCRC (byte);
     sendFragmentLength--;
     if (sendFragmentLength == 0) {
       endPackage ();
@@ -202,19 +202,15 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
         sendFragmentId++;
         sendPackageHeader ();
       }
-    }
+    }  
   }
   
-  public:
-  void sendWordPackage (uint16_t w) {
-    sendBytePackage (w);
-    sendBytePackage (w >> 8);
-  }
   
-  public:
-  void sendBytesPackage (uint8_t * buf, uint16_t len) {
-    while (len--) sendBytePackage (*buf++);
-  }
+  public:  
+  void write (uint8_t * buf, uint16_t size) {
+    while (size--) write (*buf++);
+  } 
+     
   
   private:
   void endPackage () {
@@ -233,7 +229,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
   public:
   void sendPackage (uint8_t command, uint8_t clientId, uint8_t *buf, uint16_t length) {
     startPackage (command, clientId, length);
-    sendBytesPackage (buf, length);
+    write (buf, length);
   }
   
   public:
@@ -241,9 +237,9 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     uint8_t *p = guiData->conf;
     uint16_t length = guiData->confLength;
     startPackage (command, clientId, length+1); 
-    sendBytePackage (REMOTEXY_PACKAGE_VERSION);
+    write (REMOTEXY_PACKAGE_VERSION);    
     while (length--) {
-      sendBytePackage (rxy_readConfByte (p++));
+      write (rxy_readConfByte (p++));
     }
   }
    
@@ -252,6 +248,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     startPackage (command, clientId, 0);
   }
 
+  
   public:
   void readByte (uint8_t byte) override {
     uint16_t pi, i;
@@ -274,7 +271,7 @@ class CRemoteXYWire : public CRemoteXYReadByteListener {
     }
     receiveBuffer[receiveIndex++]=byte;  
     receiveModified = 1; 
-  }
+  }  
   
   private:
   void receivePackage () {

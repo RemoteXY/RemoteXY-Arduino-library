@@ -187,32 +187,31 @@ class CRemoteXYAesCbc : public CRemoteXYAes {
 };
 
 
-class CRemoteXYAesCbcWriter {
+class CRemoteXYAesCbcWriter: public CRemoteXYOutput {
   private:
   CRemoteXYAesCbc * aesCbc;
-  CRemoteXYStream * stream;
+  CRemoteXYOutput * output;
   uint8_t block[REMOTEXY_AES_BLOCK_SIZE];
   uint8_t blockCnt;
   uint16_t dataSize;
   uint16_t crc;
   
   public:
-  CRemoteXYAesCbcWriter (CRemoteXYStream * _stream, CRemoteXYAesCbc * _aesCbc) {
+  CRemoteXYAesCbcWriter (CRemoteXYOutput * _output, CRemoteXYAesCbc * _aesCbc) {
     aesCbc = _aesCbc;
-    stream = _stream;
+    output = _output;
   }
   
   
-  void writeStart (uint16_t size) {  
+  void startWrite (uint16_t size) {  
     blockCnt = 0;
     dataSize = size;  
     rxy_initCRC (&crc);
-    stream->write (aesCbc->iv, REMOTEXY_AES_BLOCK_SIZE);
     writeToBlockUpdateCrc (size);
     writeToBlockUpdateCrc (size >> 8);
   }
   
-  void write (uint8_t b) {    
+  void write (uint8_t b) override {    
     writeToBlockUpdateCrc (b);
     dataSize--;
     if (dataSize == 0) {
@@ -221,13 +220,9 @@ class CRemoteXYAesCbcWriter {
       while (blockCnt) {
         writeToBlock (++crc);
       }
-      stream->flush();
+      output->flush();
     }
   }
-  
-  void write (uint8_t * buf, uint16_t size) {
-    while (size--) write (*buf++);
-  };   
   
   
   private:
@@ -235,7 +230,7 @@ class CRemoteXYAesCbcWriter {
     block[blockCnt++] = b;
     if (blockCnt >= REMOTEXY_AES_BLOCK_SIZE) {
       aesCbc->encryptBlockCbc (block);
-      stream->write (block, REMOTEXY_AES_BLOCK_SIZE);
+      output->write (block, REMOTEXY_AES_BLOCK_SIZE);
       blockCnt = 0;
     }
   }
@@ -251,7 +246,6 @@ class CRemoteXYAesCbcWriter {
     size += 4;
     uint16_t blockCount = size / REMOTEXY_AES_BLOCK_SIZE;
     if (size % REMOTEXY_AES_BLOCK_SIZE) blockCount++;
-    blockCount++;  // iv
     return blockCount * REMOTEXY_AES_BLOCK_SIZE;
   }  
   

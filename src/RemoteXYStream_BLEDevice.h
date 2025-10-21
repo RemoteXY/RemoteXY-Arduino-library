@@ -4,8 +4,10 @@
 #if defined(MAIN_BLEDevice_H_)
 
 #include "RemoteXYNet.h"
-#include <BLE2902.h>
 
+#ifndef CONFIG_NIMBLE_ENABLED
+#include <BLE2902.h>
+#endif
 
 #define RemoteXYNet_BLEDEVICE__SEND_BUFFER_SIZE 20
 #define RemoteXYNet_BLEDEVICE__RECEIVE_BUFFER_SIZE 1024
@@ -70,10 +72,14 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
                             BLECharacteristic::PROPERTY_NOTIFY |
                             BLECharacteristic::PROPERTY_WRITE_NR 
                           );
-
+       
+                          
+#ifndef CONFIG_NIMBLE_ENABLED
     BLE2902 *ble2902 = new BLE2902();
     ble2902->setNotifications(true);
     pRxTxCharacteristic->addDescriptor(ble2902);
+#endif   
+      
     pRxTxCharacteristic->setCallbacks(this);
 
     // Start the service
