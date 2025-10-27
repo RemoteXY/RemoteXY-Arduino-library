@@ -240,27 +240,29 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
         item = eeprom->getAesKeyItem ();
         canUpdate = 1;
       }      
-      if ((item != NULL) && (item->data != NULL)) {
-        if (package->length==1) { 
-          // this is a data request
-          if (canSend != 0) {
-            wire->startPackage (package->command, clientId, item->size + 1);
-            wire->write (com);
-            wire->write (item->data, item->size);          
-          }
-          else {
-            wire->startPackage (package->command, clientId, 2);
-            wire->write (com);
-            wire->write (item->isEmpty () ? 0 : 1);
-          }
-          return;
-        }
-        else if (package->length == item->size + 1) {
-          if (item->isEmpty () || (canUpdate != 0)) {
-            rxy_bufCopy (item->data, package->buffer+1, item->size);
-            eeprom->writeItem (item);
-            wire->sendPackage (package->command, clientId, (uint8_t*)&com, 1);
+      if (item != NULL) {
+        if (item->initialized () == 1) {
+          if (package->length==1) { 
+            // this is a data request
+            if (canSend != 0) {
+              wire->startPackage (package->command, clientId, item->size + 1);
+              wire->write (com);
+              wire->write (item->data, item->size);          
+            }
+            else {
+              wire->startPackage (package->command, clientId, 2);
+              wire->write (com);
+              wire->write (item->isEmpty () ? 0 : 1);
+            }
             return;
+          }
+          else if (package->length == item->size + 1) {
+            if (item->isEmpty () || (canUpdate != 0)) {
+              rxy_bufCopy (item->data, package->buffer+1, item->size);
+              eeprom->writeItem (item);
+              wire->sendPackage (package->command, clientId, (uint8_t*)&com, 1);
+              return;
+            }
           }
         }
       }

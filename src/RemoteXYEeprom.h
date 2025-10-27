@@ -47,9 +47,16 @@ class CRemoteXYEepromItem {
     size = _size;
     key = _key;
   }
+
+  public:
+  uint8_t initialized () {
+    if (data == NULL) return 0;
+    return 1;
+  }
   
   public:
   uint8_t isEmpty () {
+    if (data == NULL) return 1;
     return rxy_bufIsEmpty (data, size);
   }
 };
@@ -64,7 +71,7 @@ class CRemoteXYEeprom {
   CRemoteXYEepromItem * items;
   
   public:
-  uint8_t initialized;
+  int8_t initialized;  // 0 - not initialized, 1 - initialized, -1 - failure
   
   
   public:
@@ -116,24 +123,48 @@ class CRemoteXYEeprom {
     return sz;    
   }
   
+#if defined(REMOTEXY__DEBUGLOG)
+  private:
+  void debugLogWriteItem (CRemoteXYEepromItem * item) {
+    RemoteXYDebugLog.write(F("write EEPROM item: "));
+    if (item->key == REMOTEXY_EEPROM_KEY_BOARDID) RemoteXYDebugLog.writeAdd(F("boardId"));
+    else if (item->key == REMOTEXY_EEPROM_KEY_AESKEY) RemoteXYDebugLog.writeAdd(F("aesKey"));
+    else RemoteXYDebugLog.writeAdd(F("var"));
+  } 
+#endif 
   
+  
+  
+      
   public: 
-  uint8_t init (uint8_t callBegin) {
+  void init () {
+    if (initialized != 0) return;
+    
     size = getSize ();
-    uint16_t dataSize = 0;
+    uint16_t dataSize = 0;  
     
     if (size > 0) {
+    
+#if defined (REMOTEXY_EEPROM_ESP)
+      if (EEPROM.length() < size + offset) {
+#if defined(REMOTEXY__DEBUGLOG)
+        RemoteXYDebugLog.write(F("EEPROM was not allocated using begin()"));
+#endif 
+        initialized = -1;
+        return;
+      }
+#endif    
+              
       dataSize = size - REMOTEXY_EEPROM_CRC_SIZE;  // sub key size
       data = (uint8_t *) malloc (dataSize);
       if (data == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.init ();
         RemoteXYDebugLog.write(F("Out of RAM memory for EEPROM support: "));
         RemoteXYDebugLog.writeAdd(dataSize);
 #endif 
-        return 0;
+        initialized = -1;
+        return;
       }
-      
       
       uint16_t address = 0;
       uint8_t * itemData = data;
@@ -141,15 +172,21 @@ class CRemoteXYEeprom {
       while (item) {
         item->data = itemData;
         item->address = address;       
+#if defined(REMOTEXY__DEBUGLOG)
+        RemoteXYDebugLog.write(F("add EEPROM item: "));
+        if (item->key == REMOTEXY_EEPROM_KEY_BOARDID) RemoteXYDebugLog.writeAdd(F("boardId"));
+        else if (item->key == REMOTEXY_EEPROM_KEY_AESKEY) RemoteXYDebugLog.writeAdd(F("aesKey"));
+        else RemoteXYDebugLog.writeAdd(F("var"));
+        RemoteXYDebugLog.writeAdd(F(", size "));
+        RemoteXYDebugLog.writeAdd(item->size);
+#endif  
         itemData += item->size;
         address += item->size;         
-        item = item->next;
+        item = item->next;  
       }
       
-      crcAddress = address;      
-      
-      if (callBegin) begin (size);
-      
+      crcAddress = address;   
+
       readBuf (0, data, dataSize);   
  
 #if defined(REMOTEXY__DEBUGLOG)
@@ -166,7 +203,7 @@ class CRemoteXYEeprom {
 #if defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.write(F("EEPROM valid"));
 #endif       
-        while (item) {
+        while (item) {         
           if (item->comparedData != NULL) {
             rxy_bufCopy (item->comparedData, item->data, item->size);
           }
@@ -193,16 +230,17 @@ class CRemoteXYEeprom {
       }
     }
     initialized = 1;
-    return 1;
+    return;
   } 
   
   
   public:
   void handler () {      
     uint8_t *pd, *pcd;
-    uint16_t addr, cnt;
+    uint16_t addr, cnt;      
     CRemoteXYEepromItem * item = items;
     uint8_t changed = 0;
+    if (initialized != 1) return;
     while (item) {
       if ((item->comparedData != NULL) && (item->data != NULL)) {
         if (rxy_bufCompare (item->comparedData, item->data, item->size) == 0) {
@@ -219,7 +257,10 @@ class CRemoteXYEeprom {
             pd++;
             pcd++;
             addr++;            
-          }         
+          }  
+#if defined(REMOTEXY__DEBUGLOG)
+          debugLogWriteItem (item);
+#endif 
         }  
       }    
       item = item->next;
@@ -231,7 +272,8 @@ class CRemoteXYEeprom {
   }
   
   public:
-  void writeItem (CRemoteXYEepromItem * item) {
+  void writeItem (CRemoteXYEepromItem * item) {    
+    if (initialized != 1) return;
     if (item->data != NULL) {
       uint8_t * pd = item->data;
       uint16_t addr = item->address;
@@ -247,10 +289,15 @@ class CRemoteXYEeprom {
       }         
       if (changed) {
         writeWord (crcAddress, getCrc ());    
+#if defined(REMOTEXY__DEBUGLOG)
+        debugLogWriteItem (item);
+#endif 
         commit ();     
-      }   
+      }         
     } 
   }
+  
+
   
   private:
   uint16_t getCrc () {
@@ -272,12 +319,6 @@ class CRemoteXYEeprom {
     return crc;
   }
    
-  private:
-  void begin (uint16_t size) {
-#if defined (REMOTEXY_EEPROM_ESP)
-    EEPROM.begin (size);
-#endif   
-  }
   
   private:
   uint8_t read (uint16_t address) {
@@ -331,7 +372,7 @@ class CRemoteXYEeprom {
   public:
   void createBoardIdItem () {
     if (getBoardIdItem () == NULL) {
-      addItem (REMOTEXY_BOARDID_LENGTH, REMOTEXY_EEPROM_KEY_BOARDID);      
+      addItem (REMOTEXY_BOARDID_LENGTH, REMOTEXY_EEPROM_KEY_BOARDID);          
     }
   }
   

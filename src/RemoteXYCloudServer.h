@@ -77,7 +77,13 @@ class CRemoteXYCloudServer : public CRemoteXYReceivePackageListener  {
     return 0;
   }
   
+  public:
+  uint8_t configured () {
+    if (state == Working) return 1;
+    return 0;
+  }
   
+    
   public:
   void handler () {
     if (state != Stopped)  {

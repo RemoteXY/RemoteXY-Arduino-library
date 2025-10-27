@@ -15,7 +15,7 @@
 #define RemoteXYNet_BLEDEVICE__CHARACTERISTIC_UUID_RXTX "0000FFE1-0000-1000-8000-00805F9B34FB"
 
 #define RemoteXYNet_BLEDEVICE__SEND_TIME_FOR_ONE_PACKAGE 7  // test min 5 ms
-#define RemoteXYNet_BLEDEVICE__SEND_BYTES_BEFORE_OVERFLOW 500  // test max 600 bytes
+#define RemoteXYNet_BLEDEVICE__SEND_BYTES_BEFORE_OVERFLOW 340  // test max 350 bytes for ESP32S3
 
 
 class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BLECharacteristicCallbacks {
@@ -137,14 +137,7 @@ class CRemoteXYStream_BLEDevice : public CRemoteXYStream, BLEServerCallbacks, BL
       receiveBufferLook=0; 
     }
   }
-  
-  /*
-  // this works already after the buffer overflow and about 100 bytes are lost
-  void onStatus (BLECharacteristic *pCharacteristic, Status s, uint32_t code) {
-    if (s == Status::SUCCESS_NOTIFY) canWrite = 1; 
-  }
-  */
-    
+      
   
   void write (uint8_t b) override {
     sendBuffer[sendBufferCount++] = b;

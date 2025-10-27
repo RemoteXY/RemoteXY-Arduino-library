@@ -184,6 +184,16 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     return appConnectFlag;
   }
   
+  public:
+  uint8_t connectionsConfigured () {
+    CRemoteXYConnectionNet * connection = connections; 
+    while (connection) {
+      if (connection->configured () == 0) return 0; 
+      connection = connection->next;
+    }
+    return 1;    
+  }
+  
 };
 
 #endif //RemoteXYGui_h

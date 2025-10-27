@@ -17,6 +17,7 @@ class CRemoteXYConnection {
   virtual void handler () {};
   virtual void handleWire (CRemoteXYWire * wire) {UNUSED (wire);};
   virtual void stopThreadListener (CRemoteXYWire * wire) {UNUSED (wire);};
+  virtual uint8_t configured () {return 0;};                 
   
 };
 
@@ -30,7 +31,7 @@ class CRemoteXYConnectionNet : public CRemoteXYConnection {
   CRemoteXYConnectionNet (CRemoteXYNet * _net) {
     net = _net;
   }  
-  
+
 };
 
 #endif //RemoteXYConnection_h

@@ -33,6 +33,16 @@ class CRemoteXYConnectionCloud: public CRemoteXYConnectionNet {
     timeOut = millis() - REMOTEXY_CLOUDCLIENT_RETRY_TIMEOUT;
   }
   
+  public:
+  uint8_t configured () override {
+    if (net->configured ()) {
+      if (cloudServer->configured ()) {
+        return 1;
+      }
+    }
+    return 0;  
+  }
+  
   void handler () override {
     
     if (net->configured ()) {

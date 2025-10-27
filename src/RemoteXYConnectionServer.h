@@ -35,6 +35,16 @@ class CRemoteXYConnectionServer: public CRemoteXYConnectionNet, public CRemoteXY
     data = _data;
   }
   
+  public:
+  uint8_t configured () override {
+    if (net->configured ()) {
+      if (serverRunning) {
+        return 1;
+      }
+    }
+    return 0;  
+  }  
+  
   public:  
   void handler () override {
     if (server == NULL) return;

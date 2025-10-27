@@ -14,6 +14,7 @@ class CRemoteXYConnectionStream: public CRemoteXYConnection {
     stream = _stream;
   }    
   
+  public:
   void init (CRemoteXYGuiData * _data) override {
     CRemoteXYWire * wire = new CRemoteXYWire (_data);
     wire->begin (stream); 
@@ -24,9 +25,15 @@ class CRemoteXYConnectionStream: public CRemoteXYConnection {
     }
   };
   
+  public:
   void handleWire (CRemoteXYWire * wire) override {
     wire->handler ();
   }; 
+  
+  public:
+  uint8_t configured () override {
+    return stream->connected ();  
+  } 
   
 };
 

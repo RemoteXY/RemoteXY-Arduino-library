@@ -119,42 +119,9 @@ class CRemoteXY: public CRemoteXYData {
   } 
   
   
-  // EEPROM SUPPORT FUNCTIONS
-  
-  public:
-  uint16_t getEepromSize () {
-#if defined(REMOTEXY_HAS_EEPROM)
-    return eeprom.getSize ();
-#else
-    return 0;
-#endif    
-  }
-  
-  public:
-  void setEepromOffset (uint16_t offset) {
-#if defined(REMOTEXY_HAS_EEPROM)
-    eeprom.setOffset (offset);
-#endif    
-  }  
-  
-  public:
-  uint8_t initEeprom (uint8_t callBegin = 1) {
-#if defined(REMOTEXY_HAS_EEPROM)
-    if (eeprom.initialized == 0) { 
-      if (eeprom.init (callBegin) == 0) {
-        ::delay (1000);
-        return 0;
-      } 
-    }
-#endif    
-    return 1; 
-  }
-  
-  
   // HANDLER
     
-    
-    
+        
   public:
   void handler () {   
   
@@ -163,7 +130,8 @@ class CRemoteXY: public CRemoteXYData {
     handlerMillis = t;     
   
 #if defined(REMOTEXY_HAS_EEPROM)
-    if (initEeprom ()) eeprom.handler ();
+    eeprom.init ();
+    eeprom.handler ();
 #endif  
     
     // nets handler    
@@ -214,16 +182,55 @@ class CRemoteXY: public CRemoteXYData {
     return 0;
   }
       
+  
   public:
-  uint8_t netConfigured () {
+  uint8_t netsConfigured () {
     CRemoteXYNet * net = nets; 
     while (net) {
-      if (net->configured ()) return 1;
+      if (net->configured () == 0) return 0;
       net = net->next;
     } 
-    return 0;
+    return 1;
+  }
+  
+  public:
+  uint8_t connectionsConfigured () {
+    CRemoteXYGui * pg = guis;
+    while (pg) {
+      if (pg->connectionsConfigured() == 0) return 0;
+      pg = pg->next;
+    }  
+    return 1;
   }
 
+  // EEPROM SUPPORT FUNCTIONS
+  
+  public:
+  uint16_t getEepromSize () {
+#if defined(REMOTEXY_HAS_EEPROM)
+    return eeprom.getSize ();
+#else
+    return 0;
+#endif    
+  }
+  
+  public:
+  void setEepromOffset (uint16_t offset) {
+#if defined(REMOTEXY_HAS_EEPROM)
+    eeprom.setOffset (offset);
+#endif    
+  }  
+
+  public:
+  int8_t initEeprom () {
+#if defined(REMOTEXY_HAS_EEPROM)
+    eeprom.init ();
+    return eeprom.initialized;   
+#else
+    return -1;
+#endif
+  }
+  
   
 };
 

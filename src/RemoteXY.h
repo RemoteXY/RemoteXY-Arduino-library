@@ -229,8 +229,13 @@
 //API
 #define RemoteXY_delay(ms) remotexy->delay (ms)
 #define RemoteXY_appConnected() remotexy->appConnected ()
-#define RemoteXY_netConfigured() remotexy->netConfigured ()
+#define RemoteXY_netsConfigured() remotexy->netsConfigured ()
+#define RemoteXY_connectionsConfigured() remotexy->connectionsConfigured ()
 #define RemoteXY_getBoardTime() remotexy->getBoardTime ()
+//API EEPROM
+#define RemoteXY_getEepromSize() remotexy->getEepromSize ()
+#define RemoteXY_setEepromOffset(ofset) remotexy->setEepromOffset (ofset)
+#define RemoteXY_initEeprom() remotexy->initEeprom ()
 
 #endif //_REMOTEXY_H_
 
