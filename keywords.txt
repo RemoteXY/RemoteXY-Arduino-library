@@ -3,6 +3,9 @@
 ######################################
 
 RemoteXY	KEYWORD1
+RemoteXYEngine	KEYWORD1
+RemoteXYGui	KEYWORD1
+RemoteXYNet	KEYWORD1
 RemoteXY_Init	KEYWORD2
 RemoteXY_Handler	KEYWORD2
 RemoteXY_delay	KEYWORD2

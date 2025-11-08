@@ -15,7 +15,7 @@ class CRemoteXYServer;
 class CRemoteXYHttpRequest;
 class CRemoteXYServerRequest;
 
-
+#define RemoteXYNet CRemoteXYNet
 class CRemoteXYNet { 
   public:
   CRemoteXYNet * next;

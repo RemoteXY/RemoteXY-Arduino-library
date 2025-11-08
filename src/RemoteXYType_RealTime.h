@@ -4,6 +4,7 @@
 #include "RemoteXYType.h"
 #include "RemoteXYTime.h"
 
+#define UNUSED(x) (void)(x)
 
 class CRemoteXYTypeInner_RealTime : public CRemoteXYTypeInner {
   public:
@@ -26,6 +27,7 @@ class CRemoteXYTypeInner_RealTime : public CRemoteXYTypeInner {
   
   public:
   void sendDescriptorBytes (CRemoteXYWire * wire) override {
+    UNUSED (wire);
   }
 
   
@@ -41,6 +43,7 @@ class CRemoteXYTypeInner_RealTime : public CRemoteXYTypeInner {
       cnt -= 9; 
       buf += 8;
     }
+    UNUSED (wire);
     return 0; // will send empty package
   }
   

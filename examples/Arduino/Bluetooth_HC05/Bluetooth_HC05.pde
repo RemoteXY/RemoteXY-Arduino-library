@@ -22,7 +22,7 @@
 
 // RemoteXY configurate  
 #pragma pack(push, 1)
-uint8_t RemoteXY_CONF[] =
+uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =
   { 255,1,0,1,0,27,0,10,13,2,
   1,0,9,9,46,46,6,7,50,50,
   2,31,88,0,65,4,62,16,31,31,
@@ -49,21 +49,15 @@ struct {
 //           END RemoteXY include          //
 /////////////////////////////////////////////
 
-
-CRemoteXY *remotexy;
+SoftwareSerial mySoftwareSerial (2, 3); // RX, TX
 
 void setup() 
 {
 
-  remotexy = new CRemoteXY (
-    RemoteXY_CONF_PROGMEM, 
-    &RemoteXY, 
-    new CRemoteXYStream_SoftSerial (
-      2,       // REMOTEXY_SERIAL_RX
-      3,       // REMOTEXY_SERIAL_TX, 
-      9600     // REMOTEXY_SERIAL_SPEED
-    )
-  ); 
+  mySoftwareSerial.begin (9600); // SPEED
+
+  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+  gui->addConnection (mySoftwareSerial); 
   
   
   // TODO you setup code
@@ -72,7 +66,7 @@ void setup()
 
 void loop()        
 { 
-  remotexy->handler ();
+  RemoteXYEngine.handler ();
   
   if (RemoteXY.button_1)  RemoteXY.led_1_r = 255;
   else RemoteXY.led_1_r = 0;

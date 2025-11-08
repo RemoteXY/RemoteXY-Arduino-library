@@ -7,7 +7,11 @@
 #include "RemoteXYConnection.h"
 #include "RemoteXYStream_Stream.h" 
 #include "RemoteXYConnectionStream.h"
+#include "RemoteXYConnectionServer.h"
+#include "RemoteXYConnectionCloud.h"
 #include "RemoteXYType.h"   
+
+
 
 class CRemoteXYGui: public CRemoteXYGuiData {
 
@@ -80,7 +84,9 @@ class CRemoteXYGui: public CRemoteXYGuiData {
         s |= (b & 0xc0) << 2; 
 #if defined(REMOTEXY_HAS_EEPROM)
         data->eeprom.addItem (inputVar + v, s, v+(s>>6));
-#endif         
+#elif defined(REMOTEXY__DEBUGLOG)
+        RemoteXYDebugLog.write(F("Not include EEPROM.h, variable not saved"));
+#endif       
       }  
 
     }
@@ -110,40 +116,89 @@ class CRemoteXYGui: public CRemoteXYGuiData {
   }
  
  
-  public:  
-  void addConnection (CRemoteXYStream * stream) {  
-    CRemoteXYConnection * conn = new CRemoteXYConnectionStream (stream);
-    conn->init (this);           
-  } 
 
+  // ADD CONNECTIONS
 
   public:  
   void addConnection (Stream * stream) {  
     CRemoteXYStream_Stream * comm = new CRemoteXYStream_Stream (stream);
-    CRemoteXYConnection * conn = new CRemoteXYConnectionStream (comm);
-    conn->init (this);           
+    if (comm) {
+      addConnection (comm);
+    }         
+#if defined(REMOTEXY__DEBUGLOG) 
+    else {
+      RemoteXYDebugLog.write(F("Out of memory in addConnection()"));
+    }
+#endif 
+  }
+  
+  public:  
+  void addConnection (Stream &stream) {
+    addConnection (&stream);          
   }
    
   public:  
-  void addConnection (CRemoteXYConnectionNet * conn) {
-    addNet (conn->net);   
-    conn->next = connections;
-    connections = conn; 
-    conn->init (this);    
+  void addConnection (CRemoteXYStream * stream) {  
+    CRemoteXYConnection * conn = new CRemoteXYConnectionStream (stream);
+    if (conn) {
+      conn->init (this); 
+    }
+#if defined(REMOTEXY__DEBUGLOG) 
+    else {
+      RemoteXYDebugLog.write(F("Out of memory in addConnection()"));
+    }
+#endif       
+  } 
+    
+  public:  
+  void addConnectionServer (CRemoteXYNet * net, uint16_t port) {
+    if (net) {
+      CRemoteXYConnectionServer * conn = new CRemoteXYConnectionServer (net, port);
+      if (conn) {
+        addConnection (conn); 
+      }
+#if defined(REMOTEXY__DEBUGLOG) 
+      else {
+        RemoteXYDebugLog.write(F("Out of memory in addConnectionServer()"));
+      }
+#endif       
+    }  
+#if defined(REMOTEXY__DEBUGLOG) 
+    else {
+      RemoteXYDebugLog.write(F("Out of memory for RemoteXYNet"));
+    }
+#endif       
   } 
   
-  private:
-  void addNet (CRemoteXYNet * net) {
-    CRemoteXYNet * p = data->nets;
-    while (p) {
-      if (p == net) return;
-      p = p->next;
+  public:  
+  void addConnectionCloud (CRemoteXYNet * net, const char * cloudHost, uint16_t port, const char * cloudToken) {
+    if (net) {
+      CRemoteXYConnectionCloud * conn = new CRemoteXYConnectionCloud (net, cloudHost, port, cloudToken);
+      if (conn) {
+        addConnection (conn);
+      }    
+#if defined(REMOTEXY__DEBUGLOG) 
+      else {
+        RemoteXYDebugLog.write(F("Out of memory in addConnectionCloud()"));
+      }
+#endif        
+    }  
+#if defined(REMOTEXY__DEBUGLOG) 
+    else {
+      RemoteXYDebugLog.write(F("Out of memory for RemoteXYNet"));
     }
-    net->next = data->nets;
-    data->nets = net;
+#endif    
   }
-  
-  
+
+  public: // private
+  void addConnection (CRemoteXYConnectionNet * conn) {
+    data->addNet (conn->net);
+    conn->next = connections;
+    connections = conn; 
+    conn->init (this);   
+  } 
+    
+   
   public:
   void handler () {
     
@@ -195,5 +250,7 @@ class CRemoteXYGui: public CRemoteXYGuiData {
   }
   
 };
+
+typedef CRemoteXYGui RemoteXYGui; 
 
 #endif //RemoteXYGui_h

@@ -19,6 +19,8 @@
 
 const char REMOTEXY_MODEM_ESP8266_RESPONSE_BUSY[] PROGMEM = "BUSY #";
 
+#define UNUSED(x) (void)(x)
+
 class CRemoteXYNet_ModemESP8266_Generic : public CRemoteXYNet_Modem {
   
   protected:
@@ -139,7 +141,7 @@ class CRemoteXYNet_ModemESP8266_Generic : public CRemoteXYNet_Modem {
     else if (equalResponse (F("#,CLOSED")) || equalResponse (F("#,CONNECT FAIL"))) {
       markClientDisconnected (rxy_strParseInt (responseParams[0]));
     }
-
+    UNUSED (timeOut);
   }
     
   

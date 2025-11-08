@@ -30,12 +30,10 @@
 #include "RemoteXYType_Notification.h"
 #include "RemoteXYType_NotificationNet.h"
 
+#define UNUSED(x) (void)(x)
 
 class CRemoteXY: public CRemoteXYData {
-  public:
-  CRemoteXYGui * guis;
   
-
   private:
   void init () {
     nets = NULL;
@@ -44,79 +42,62 @@ class CRemoteXY: public CRemoteXYData {
     handlerMillis = 0;
     boardTime = 0;
     
-#if defined(REMOTEXY__DEBUGLOG)
-    RemoteXYDebugLog.init ();
-    RemoteXYDebugLog.write(F("RemoteXY started"));
-#endif 
   }
 
   public:
   CRemoteXY () {    
     init ();
   }        
-
+     
   public:
+  //deprecated
   CRemoteXY (const void * _conf, void * _var, const char * _accessPassword = NULL) {                    
     init ();
     addGui (_conf, _var, _accessPassword);   
   }
    
   public:
+  //deprecated
   CRemoteXY (const void * _conf, void * _var, CRemoteXYConnectionNet * _conn, const char * _accessPassword = NULL) {                     
     init ();
-    addGui (_conf, _var, _accessPassword);    
-    addConnection (_conn);  
+    CRemoteXYGui * gui = addGui (_conf, _var, _accessPassword);    
+    gui->addConnection (_conn);  
   }
   
   public:
+  //deprecated
   CRemoteXY (const void * _conf, void * _var, CRemoteXYStream * _stream, const char * _accessPassword = NULL) {                     
     init ();
-    addGui (_conf, _var, _accessPassword);    
-    addConnection (_stream);
+    CRemoteXYGui * gui = addGui (_conf, _var, _accessPassword);    
+    gui->addConnection (_stream);
   }
   
   public:
+  //deprecated
   CRemoteXY (const void * _conf, void * _var, Stream * _stream, const char * _accessPassword = NULL) {                     
     init ();
-    addGui (_conf, _var, _accessPassword);    
-    addConnection (_stream);
-  
+    CRemoteXYGui * gui = addGui (_conf, _var, _accessPassword);    
+    gui->addConnection (_stream);  
   }
     
   public: 
   CRemoteXYGui * addGui (const void * _conf, void * _var, const char * _accessPassword = NULL) {
-    CRemoteXYGui * gui = new CRemoteXYGui (this, _conf, _var, _accessPassword); 
-    if (gui == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
-      RemoteXYDebugLog.init ();
-      RemoteXYDebugLog.write(F("Out of memory: "));
-      RemoteXYDebugLog.writeAdd((uint16_t) sizeof (CRemoteXYGui));
-      ::delay(1000);
+    RemoteXYDebugLog.init ();
+    RemoteXYDebugLog.write(F("Add GUI"));
 #endif 
-      return NULL;
-    }  
-    gui->next = guis;
-    guis = gui;
+    CRemoteXYGui * gui = new CRemoteXYGui (this, _conf, _var, _accessPassword); 
+    if (gui) {
+      gui->next = guis;
+      guis = gui;
+    }
+#if defined(REMOTEXY__DEBUGLOG)
+    else {
+      RemoteXYDebugLog.write(F("Out of memory for RemoteXYGui"));
+    }
+#endif 
     return gui;
   }
-  
-
-
-  public:  
-  void addConnection (CRemoteXYStream * stream) {  
-    if (guis) guis->addConnection (stream);     
-  } 
-
-
-  public:  
-  void addConnection (Stream * stream) {  
-    if (guis) guis->addConnection (stream);     
-  }
-   
-  public:  
-  void addConnection (CRemoteXYConnectionNet * conn) {   
-    if (guis) guis->addConnection (conn);     
-  } 
   
   
   // HANDLER
@@ -218,6 +199,8 @@ class CRemoteXY: public CRemoteXYData {
   void setEepromOffset (uint16_t offset) {
 #if defined(REMOTEXY_HAS_EEPROM)
     eeprom.setOffset (offset);
+#else
+    UNUSED (offset);
 #endif    
   }  
 
@@ -235,7 +218,7 @@ class CRemoteXY: public CRemoteXYData {
 };
 
 
-
+CRemoteXY RemoteXYEngine;
 
    
 #endif //RemoteXYClass_h

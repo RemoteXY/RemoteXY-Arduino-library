@@ -52,20 +52,12 @@ struct {
 /////////////////////////////////////////////
 
 
-CRemoteXY *remotexy;
-
 void setup() 
 {
-  remotexy = new CRemoteXY (
-    RemoteXY_CONF_PROGMEM, 
-    &RemoteXY, 
-    new CRemoteXYConnectionServer (
-      new CRemoteXYNet_Ethernet (
-        "DE:AD:BE:EF:EF:ED"),       // MAC ADDRESS
-      6377                          // REMOTEXY_SERVER_PORT
-    )
-  ); 
   
+  RemoteXYNet * net = new CRemoteXYNet_Ethernet ("DE:AD:BE:EF:EF:ED"); // MAC ADDRESS
+  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+  gui->addConnectionServer (net, 6377); // REMOTEXY_SERVER_PORT
   
   // TODO you setup code
   
@@ -73,7 +65,7 @@ void setup()
 
 void loop() 
 { 
-  remotexy->handler ();
+  RemoteXYEngine.handler ();
   
   if (RemoteXY.button_1)  RemoteXY.led_1_r = 255;
   else RemoteXY.led_1_r = 0;

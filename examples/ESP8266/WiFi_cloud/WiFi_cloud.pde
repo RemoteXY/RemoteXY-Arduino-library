@@ -22,7 +22,7 @@
 
 // RemoteXY configurate  
 #pragma pack(push, 1)
-uint8_t RemoteXY_CONF[] =
+uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =
   { 255,1,0,1,0,27,0,10,13,2,
   1,0,9,9,46,46,6,7,50,50,
   2,31,88,0,65,4,62,16,31,31,
@@ -50,23 +50,18 @@ struct {
 /////////////////////////////////////////////
 
 
-CRemoteXY *remotexy;
-
 void setup() 
 {
-  remotexy = new CRemoteXY (
-    RemoteXY_CONF_PROGMEM, 
-    &RemoteXY, 
-    new CRemoteXYConnectionCloud (
-      new CRemoteXYNet_WiFi (
-        "myHomeFiFi",       // REMOTEXY_WIFI_SSID
-        "myPass"),          // REMOTEXY_WIFI_PASSWORD
-      "cloud.remotexy.com",   // REMOTEXY_CLOUD_SERVER
-      6376,                   // REMOTEXY_CLOUD_PORT
-      "xxxxxxxxxxxxxxxxxxxx"  // REMOTEXY_CLOUD_TOKEN
-    )
-  ); 
-  
+  RemoteXYNet * net = new CRemoteXYNet_WiFi (
+    "myHomeFiFi",      // WIFI_SSID
+    "12345678"         // WIFI_PASSWORD
+  );
+  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+  gui->addConnectionCloud (net,
+    "cloud.remotexy.com",   // REMOTEXY_CLOUD_SERVER
+    6376,                   // REMOTEXY_CLOUD_PORT
+    "xxxxxxxxxxxxxxxxxxxx"  // REMOTEXY_CLOUD_TOKEN
+  );  
   
   // TODO you setup code
   
@@ -74,7 +69,7 @@ void setup()
 
 void loop() 
 { 
-  remotexy->handler ();
+  RemoteXYEngine.handler ();
   
   if (RemoteXY.button_1)  RemoteXY.led_1_r = 255;
   else RemoteXY.led_1_r = 0;

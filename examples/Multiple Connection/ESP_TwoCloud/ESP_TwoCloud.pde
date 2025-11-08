@@ -1,5 +1,5 @@
 /*
-   RemoteXY example: two cloud projects on one board, two tokens are used
+   RemoteXY example: two cloud GUIs on one board, two tokens are used
    
    To connect, use the RemoteXY mobile 
    application at http://remotexy.com/en/download/               
@@ -14,7 +14,7 @@
 //////////////////////////////////////////////
 
 // RemoteXY select connection mode and include library
-#define REMOTEXY__DEBUGLOG 
+//#define REMOTEXY__DEBUGLOG 
 
 #if defined (ESP8266)
   #include <ESP8266WiFi.h>
@@ -83,30 +83,30 @@ struct {
 /////////////////////////////////////////////
 
 
-CRemoteXY *remotexy_1;
-CRemoteXY *remotexy_2;
-
 void setup() 
 {
   
-  CRemoteXYNet_WiFi * wifi =  new CRemoteXYNet_WiFi (
-    "myHomeFiFi",                            // REMOTEXY_WIFI_SSID
-    "myPass"                       // REMOTEXY_WIFI_PASSWORD
+  CRemoteXYNet * net =  new CRemoteXYNet_WiFi (
+    "myHomeFiFi",                  // WIFI_SSID
+    "myPass"                       // WIFI_PASSWORD
   );
   
-  remotexy_1 = new CRemoteXY (RemoteXY_CONF_PROGMEM_1, &RemoteXY_1); 
-  remotexy_1->addConnection (new CRemoteXYConnectionCloud ( wifi, 
-    "cloud.remotexy.com",                     // REMOTEXY_CLOUD_SERVER 
-    6376,                                     // REMOTEXY_CLOUD_PORT
-    "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"        // REMOTEXY_CLOUD_TOKEN
-  ));
+  // add GUIs
+  RemoteXYGui * gui_1 = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM_1, &RemoteXY_1);
+  RemoteXYGui * gui_2 = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM_2, &RemoteXY_2);
   
-  remotexy_2 = new CRemoteXY (RemoteXY_CONF_PROGMEM_2, &RemoteXY_2); 
-  remotexy_2->addConnection (new CRemoteXYConnectionCloud ( wifi, 
-    "cloud.remotexy.com",                     // REMOTEXY_CLOUD_SERVER 
-    6376,                                     // REMOTEXY_CLOUD_PORT
-    "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"        // REMOTEXY_CLOUD_TOKEN
-  ));  
+  // setup connections
+  gui_1->addConnectionCloud (net,       
+    "cloud.remotexy.com",   // CLOUD_SERVER
+    6376,                   // CLOUD_PORT
+    "xxxxxxxxxxxxxxxxxxxx"  // CLOUD_TOKEN
+  );
+  gui_2->addConnectionCloud (net,       
+    "cloud.remotexy.com",   // CLOUD_SERVER
+    6376,                   // CLOUD_PORT
+    "yyyyyyyyyyyyyyyyyyyy"  // CLOUD_TOKEN
+  );
+  
   
   // TODO you setup code
   
@@ -114,8 +114,7 @@ void setup()
 
 void loop() 
 { 
-  remotexy_1->handler ();
-  remotexy_2->handler ();
+  RemoteXYEngine.handler ();
   
   if (RemoteXY_1.button_1)  RemoteXY_1.led_1_r = 255;
   else RemoteXY_1.led_1_r = 0;

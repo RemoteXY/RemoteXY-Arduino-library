@@ -70,4 +70,6 @@ History:
      - new complex variables for new controls;
    version 4.1.5 
      - fixed some bugs; 
-  
+   version 4.1.6
+     - EEPROM support;
+     - examples have been updated;

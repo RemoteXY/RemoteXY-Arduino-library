@@ -16,6 +16,7 @@
 // RemoteXY select connection mode and include library
 //#define REMOTEXY__DEBUGLOG 
 
+#include <SoftwareSerial.h>
 #include <RemoteXY.h>
 
 
@@ -49,33 +50,28 @@ struct {
 /////////////////////////////////////////////
 
 
-CRemoteXY *remotexy;
 
 void setup() 
 {
-  remotexy = new CRemoteXY (
-    RemoteXY_CONF_PROGMEM, 
-    &RemoteXY, 
-    new CRemoteXYConnectionServer (
-      new CRemoteXYNet_ModemESP8266_Point (
-        new CRemoteXYStream_HardSerial (
-          &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
-          115200
-        ),
-        "myRemoteXY",       // REMOTEXY_WIFI_SSID
-        "12345678"),        // REMOTEXY_WIFI_PASSWORD
-      6377                  // REMOTEXY_SERVER_PORT
-    )
-  ); 
   
-  
+  RemoteXYNet * net = new CRemoteXYNet_ModemESP8266_Point (
+    new CRemoteXYStream_HardSerial (
+      &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
+      115200
+    ),
+    "myRemoteXY",       // WIFI_SSID
+    "12345678"          // WIFI_PASSWORD
+  );
+  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+  gui->addConnectionServer (net, 6377);   // SERVER_PORT
+    
   // TODO you setup code
   
 }
 
 void loop() 
 { 
-  remotexy->handler ();
+  RemoteXYEngine.handler ();
   
   if (RemoteXY.button_1)  RemoteXY.led_1_r = 255;
   else RemoteXY.led_1_r = 0;
