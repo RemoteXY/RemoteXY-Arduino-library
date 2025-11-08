@@ -59,9 +59,9 @@ void setup()
   );
   RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
   gui->addConnectionCloud (net,
-    "cloud.remotexy.com",   // REMOTEXY_CLOUD_SERVER
-    6376,                   // REMOTEXY_CLOUD_PORT
-    "xxxxxxxxxxxxxxxxxxxx"  // REMOTEXY_CLOUD_TOKEN
+    "cloud.remotexy.com",   // CLOUD_SERVER
+    6376,                   // CLOUD_PORT
+    "xxxxxxxxxxxxxxxxxxxx"  // CLOUD_TOKEN, Create a token in your personal account at remotexy.com
   );  
   
   // TODO you setup code

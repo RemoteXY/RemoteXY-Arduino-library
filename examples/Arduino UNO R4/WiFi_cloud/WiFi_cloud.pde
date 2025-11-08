@@ -60,7 +60,7 @@ void setup()
   gui->addConnectionCloud (net,       
     "cloud.remotexy.com",   // CLOUD_SERVER
     6376,                   // CLOUD_PORT
-    "xxxxxxxxxxxxxxxxxxxx"  // CLOUD_TOKEN
+    "xxxxxxxxxxxxxxxxxxxx"  // CLOUD_TOKEN, Create a token in your personal account at remotexy.com
   );
     
   // TODO you setup code
