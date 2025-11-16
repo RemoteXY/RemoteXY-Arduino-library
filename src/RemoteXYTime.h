@@ -645,11 +645,6 @@ class RemoteXYTime {
 
   String format (const char * tmpl) {
     uint16_t len = getFormatLength (tmpl)+1;
-    //uint16_t len = rxy_strLength(tmpl)+1;
-    //len += 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_MMMM), 0);
-    //len += 5 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_EEEE), 0);
-    //len += 2 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_d), 0);
-    //len += 2 * rxy_strSearchCount (tmpl, FPSTR(REMOTEXY_TIMEFORMAT_h), 0);
     char *str = (char*)malloc (len);
     format (str, tmpl);
     String s = String (str);
