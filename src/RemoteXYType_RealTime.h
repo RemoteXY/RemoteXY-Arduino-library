@@ -133,7 +133,7 @@ class RemoteXYType_RealTime : public CRemoteXYType {
   int64_t getTimeStamp (int16_t timeZoneMinutes) {
     int64_t time = getUtcTimeStamp ();
     if (time != 0) {
-      time += (uint32_t)timeZoneMinutes * (uint32_t)60000; 
+      time += (int64_t)timeZoneMinutes * 60000; 
     }
     return time;
   }
