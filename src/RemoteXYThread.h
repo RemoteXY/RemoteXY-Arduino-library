@@ -148,6 +148,7 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       case REMOTEXY_PACKAGE_COMMAND_INPUTVAR: // receive input vars 
         if ((package->length == guiData->inputLength) && (inputVarNeedSend==0)) {
           rxy_bufCopy (guiData->inputVar, package->buffer, guiData->inputLength);
+          checkEvents ();
           rxy_bufCopy (guiData->inputVarCopy, package->buffer, guiData->inputLength);
           CRemoteXYThread::notifyInputVarNeedSend (guiData);  // notify other threads
           inputVarNeedSend = 0; // was change in notifyInputVarNeedSend
@@ -219,7 +220,19 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       var->sendDescriptorBytes (wire);
     }
   }
-  
+
+  private:
+  void checkEvents () {
+    uint8_t * inputVar = guiData->inputVar;
+    uint8_t * inputVarCopy = guiData->inputVarCopy;
+    CRemoteXYVariableEventDescriptor * p = guiData->variableEvents;
+    while (p) {
+      if (!rxy_bufCompare (inputVarCopy + p->offset, inputVar + p->offset, p->size)) {
+        p->needEvent = 1;
+      }
+      p = p->next;
+    }
+  }  
   
 #if defined (REMOTEXY_HAS_EEPROM) 
   
@@ -305,6 +318,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
     return NULL; 
   }
   
+
+  
   
   public:
   static void notifyInputVarNeedSend (CRemoteXYGuiData * guiData) {
@@ -323,6 +338,8 @@ class CRemoteXYThread : public CRemoteXYReceivePackageListener {
       p = p->next;
     }
   }
+  
+
   
 };
 

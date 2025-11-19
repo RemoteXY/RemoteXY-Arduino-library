@@ -214,7 +214,40 @@ class CRemoteXY: public CRemoteXYData {
 #endif
   }
   
+
+  // EVENTS
   
+  void addVariableEvent (void * var, uint16_t size, void (*event) ()) {
+    CRemoteXYGui * pg = guis;
+    while (pg) {
+      pg->addVariableEvent(var, size, event);
+      pg = pg->next;
+    }      
+  }
+  
+  void addVariableEvent (uint8_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(uint8_t), event);
+  }
+  void addVariableEvent (int8_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(int8_t), event);
+  }
+  void addVariableEvent (uint16_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(uint16_t), event);
+  }    
+  void addVariableEvent (int16_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(int16_t), event);
+  }   
+  void addVariableEvent (uint32_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(uint32_t), event);
+  }  
+  void addVariableEvent (int32_t &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(int32_t), event);
+  }    
+  void addVariableEvent (float &var, void (*event) ()) {
+    addVariableEvent (&var, sizeof(float), event);
+  }  
+
+      
 };
 
 

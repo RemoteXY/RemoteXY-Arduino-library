@@ -27,7 +27,8 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     inputVar = pv;
     
     threads = NULL;
-    connections = NULL;     
+    connections = NULL; 
+    variableEvents = NULL;    
     
     connect_flag = NULL; 
     
@@ -229,7 +230,18 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     while (connection) {
       connection->handler (); 
       connection = connection->next;
-    }    
+    }  
+    
+    // events
+    CRemoteXYVariableEventDescriptor * pe = variableEvents;
+    while (pe) {
+      if (pe->needEvent != 0) {
+        pe->event ();
+        pe->needEvent = 0;
+      }
+      pe = pe->next;
+    }
+  
     
   }
 
@@ -248,6 +260,20 @@ class CRemoteXYGui: public CRemoteXYGuiData {
     }
     return 1;    
   }
+  
+  ///// EVENTS
+  public:
+  void addVariableEvent (void * _var, uint16_t _size, void (*_event) ()) {
+    if (_event && _var && _size > 0) {
+      int16_t offset = (uint8_t*)_var - inputVar;
+      if ((offset >= 0) && (offset + _size <= inputLength)) {
+        CRemoteXYVariableEventDescriptor * event = new CRemoteXYVariableEventDescriptor (offset, _size, _event);
+        event->next = variableEvents;
+        variableEvents = event;
+      }
+    }
+  }  
+  
   
 };
 

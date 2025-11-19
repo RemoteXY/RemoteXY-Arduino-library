@@ -16,6 +16,25 @@ class CRemoteXYEeprom;
 // > REMOTEXY_BOARDID_LENGTH+1 
 #define REMOTEXY_RECEIVE_BUFFER_MIN_LENGTH 33 
 
+class CRemoteXYVariableEventDescriptor {
+  public:
+  CRemoteXYVariableEventDescriptor * next;
+  uint8_t needEvent;  
+  uint16_t offset;
+  uint16_t size;
+  void (*event) ();
+  
+  public:
+  CRemoteXYVariableEventDescriptor (uint16_t _offset, uint16_t _size, void (*_event) ()) {
+    next = NULL;
+    needEvent = 0;
+    offset = _offset;
+    size = _size;
+    event = _event;
+  }
+};
+
+
 class CRemoteXYGuiData {
   
   public:
@@ -38,7 +57,9 @@ class CRemoteXYGuiData {
   CRemoteXYThread * threads;  
   CRemoteXYConnectionNet * connections;  
   
-  uint8_t *inputVarCopy;  
+  uint8_t *inputVarCopy; 
+  
+  CRemoteXYVariableEventDescriptor * variableEvents; 
   
   public:
   uint16_t getReceiveBufferSize () {
