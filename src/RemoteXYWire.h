@@ -214,7 +214,7 @@ class CRemoteXYWire : public CRemoteXYOutput, public CRemoteXYReadByteListener {
   
   private:
   void endPackage () {
-    if (stream) {
+    if (stream) {        
 #if defined(REMOTEXY__DEBUGLOG)
       RemoteXYDebugLog.writeOutputHex (sendCRC);  
       RemoteXYDebugLog.writeOutputHex (sendCRC>>8);  
