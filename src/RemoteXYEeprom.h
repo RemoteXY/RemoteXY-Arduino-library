@@ -124,17 +124,31 @@ class CRemoteXYEeprom {
   }
   
 #if defined(REMOTEXY__DEBUGLOG)
+
+  private:
+  void debugLogPrintItemName (CRemoteXYEepromItem * item) {
+    if (item->key == REMOTEXY_EEPROM_KEY_BOARDID) RemoteXYDebugLog.writeAdd(F("boardId"));
+    else if (item->key == REMOTEXY_EEPROM_KEY_AESKEY) RemoteXYDebugLog.writeAdd(F("aesKey"));
+    else {
+      RemoteXYDebugLog.writeAdd(F("var_"));
+      RemoteXYDebugLog.writeAdd(item->key);
+    }
+  } 
+
+  private:
+  void debugLogAddItem (CRemoteXYEepromItem * item) {
+    RemoteXYDebugLog.write(F("add EEPROM item: "));
+    debugLogPrintItemName (item);
+    RemoteXYDebugLog.writeAdd(F(", size "));
+    RemoteXYDebugLog.writeAdd(item->size);
+  } 
+
   private:
   void debugLogWriteItem (CRemoteXYEepromItem * item) {
     RemoteXYDebugLog.write(F("write EEPROM item: "));
-    if (item->key == REMOTEXY_EEPROM_KEY_BOARDID) RemoteXYDebugLog.writeAdd(F("boardId"));
-    else if (item->key == REMOTEXY_EEPROM_KEY_AESKEY) RemoteXYDebugLog.writeAdd(F("aesKey"));
-    else RemoteXYDebugLog.writeAdd(F("var"));
+    debugLogPrintItemName (item);
   } 
-#endif 
-  
-  
-  
+#endif   
       
   public: 
   void init () {
@@ -173,12 +187,7 @@ class CRemoteXYEeprom {
         item->data = itemData;
         item->address = address;       
 #if defined(REMOTEXY__DEBUGLOG)
-        RemoteXYDebugLog.write(F("add EEPROM item: "));
-        if (item->key == REMOTEXY_EEPROM_KEY_BOARDID) RemoteXYDebugLog.writeAdd(F("boardId"));
-        else if (item->key == REMOTEXY_EEPROM_KEY_AESKEY) RemoteXYDebugLog.writeAdd(F("aesKey"));
-        else RemoteXYDebugLog.writeAdd(F("var"));
-        RemoteXYDebugLog.writeAdd(F(", size "));
-        RemoteXYDebugLog.writeAdd(item->size);
+        debugLogAddItem (item);
 #endif  
         itemData += item->size;
         address += item->size;         
