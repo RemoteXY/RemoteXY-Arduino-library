@@ -186,6 +186,39 @@ class CRemoteXY: public CRemoteXYData {
 
   // EEPROM SUPPORT FUNCTIONS
   
+  void addToEeprom (void * var, uint16_t size, uint16_t key) {
+#if defined(REMOTEXY_HAS_EEPROM)
+    if (key >= REMOTEXY_EEPROM_KEY_) key &= 0x7fff;
+    eeprom.addItem ((uint8_t*)var, size, key);    
+#else
+    UNUSED (var);
+    UNUSED (size);
+    UNUSED (key);
+#endif    
+  }
+  
+  void addToEeprom (uint8_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(uint8_t), key);
+  }
+  void addToEeprom (int8_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(int8_t), key);
+  }
+  void addToEeprom (uint16_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(uint16_t), key);
+  }    
+  void addToEeprom (int16_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(int16_t), key);
+  }   
+  void addToEeprom (uint32_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(uint32_t), key);
+  }  
+  void addToEeprom (int32_t &var, uint16_t key) {
+    addToEeprom (&var, sizeof(int32_t), key);
+  }    
+  void addToEeprom (float &var, uint16_t key) {
+    addToEeprom (&var, sizeof(float), key);
+  }    
+  
   public:
   uint16_t getEepromSize () {
 #if defined(REMOTEXY_HAS_EEPROM)

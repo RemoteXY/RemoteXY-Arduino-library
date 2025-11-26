@@ -84,7 +84,7 @@ class CRemoteXYGui: public CRemoteXYGuiData {
         v |= (b & 0x3f) << 8; 
         s |= (b & 0xc0) << 2; 
 #if defined(REMOTEXY_HAS_EEPROM)
-        data->eeprom.addItem (inputVar + v, s, v+(s>>6));
+        data->eeprom.addItem (inputVar + v, s, (v+(s<<6)) & 0x7fff);
 #elif defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.write(F("Not include EEPROM.h, variable not saved"));
 #endif       
