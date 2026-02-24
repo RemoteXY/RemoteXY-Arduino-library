@@ -77,3 +77,5 @@ History:
      - storing variables in EEPROM;
      - variable events;
      - fixed some bugs;
+   version 4.1.9
+     - fixed some bugs;

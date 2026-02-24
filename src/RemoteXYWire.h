@@ -184,7 +184,8 @@ class CRemoteXYWire : public CRemoteXYOutput, public CRemoteXYReadByteListener {
       sendFragmentLastId = 0;
     } 
     else {
-      sendFragmentLastId = length / (sendFragmentSize - 8);
+      // when the data length is a multiple of the packet size -> length - 1
+      sendFragmentLastId = (length - 1) / (sendFragmentSize - 8);
     }  
     sendFragmentId = 0;
     sendPackageHeader ();

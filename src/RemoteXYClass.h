@@ -29,6 +29,7 @@
 #include "RemoteXYType_Terminal.h"
 #include "RemoteXYType_Notification.h"
 #include "RemoteXYType_NotificationNet.h"
+//#include "RemoteXYType_Connect.h"
 
 #define UNUSED(x) (void)(x)
 
