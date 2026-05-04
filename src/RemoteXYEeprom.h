@@ -65,8 +65,8 @@ class CRemoteXYEeprom {
 
   private:
   uint16_t offset;
-  uint16_t size;
   uint8_t * data;
+  uint16_t dataSize;
   uint16_t crcAddress;
   CRemoteXYEepromItem * items;
   
@@ -154,13 +154,12 @@ class CRemoteXYEeprom {
   void init () {
     if (initialized != 0) return;
     
-    size = getSize ();
-    uint16_t dataSize = 0;  
+    uint16_t eepromSize = getSize ();
     
-    if (size > 0) {
+    if (eepromSize > 0) {
     
 #if defined (REMOTEXY_EEPROM_ESP)
-      if (EEPROM.length() < size + offset) {
+      if (EEPROM.length() < eepromSize + offset) {
 #if defined(REMOTEXY__DEBUGLOG)
         RemoteXYDebugLog.write(F("EEPROM was not allocated using begin()"));
 #endif 
@@ -169,7 +168,7 @@ class CRemoteXYEeprom {
       }
 #endif    
               
-      dataSize = size - REMOTEXY_EEPROM_CRC_SIZE;  // sub key size
+      dataSize = eepromSize - REMOTEXY_EEPROM_CRC_SIZE;  // sub key size
       data = (uint8_t *) malloc (dataSize);
       if (data == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
@@ -200,7 +199,7 @@ class CRemoteXYEeprom {
  
 #if defined(REMOTEXY__DEBUGLOG)
       RemoteXYDebugLog.write(F("EEPROM started, size "));
-      RemoteXYDebugLog.writeAdd(size);
+      RemoteXYDebugLog.writeAdd(eepromSize);
       RemoteXYDebugLog.writeAdd(F(" offset "));
       RemoteXYDebugLog.writeAdd(offset);
 #endif       
@@ -315,7 +314,7 @@ class CRemoteXYEeprom {
     
     // first part
     uint8_t * p = data;
-    uint16_t sz = size;
+    uint16_t sz = dataSize;
     while (sz--) rxy_updateCRC (&crc, *p++);
     
     // second part
