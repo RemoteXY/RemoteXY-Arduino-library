@@ -1,174 +1,130 @@
 /*
-   RemoteXY example: setup WiFi client settings using BLE mode for ESP32 
+   RemoteXY Example: WiFi Client Configuration using BLE (ESP32)  
    
    To connect, use the RemoteXY mobile 
    application at http://remotexy.com/en/download/               
     
    Copyright (c) 2014-2025 Evgenii Shemanuev
    Licensed under the MIT License. See LICENSE file in the project root for 
-   full license information.   
+   full license information.     
 */
 
-//#define REMOTEXY__DEBUGLOG
+
+// you can enable debug logging to Serial at 115200
+//#define REMOTEXY__DEBUGLOG    
 
 #include <EEPROM.h>
 #include <WiFi.h>  
 #include "BLEDevice.h"
-
 #include <RemoteXY.h>
 
-#define PIN_BUTTON_WIFISETUP 3   // pin of button for wifi settings, press this button when devise reset
-#define EPPROM_CHECK_VALUE 0x55
+// RemoteXY connection settings 
+#define REMOTEXY_BLUETOOTH_NAME "Device Setup"
+#define REMOTEXY_CLOUD_SERVER "cloud.remotexy.com"
+#define REMOTEXY_CLOUD_PORT 6376
+#define REMOTEXY_CLOUD_TOKEN "xxxxxxxxxxx" // replace with your token
+
+#define PIN_BUTTON_WIFISETUP 3   // pin of button for wifi WiFiSetup, press this button when devise reset
 
 
-#pragma pack(push, 1)
-////////////////////////////////////////
-// WiFi settings configuration
-////////////////////////////////////////
+// RemoteXY GUI configuration  
+#pragma pack(push, 1)  
 
-// structure for EEPROM 
-struct {
-  char ssid[21]; 
-  char pass[21];  
-} WiFiSettings;
-
-
-uint8_t const PROGMEM RemoteXY_CONF_WiFiSettings [] =
-  { 255,43,0,0,0,106,0,10,172,2,
-  7,4,28,18,47,7,9,25,46,7,
-  24,31,2,21,7,4,28,34,47,7,
-  9,44,46,7,24,31,2,21,129,0,
-  28,13,34,4,9,20,35,4,31,87,
-  105,70,105,32,110,97,109,101,32,40,
-  83,83,73,68,41,58,0,129,0,28,
-  29,35,4,9,39,35,4,31,80,97,
-  115,115,119,111,114,100,58,0,1,2,
-  28,46,47,8,8,61,48,8,190,31,
-  82,69,83,69,84,32,68,69,86,73,
-  67,69,0 };
-
-struct {
-
-    // input variables
-  char ssid[21];  
-  char pass[21];  
-  uint8_t buttonReset; 
-
-    // other variable
-  uint8_t connect_flag;  // =1 if wire connected, else =0 
-
-
-} RemoteXY_WiFiSettings;
-
-////////////////////////////////////////
-// Main configuration
-////////////////////////////////////////
-
-uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =
-  { 255,1,0,1,0,27,0,10,13,2,
-  1,0,9,9,46,46,6,7,50,50,
-  2,31,88,0,65,4,62,16,31,31,
-  14,62,35,35 };
+// MAIN GUI
+uint8_t const PROGMEM RemoteXY_CONF_PROGMEM[] =   // 102 bytes V21 
+  { 254,1,0,3,0,0,0,1,0,0,1,0,88,0,21,0,0,0,0,31,
+  1,106,200,1,1,6,0,70,16,101,24,24,16,26,37,0,3,15,59,75,
+  28,131,2,26,70,41,101,24,24,16,26,37,0,70,66,101,24,24,16,26,
+  37,0,129,23,12,57,12,64,24,84,101,115,116,32,109,111,100,101,0,129,
+  24,48,57,7,64,24,83,97,118,101,100,32,116,111,32,69,69,80,82,79,
+  77,0 };
   
 // this structure defines all the variables and events of your control interface 
 struct {
 
     // input variables
-  uint8_t button_1; // =1 if button pressed, else =0 
+  uint8_t selectorSwitch; // from 0 to 2, saved to EEPROM
 
     // output variables
-  uint8_t led_1_r; // =0..255 LED Red brightness 
+  uint8_t led_01; // from 0 to 1
+  uint8_t led_02; // from 0 to 1
+  uint8_t led_03; // from 0 to 1
 
-    // other variable
-  uint8_t connect_flag;  // =1 if wire connected, else =0 
+} RemoteXY;  
 
-} RemoteXY;
+// WiFiSetup GUI
+uint8_t const PROGMEM RemoteXY_CONF_WiFiSetup[] =   // 148 bytes V21 
+  { 254,67,0,0,0,0,0,2,0,0,33,0,33,33,0,131,0,21,0,0,
+  0,87,105,45,70,105,32,83,101,116,117,112,0,31,1,106,200,1,1,6,
+  0,7,6,46,95,10,4,0,31,28,33,129,6,39,36,6,64,25,87,105,
+  70,105,32,110,101,116,119,111,114,107,58,0,129,6,61,28,6,64,25,80,
+  97,115,115,119,111,114,100,58,0,7,6,67,95,10,4,0,31,28,33,129,
+  10,15,84,7,64,24,82,101,109,111,116,101,32,68,101,118,105,99,101,32,
+  87,105,45,70,105,32,83,101,116,117,112,0,1,17,172,72,16,5,133,31,
+  67,111,110,110,101,99,116,0 };
+  
+// this structure defines all the variables and events of your control interface 
+struct {
+
+    // input variables
+  char wifiSsid[33]; // string UTF8 end zero, saved to EEPROM
+  char wifiPass[33]; // string UTF8 end zero, saved to EEPROM
+  uint8_t wifiConnectButton; // =1 if button pressed, else =0, from 0 to 1
+
+} RemoteXY_WiFiSetup;  
 
 #pragma pack(pop)
+// END RemoteXY GUI configuration  
 
 
-
-/////////////////////////////////////////////
-//           END RemoteXY include          //
-/////////////////////////////////////////////
-
-uint8_t ifSettingsMode = 0;
-
-
-boolean readWiFiSettings () {
-  if (EEPROM.read(sizeof(WiFiSettings)) == EPPROM_CHECK_VALUE) {
-    for (uint8_t i = 0; i<sizeof(WiFiSettings); i++) {
-      *(((uint8_t*)&WiFiSettings)+i) = EEPROM.read(i); 
-    }
-    return true;
-  }
-  return false;  
-}
-
-void writeWiFiSettings () {
-  for (uint8_t i = 0; i<sizeof(WiFiSettings); i++) {
-    EEPROM.write (i, *(((uint8_t*)&WiFiSettings)+i));
-  }
-  EEPROM.write (sizeof(WiFiSettings), EPPROM_CHECK_VALUE);    
-  EEPROM.commit ();  
-}
+uint8_t wiFiSetupMode = 0;
 
 void setup() 
 {
-  EEPROM.begin(sizeof(WiFiSettings)+1);
-  pinMode (PIN_BUTTON_WIFISETUP, INPUT);
+  RemoteXYGui *wifiSetupGui = RemoteXYEngine.addGui (RemoteXY_CONF_WiFiSetup, &RemoteXY_WiFiSetup);
+  RemoteXYGui *mainGui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY); 
   
-  boolean EEPROMisValid = readWiFiSettings ();
-  if (!digitalRead(PIN_BUTTON_WIFISETUP) || (!EEPROMisValid)) {
-    // wifi setup mode using BLE mode
-    ifSettingsMode = 1;
-    RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_WiFiSettings, &RemoteXY_WiFiSettings);
-    gui->addConnection (new CRemoteXYStream_BLEDevice (
-      "Device Settings"       // BLUETOOTH_NAME 
-    ));  
-    if (EEPROMisValid) {
-      strcpy (RemoteXY_WiFiSettings.ssid, WiFiSettings.ssid);
-      strcpy (RemoteXY_WiFiSettings.pass, WiFiSettings.pass);      
-    }     
+  // init EEPROM
+  EEPROM.begin(RemoteXYEngine.getEepromSize()); 
+  RemoteXYEngine.initEeprom ();
+
+
+  if (!digitalRead(PIN_BUTTON_WIFISETUP) || (RemoteXY_WiFiSetup.wifiSsid[0] != 0)) {
+    // WiFiSetup button not pressed, go to main mode
+    CRemoteXYNet * net =  new CRemoteXYNet_WiFi (
+      RemoteXY_WiFiSetup.wifiSsid,    // WIFI_SSID
+      RemoteXY_WiFiSetup.wifiPass     // WIFI_PASSWORD
+    );  
+    mainGui->addConnectionCloud (net,       
+      REMOTEXY_CLOUD_SERVER,   // CLOUD_SERVER
+      REMOTEXY_CLOUD_PORT,     // CLOUD_PORT
+      REMOTEXY_CLOUD_TOKEN     // CLOUD_TOKEN
+    );
   }
   else {
-    CRemoteXYNet * net =  new CRemoteXYNet_WiFi (
-      WiFiSettings.ssid,    // WIFI_SSID
-      WiFiSettings.pass     // WIFI_PASSWORD
-    );  
-    RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
-    gui->addConnectionCloud (net,       
-      "cloud.remotexy.com",   // CLOUD_SERVER
-      6376,                   // CLOUD_PORT
-      "xxxxxxxxxxxxxxxxxxxx"  // CLOUD_TOKEN
-    );
-  
-    // TODO you setup code
-
-  } 
+    // go to WiFiSetup mode
+    wiFiSetupMode = 1;
+    wifiSetupGui->addConnection (new CRemoteXYStream_BLEDevice (REMOTEXY_BLUETOOTH_NAME));
+  }
   
 }
 
-
 void loop() 
 { 
-  RemoteXYEngine.handler ();
-  
-  if (ifSettingsMode) {
-
-    if (RemoteXY_WiFiSettings.buttonReset) {
-      strcpy (WiFiSettings.ssid, RemoteXY_WiFiSettings.ssid);
-      strcpy (WiFiSettings.pass, RemoteXY_WiFiSettings.pass);         
-      writeWiFiSettings ();  
+  RemoteXYEngine.handler (); 
+  if (wiFiSetupMode == 1) {
+    if (RemoteXY_WiFiSetup.wifiConnectButton !=0) {
       ESP.restart (); 
     }
-  }  
-  else {
-  
-    // TODO you loop code
-  
-  
+    return;
   }
 
+
+  // TODO you loop code
+  // use the RemoteXY structure for data transfer
+  // do not call delay(), use instead RemoteXYEngine.delay() 
+  RemoteXY.led_01 = RemoteXY.selectorSwitch == 0 ? 1 : 0;
+  RemoteXY.led_02 = RemoteXY.selectorSwitch == 1 ? 1 : 0;
+  RemoteXY.led_03 = RemoteXY.selectorSwitch == 2 ? 1 : 0;
 }
 

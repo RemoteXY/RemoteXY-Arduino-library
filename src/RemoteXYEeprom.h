@@ -168,7 +168,7 @@ class CRemoteXYEeprom {
       }
 #endif    
               
-      dataSize = eepromSize - REMOTEXY_EEPROM_CRC_SIZE;  // sub key size
+      dataSize = eepromSize - REMOTEXY_EEPROM_CRC_SIZE;  // sub CRC size
       data = (uint8_t *) malloc (dataSize);
       if (data == NULL) {
 #if defined(REMOTEXY__DEBUGLOG)
