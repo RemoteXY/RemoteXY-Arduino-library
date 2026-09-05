@@ -33,6 +33,18 @@ class CRemoteXYNet_ModemESP8266_Generic : public CRemoteXYNet_Modem {
     setMaxClientCount (REMOTEXY_MODEM_ESP8266_CLIENT_COUNT);  
   }
   
+  public:
+  CRemoteXYNet_ModemESP8266_Generic (Stream * stream) : CRemoteXYNet_Modem (stream) {
+    state = 0;
+    setMaxClientCount (REMOTEXY_MODEM_ESP8266_CLIENT_COUNT);  
+  }
+  
+  public:
+  CRemoteXYNet_ModemESP8266_Generic (Stream &stream) : CRemoteXYNet_Modem (stream) {
+    state = 0;
+    setMaxClientCount (REMOTEXY_MODEM_ESP8266_CLIENT_COUNT);  
+  }
+  
   virtual uint8_t initModem () = 0;
   
   
@@ -164,7 +176,18 @@ class CRemoteXYNet_ModemESP8266 : public CRemoteXYNet_ModemESP8266_Generic {
     wifiPassword = _wifiPassword;  
   }
 
-
+  public:
+  CRemoteXYNet_ModemESP8266 (Stream * stream, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ModemESP8266_Generic (stream) {
+    wifiSsid = _wifiSsid;
+    wifiPassword = _wifiPassword;  
+  }
+  
+  public:
+  CRemoteXYNet_ModemESP8266 (Stream &stream, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ModemESP8266_Generic (stream) {
+    wifiSsid = _wifiSsid;
+    wifiPassword = _wifiPassword;  
+  }
+  
   private:
   uint8_t initModem () override {
     if (sendCommandForResult (F("ATE0")) == 0) return 0;   
@@ -228,6 +251,18 @@ class CRemoteXYNet_ModemESP8266_Point : public CRemoteXYNet_ModemESP8266_Generic
   
   public:
   CRemoteXYNet_ModemESP8266_Point (CRemoteXYStream * stream, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ModemESP8266_Generic (stream) {
+    wifiSsid = _wifiSsid;
+    wifiPassword = _wifiPassword;  
+  }
+  
+  public:
+  CRemoteXYNet_ModemESP8266_Point (Stream * stream, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ModemESP8266_Generic (stream) {
+    wifiSsid = _wifiSsid;
+    wifiPassword = _wifiPassword;  
+  }
+  
+  public:
+  CRemoteXYNet_ModemESP8266_Point (Stream &stream, const char * _wifiSsid, const char * _wifiPassword) : CRemoteXYNet_ModemESP8266_Generic (stream) {
     wifiSsid = _wifiSsid;
     wifiPassword = _wifiPassword;  
   }

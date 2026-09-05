@@ -60,6 +60,23 @@ class CRemoteXYModem: public CRemoteXYReadByteListener {
   public:
   CRemoteXYModem (CRemoteXYStream *_stream)  {
     stream = _stream;
+    initModem ();
+  }
+  
+  public:
+  CRemoteXYModem (Stream *_stream)  {
+    stream = new CRemoteXYStream_Stream (_stream); 
+    initModem ();
+  }  
+  
+  public:
+  CRemoteXYModem (Stream &_stream)  {
+    stream = new CRemoteXYStream_Stream (&_stream); 
+    initModem ();
+  }  
+  
+  private:
+  void initModem () {
     stream->setReadByteListener (this);
     receiveBufferIndex = 0; 
     commandState = 0;

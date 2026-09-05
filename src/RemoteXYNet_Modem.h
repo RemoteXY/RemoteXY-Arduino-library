@@ -23,13 +23,28 @@ class CRemoteXYNet_Modem_Proto : public CRemoteXYModem, public CRemoteXYNet {
 
   public:
   CRemoteXYNet_Modem_Proto (CRemoteXYStream * stream) : CRemoteXYModem (stream), CRemoteXYNet () {
+    initNet_Modem_Proto ();
+  }
+  
+  public:
+  CRemoteXYNet_Modem_Proto (Stream * stream) : CRemoteXYModem (stream), CRemoteXYNet () {
+    initNet_Modem_Proto ();
+  }
+  
+  public:
+  CRemoteXYNet_Modem_Proto (Stream &stream) : CRemoteXYModem (stream), CRemoteXYNet () {
+    initNet_Modem_Proto ();
+  }
+  
+  private:
+  void initNet_Modem_Proto () {
     maxClientCount = REMOTEXY_NET_MODEM_CLIENT_MAX_COUNT;
     server = NULL; 
     readByteClientId = -1;
     for (uint8_t i = 0; i < REMOTEXY_NET_MODEM_CLIENT_MAX_COUNT; i++) {
       clientsById[i] = NULL;
     }
-    connectingClientId = -1;
+    connectingClientId = -1;  
   }
   
   public:
@@ -90,6 +105,7 @@ class CRemoteXYClient_Modem : public CRemoteXYClient {
     modem = _modem; 
     clearBuffers ();  
   } 
+  
   
   public:
   void clearBuffers () {
@@ -192,6 +208,14 @@ class CRemoteXYNet_Modem : public CRemoteXYNet_Modem_Proto {
   
   public:
   CRemoteXYNet_Modem (CRemoteXYStream * stream) : CRemoteXYNet_Modem_Proto (stream) {
+  }
+  
+  public:
+  CRemoteXYNet_Modem (Stream * stream) : CRemoteXYNet_Modem_Proto (stream) {
+  }
+  
+  public:
+  CRemoteXYNet_Modem (Stream &stream) : CRemoteXYNet_Modem_Proto (stream) {
   }
       
   void clientConnected (uint8_t clientId) {

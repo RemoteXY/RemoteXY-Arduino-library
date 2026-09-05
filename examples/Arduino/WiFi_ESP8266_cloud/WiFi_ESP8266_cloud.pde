@@ -16,7 +16,6 @@
 // RemoteXY select connection mode and include library
 //#define REMOTEXY__DEBUGLOG 
 
-#include <SoftwareSerial.h>
 #include <RemoteXY.h>
 
 
@@ -52,16 +51,16 @@ struct {
 
 void setup() 
 {
-  
+
+  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+
+  Serial.begin (115200);
   RemoteXYNet * net = new CRemoteXYNet_ModemESP8266 (
-    new CRemoteXYStream_HardSerial (
-      &Serial,          // use Serial1 (Serial2, Serial3) for Arduino Mega board
-      115200
-    ),
+    Serial,
     "myHomeFiFi",       // WIFI_SSID
     "12345678"          // WIFI_PASSWORD
   );
-  RemoteXYGui * gui = RemoteXYEngine.addGui (RemoteXY_CONF_PROGMEM, &RemoteXY);
+  
   gui->addConnectionCloud (net,       
     "cloud.remotexy.com",   // CLOUD_SERVER
     6376,                   // CLOUD_PORT
