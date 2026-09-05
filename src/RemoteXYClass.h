@@ -33,6 +33,7 @@
 
 #define UNUSED(x) (void)(x)
 
+
 class CRemoteXY: public CRemoteXYData {
   
   private:
@@ -98,6 +99,12 @@ class CRemoteXY: public CRemoteXYData {
     }
 #endif 
     return gui;
+  }
+  
+  public: 
+  template <typename RemoteXY_T>
+  CRemoteXYGui * addGui (const void * _conf, RemoteXY_T &_var, const char * _accessPassword = NULL) {
+    return addGui (_conf, (void*)&_var, _accessPassword); 
   }
   
   
